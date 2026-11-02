@@ -72,6 +72,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .item .l1 .num{font-size:16px;white-space:nowrap}
 .item .l2{font-size:13px;color:var(--muted)}
 .flag{color:var(--warn)!important}
+.swipe{position:relative;overflow:hidden}
+.swipe .del{position:absolute;inset:0 0 1px 0;display:flex;align-items:center;justify-content:flex-end;padding:0 18px;background:#B42318;color:#fff;font-size:15px;font-weight:500}
+.swipe .item{position:relative;background:var(--bg);transition:transform .22s cubic-bezier(.3,.7,.4,1)}
+.swipe.drag .item{transition:none}
 .empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:36px 12px}
 .empty .t{font-size:18px;font-weight:600}
 .empty .d{font-size:14px;color:var(--muted);max-width:280px}
@@ -148,8 +152,9 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 @keyframes kBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 .bob{animation:kBob 2.8s ease-in-out infinite}
 /* toast */
+#toast .gone{opacity:0!important}
 #toast{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 12px);z-index:40;pointer-events:none}
-#toast div{background:var(--ink);color:var(--bg);font-size:14px;padding:11px 16px;border-radius:2px;max-width:90vw;white-space:nowrap;display:flex;align-items:center;gap:10px;position:relative;left:50%;width:max-content;transform:translateX(-50%);animation:kDrop .3s cubic-bezier(.2,.9,.3,1.1) both}
+#toast div{pointer-events:auto;touch-action:none;cursor:pointer;transition:transform .2s ease,opacity .2s ease;background:var(--ink);color:var(--bg);font-size:14px;padding:11px 16px;border-radius:2px;max-width:90vw;white-space:nowrap;display:flex;align-items:center;gap:10px;position:relative;left:50%;width:max-content;transform:translateX(-50%);animation:kDrop .3s cubic-bezier(.2,.9,.3,1.1) both}
 #toast .ck{display:inline-flex;width:16px;height:16px;color:var(--bg);animation:kTick .4s .08s cubic-bezier(.2,.9,.3,1.3) both}
 #toast .ck svg{width:16px;height:16px}
 #toast div button{pointer-events:auto;border:none;border-left:1px solid #444;background:none;color:var(--bg);font:inherit;font-size:14px;font-weight:600;padding:0 0 0 12px;margin-left:2px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
@@ -264,6 +269,32 @@ function guessCat(desc){
   for(const c of Object.keys(CAT_WORDS)) if(words.some(w=>CAT_WORDS[c].includes(w))) return {cat:c,meal:c==='meal'?'other':null};
   return {cat:'other',meal:null};
 }
+(function(){
+  let x0=null,y0=null,dx=0,mode=null,row=null,item=null;
+  document.addEventListener('touchstart',e=>{ const r=e.target.closest('.swipe'); if(!r){ x0=null; return; } row=r; item=r.querySelector('.item'); x0=e.touches[0].clientX; y0=e.touches[0].clientY; dx=0; mode=null; },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(x0==null||!row) return; const mx=e.touches[0].clientX-x0, my=e.touches[0].clientY-y0;
+    if(!mode){ if(Math.abs(mx)>8&&Math.abs(mx)>Math.abs(my)*1.3) mode='h'; else if(Math.abs(my)>8) mode='v'; }
+    if(mode!=='h') return; dx=Math.min(0,mx); row.classList.add('drag'); item.style.transform='translateX('+dx+'px)'; },{passive:true});
+  document.addEventListener('touchend',()=>{ if(x0==null||!row) return; const r=row, it=item; r.classList.remove('drag');
+    if(mode==='h'){ swipeBlock=Date.now();
+      if(dx<-Math.min(110,r.offsetWidth*0.3)){ it.style.transform='translateX(-110%)'; const id=r.dataset.sw, g=G(S.gid), x=g&&(S.exp[g.id]||[]).find(e=>e.id===id); setTimeout(()=>{ if(x) softDelete('groups/'+g.id+'/expenses/'+x.id,x,'"'+x.desc+'" deleted',x.photoId); },180); }
+      else it.style.transform=''; }
+    x0=null; row=null; item=null; mode=null; },{passive:true});
+})();
+let swipeBlock=0;
+function hideToast(dir){
+  const t=document.getElementById('toast'), d=t.firstElementChild; clearTimeout(toast._t);
+  if(!d){ return; }
+  d.style.animation='none'; d.style.transform=dir==='up'?'translate(-50%,-80px)':'translate(calc(-50% + '+(dir==='left'?-420:420)+'px),0)'; d.classList.add('gone');
+  setTimeout(()=>{ if(t.firstElementChild===d) t.innerHTML=''; },200);
+}
+(function(){
+  let x0=null,y0=null,dx=0,dy=0,el=null;
+  document.addEventListener('touchstart',e=>{ const d=e.target.closest('#toast div'); if(!d||e.target.closest('button')) { x0=null; return; } el=d; x0=e.touches[0].clientX; y0=e.touches[0].clientY; dx=dy=0; el.style.animation='none'; el.style.transition='none'; },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(x0==null||!el) return; dx=e.touches[0].clientX-x0; dy=Math.min(0,e.touches[0].clientY-y0); el.style.transform='translate(calc(-50% + '+dx+'px),'+dy+'px)'; el.style.opacity=String(Math.max(.2,1-Math.max(Math.abs(dx)/220,-dy/80))); },{passive:true});
+  document.addEventListener('touchend',()=>{ if(x0==null||!el) return; el.style.transition=''; if(Math.abs(dx)>50) hideToast(dx<0?'left':'right'); else if(dy<-24) hideToast('up'); else if(Math.abs(dx)<6&&dy>-6) hideToast('up'); else { el.style.transform='translate(-50%,0)'; el.style.opacity=''; } x0=null; el=null; },{passive:true});
+  document.addEventListener('click',e=>{ const d=e.target.closest('#toast div'); if(d&&!e.target.closest('button')) hideToast('up'); });
+})();
 function toast(msg,ok,action,ms){ const t=document.getElementById('toast'); t.innerHTML=''; void t.offsetWidth; t.innerHTML='<div>'+(ok?'<span class="ck">'+IC.tick+'</span>':'')+esc(msg)+(action?'<button data-a="undo">'+esc(action)+'</button>':'')+'</div>'; clearTimeout(toast._t); toast._t=setTimeout(()=>{t.innerHTML='';},ms||2600); }
 function errText(e){
   const c=e&&e.code;
@@ -488,10 +519,10 @@ function expRow(g,x,cls){
   return '<button class="item'+(cls||'')+'" data-a="exp" data-e="'+esc(x.id)+'"><span class="l1"><b>'+esc(x.desc)+'</b><i aria-hidden="true"></i><span class="num">'+fmt(x.base,g.currency)+'</span></span><span class="l2">'+(fl?'<span class="flag">'+esc(fl)+'</span>':who+' · '+itemMeta(g,x))+'</span></button>';
 }
 function renderList(g){
-  const ex=expensesOf(g.id);
+  const ex=expensesOf(g.id), sw=canEdit();
   if(!ex.length) return '<div class="empty">'+cat(64,'bob')+'<div class="t">Nothing in yet</div><div class="d">Add the first expense and Kitty works out who owes what.</div></div>';
   const seen=S.seen[g.id]; S.seen[g.id]=new Set(ex.map(x=>x.id));
-  return '<div class="list">'+ex.map(x=>expRow(g,x,(seen&&!seen.has(x.id))?' new':'')).join('')+'</div>';
+  return '<div class="list">'+ex.map(x=>{ const r=expRow(g,x,(seen&&!seen.has(x.id))?' new':''); return sw?'<div class="swipe" data-sw="'+esc(x.id)+'"><span class="del" aria-hidden="true">Delete</span>'+r+'</div>':r; }).join('')+'</div>'+(sw&&ex.length?'<p class="hint" style="margin-top:8px">Swipe an expense left to delete it.</p>':'');
 }
 function renderTimeline(g){
   const ex=expensesOf(g.id);
@@ -987,6 +1018,7 @@ async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast('
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-a]'); if(!t) return;
   const a=t.dataset.a;
+  if(a==='exp' && Date.now()-swipeBlock<400) return;
   if(a==='ovClose'){ if(e.target===t) closeSheet(); return; }
   const g=S.gid?G(S.gid):null;
   switch(a){

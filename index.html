@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Kitty</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -20,7 +20,8 @@
 <style>
 :root{--bg:#FFF4D6;--ink:#1A1A1A;--muted:#4A4A4A;--accent:#FF7A45;--line:#EFE4D2;--warn:#9A3412}
 *{box-sizing:border-box}
-html,body{margin:0}
+html,body{margin:0;overflow-x:hidden;overscroll-behavior-x:none;touch-action:pan-y;-webkit-text-size-adjust:100%;max-width:100%}
+#sheet .pn{overflow-x:hidden;overscroll-behavior:contain}
 body{background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;transition:background .2s}
 button{font-family:inherit;color:inherit}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #2563EB;outline-offset:2px}
@@ -98,7 +99,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 #sheet .hd h2{margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em}
 .f{display:flex;flex-direction:column;gap:6px}
 .f>label,.lbl{font-size:14px;font-weight:700}
-.inp,select.inp,textarea.inp{width:100%;height:52px;border:2px solid var(--ink);border-radius:16px;padding:0 14px;font:inherit;font-size:17px;background:#fff;color:var(--ink)}
+.inp,select.inp,input[type=date].inp{-webkit-appearance:none;appearance:none;text-align:left;display:flex;align-items:center;min-width:0}
+input[type=date].inp::-webkit-date-and-time-value{text-align:left;margin:0}
+input[type=date].inp::-webkit-datetime-edit{padding:0}
+textarea.inp{width:100%;height:52px;border:2px solid var(--ink);border-radius:16px;padding:0 14px;font:inherit;font-size:17px;background:#fff;color:var(--ink)}
 textarea.inp{height:auto;min-height:76px;padding:12px 14px;resize:vertical}
 .amtwrap{display:flex;gap:8px}
 .amtwrap .inp.amt{font-size:28px;font-weight:800;height:64px}

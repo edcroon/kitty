@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kitty</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Kitty">
+<meta name="theme-color" content="#FFF4D6">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<script src="shim.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--bg:#FFF4D6;--ink:#1A1A1A;--muted:#4A4A4A;--accent:#FF7A45;--line:#EFE4D2;--warn:#9A3412}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;transition:background .2s}
+button{font-family:inherit;color:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #2563EB;outline-offset:2px}
+#app{max-width:480px;margin:0 auto;min-height:100vh;padding:calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 120px)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.top .r{display:flex;gap:8px}
+.logo{font-size:40px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.round{width:48px;height:48px;border-radius:24px;border:2px solid var(--ink);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
+.stack{display:flex;flex-direction:column;gap:18px}
+.hero{background:var(--ink);color:var(--bg);border-radius:28px;padding:22px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.hero .lab{font-size:14px;font-weight:600}
+.hero .big{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1.05}
+.hero .big.sm{font-size:28px}
+.card{background:#fff;border:2px solid var(--ink);border-radius:28px;padding:18px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gcard{border:2px solid var(--ink);border-radius:28px;padding:18px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:14px;min-height:150px;font:inherit;width:100%}
+.gcard.wide{grid-column:span 2;padding:20px}
+.gcard .nm{font-size:18px;font-weight:800;line-height:1.15;word-break:break-word}
+.gcard.wide .nm{font-size:22px}
+.gcard .lab{font-size:13px;font-weight:600}
+.gcard .amt{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.gcard.wide .amt{font-size:32px}
+.avs{display:flex}
+.av{width:28px;height:28px;border-radius:14px;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.avs .av{border:2px solid var(--cardbg,#fff);margin-left:-8px}
+.avs .av:first-child{margin-left:0}
+.av.lg{width:38px;height:38px;border-radius:19px;font-size:14px}
+.dock{position:fixed;left:0;right:0;bottom:0;padding:12px 20px calc(env(safe-area-inset-bottom) + 16px);background:var(--page,var(--bg));border-top:2px solid var(--ink);z-index:10}
+.dock .in{max-width:440px;margin:0 auto;display:flex;gap:10px}
+.btn{height:60px;border-radius:30px;border:2px solid var(--ink);font-size:17px;font-weight:800;cursor:pointer;padding:0 18px;white-space:nowrap;background:#fff;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.primary{background:var(--accent)}
+.btn.dark{background:var(--ink);color:var(--bg)}
+.btn.sm{height:44px;font-size:15px;padding:0 16px;border-radius:22px}
+.btn.grow{flex:1}
+.btn:disabled{opacity:.5;cursor:default}
+.h1{font-size:36px;font-weight:800;letter-spacing:-.03em;line-height:1.02;margin:0;word-break:break-word}
+.h2{font-size:15px;font-weight:700;margin:6px 0 0}
+.muted{color:var(--muted)}
+.bar{height:14px;border-radius:7px;border:2px solid var(--ink);background:var(--bg);overflow:hidden}
+.bar>div{height:100%;background:var(--accent);border-right:2px solid var(--ink)}
+.bar.over>div{background:#E11D48}
+.ppl{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px}
+.pp{border:2px solid var(--ink);border-radius:20px;padding:10px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;min-width:0}
+.pp b{font-size:14px;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pp span{font-size:12.5px;font-weight:700;white-space:nowrap}
+.tabs{display:flex;gap:6px;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:4px}
+.tabs button{flex:1;height:40px;border:none;border-radius:999px;background:transparent;font-size:15px;font-weight:700;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg)}
+.list{background:#fff;border:2px solid var(--ink);border-radius:28px;padding:4px 16px}
+.item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1.5px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;cursor:pointer;font:inherit}
+.item:last-child{border-bottom:none}
+.item .t{flex:1;display:flex;flex-direction:column;min-width:0}
+.item .t b{font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .t span{font-size:13px;font-weight:500;color:var(--muted)}
+.item .a{font-size:16px;font-weight:800;white-space:nowrap}
+.flag{color:var(--warn)!important;font-weight:700!important}
+.empty{text-align:center;padding:28px 12px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.day{display:flex;justify-content:space-between;align-items:baseline;font-weight:800;font-size:17px;margin:8px 4px 0}
+.tl{background:#fff;border:2px solid var(--ink);border-radius:24px;overflow:hidden;text-align:left;cursor:pointer;width:100%;padding:0;font:inherit}
+.tl img{display:block;width:100%;max-height:260px;object-fit:cover;border-bottom:2px solid var(--ink)}
+.tl .b{padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.tl .row{display:flex;justify-content:space-between;gap:10px;font-weight:800;font-size:17px}
+.tl p{margin:0;font-size:14px;color:var(--muted)}
+.xfer{display:flex;align-items:center;gap:10px;padding:14px 0;border-bottom:1.5px solid var(--line)}
+.xfer:last-child{border-bottom:none}
+.xfer .t{flex:1;font-size:15px}
+.banner{border:2px solid var(--ink);border-radius:20px;padding:12px 14px;background:#fff;font-size:14px;font-weight:600}
+.sec{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin:6px 4px -6px}
+.orow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1.5px solid var(--line);gap:10px}
+.orow:last-child{border-bottom:none}
+/* sheet */
+#sheet .ov{position:fixed;inset:0;background:rgba(26,26,26,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+#sheet .pn{background:var(--bg);width:100%;max-width:480px;max-height:92vh;overflow:auto;border:2px solid var(--ink);border-bottom:none;border-radius:28px 28px 0 0;padding:20px 20px calc(env(safe-area-inset-bottom) + 24px);display:flex;flex-direction:column;gap:16px}
+#sheet .hd{display:flex;justify-content:space-between;align-items:center;gap:10px}
+#sheet .hd h2{margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.f{display:flex;flex-direction:column;gap:6px}
+.f>label,.lbl{font-size:14px;font-weight:700}
+.inp,select.inp,textarea.inp{width:100%;height:52px;border:2px solid var(--ink);border-radius:16px;padding:0 14px;font:inherit;font-size:17px;background:#fff;color:var(--ink)}
+textarea.inp{height:auto;min-height:76px;padding:12px 14px;resize:vertical}
+.amtwrap{display:flex;gap:8px}
+.amtwrap .inp.amt{font-size:28px;font-weight:800;height:64px}
+.amtwrap select.inp{width:104px;height:64px;flex-shrink:0;font-weight:700}
+.hint{font-size:13px;font-weight:600;color:var(--muted);min-height:18px}
+.hint.bad{color:#B91C1C}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{height:40px;padding:0 14px;border-radius:20px;border:2px solid var(--ink);background:#fff;font-size:15px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.sw{width:44px;height:44px;border-radius:22px;border:2px solid var(--ink);cursor:pointer;padding:0}
+.sw[aria-pressed=true]{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--ink)}
+.prow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1.5px solid var(--line)}
+.prow:last-child{border-bottom:none}
+.tick{width:28px;height:28px;border-radius:8px;border:2px solid var(--ink);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
+.tick[aria-checked=true]{background:var(--ink);color:var(--bg)}
+.prow .nm{flex:1;font-weight:700;font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.prow .sh{font-weight:700;font-size:15px;white-space:nowrap}
+.prow input.inp{width:110px;height:44px;font-size:16px;text-align:right}
+.photo{display:block;width:100%;max-height:300px;object-fit:cover;border:2px solid var(--ink);border-radius:20px}
+.qr{background:#fff;border:2px solid var(--ink);border-radius:24px;padding:18px;display:flex;justify-content:center}
+.qr img,.qr canvas{display:block}
+.link{font-size:13px;word-break:break-all;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:10px 12px;user-select:all}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 104px);transform:translateX(-50%);z-index:40;pointer-events:none}
+#toast div{background:var(--ink);color:var(--bg);font-weight:700;padding:12px 18px;border-radius:999px;font-size:15px;max-width:90vw;white-space:nowrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.mem{display:flex;gap:8px;align-items:center;padding:6px 0}
+.mem .inp{flex:1;height:46px}
+.x{width:44px;height:44px;border-radius:22px;border:2px solid var(--ink);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.split3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.split3 .chip{justify-content:center}
+.danger{color:#B91C1C}
+</style>
+</head>
+<body>
+<div id="app" aria-live="polite"></div>
+<div id="sheet"></div>
+<div id="toast" role="status"></div>
+<script>
+(function(){
+'use strict';
+const APP_URL = location.origin+location.pathname;
+const COLOURS = ['#FFD6C2','#CFE3FF','#C9F2DC','#E4D9FF','#FFF0A8','#FFD3E8'];
+const AVC = ['#1A1A1A','#2563EB','#9A3412','#047857','#7C3AED','#BE185D','#0E7490','#A16207','#4338CA','#B91C1C'];
+const CURS = ['GBP','EUR','USD','CAD','AUD','NZD','CHF','SEK','NOK','DKK','ISK','PLN','CZK','HUF','TRY','AED','MAD','ZAR','THB','JPY','SGD','HKD','MXN'];
+const CATS = {meal:'Meal',drinks:'Drinks',groceries:'Groceries',transport:'Transport',stay:'Stay',tickets:'Tickets',other:'Other'};
+const MEALS = {breakfast:'Breakfast',lunch:'Lunch',dinner:'Dinner',other:'Other meal'};
+function catLabel(x){ if(x.cat==='meal'||x.cat==='food') return MEALS[x.meal]||'Meal'; return CATS[x.cat]||'Other'; }
+const CAT_WORDS = {
+  drinks:['bar','pub','beer','beers','wine','drinks','drink','cocktail','cocktails','round','pint','pints','prosecco'],
+  meal:['dinner','lunch','breakfast','brunch','restaurant','food','pizza','taco','tacos','bbq','cafe','coffee','meal','burger','sushi','takeaway','curry','chips','snacks','bakery','sardines','supper','tea'],
+  transport:['taxi','uber','lyft','train','tram','bus','fuel','petrol','gas','parking','flight','flights','car','metro','tube','toll','ferry','rental','hire'],
+  stay:['hotel','airbnb','apartment','hostel','room','rent','accommodation','villa','cabin','motel'],
+  groceries:['shop','shopping','supermarket','groceries','tesco','sainsburys','waitrose','aldi','lidl','market','walmart','target','costco'],
+  tickets:['ticket','tickets','museum','gig','show','entry','tour','concert','cinema','tickets','gallery','match']
+};
+const IC = {
+  back:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  qr:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-7"/></svg>',
+  gear:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  plus:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  addp:'<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M19 8v6M16 11h6"/></svg>',
+  x:'<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  tick:'<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>',
+  cam:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  jar:'<svg aria-hidden="true" width="56" height="56" viewBox="0 0 56 56" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M14 12h28M16 12c-4 6-6 12-6 20 0 10 7 16 18 16s18-6 18-16c0-8-2-14-6-20"/><path d="M20 30c3 3 13 3 16 0"/></svg>'
+};
+
+const S = {db:null,user:null,assets:null,uid:null,canWrite:true,groups:{},exp:{},pay:{},subs:{},view:'home',gid:null,tab:'list',loading:true,slow:false,err:null,profileName:'',sheet:null,form:null,confirm:null,joinAsked:{}};
+
+/* ---------- helpers ---------- */
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rid = p => (p||'') + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);
+function fmt(p, cur){ const v=(p||0)/100; try{ return new Intl.NumberFormat('en-GB',{style:'currency',currency:cur||'GBP'}).format(v); }catch(e){ return v.toFixed(2)+' '+(cur||''); } }
+function sym(cur){ try{ return new Intl.NumberFormat('en-GB',{style:'currency',currency:cur,currencyDisplay:'narrowSymbol'}).formatToParts(0).find(x=>x.type==='currency').value; }catch(e){ return cur; } }
+function today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function ord(n){ const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function pd(s){ const [y,m,d]=String(s||today()).split('-').map(Number); return new Date(y,(m||1)-1,d||1); }
+function dShort(s){ return pd(s).toLocaleDateString('en-GB',{weekday:'short'}); }
+function dLong(s){ const d=pd(s); return d.toLocaleDateString('en-GB',{weekday:'short'})+' '+ord(d.getDate())+' '+d.toLocaleDateString('en-GB',{month:'short'}); }
+function dDiff(a,b){ return Math.round((pd(b)-pd(a))/86400000); }
+function calc(str){
+  const s = String(str==null?'':str).replace(/[£$€¥,\s]/g,'').replace(/[x×]/gi,'*').replace(/÷/g,'/');
+  if(!s) return null;
+  if(!/^[0-9+\-*/().]+$/.test(s)) return NaN;
+  let i=0;
+  function num(){ const st=i; while(i<s.length && /[0-9.]/.test(s[i])) i++; if(st===i) throw 0; const v=parseFloat(s.slice(st,i)); if(isNaN(v)) throw 0; return v; }
+  function factor(){ if(s[i]==='-'){i++;return -factor();} if(s[i]==='+'){i++;return factor();} if(s[i]==='('){i++; const v=expr(); if(s[i]!==')') throw 0; i++; return v;} return num(); }
+  function term(){ let v=factor(); while(s[i]==='*'||s[i]==='/'){ const op=s[i++]; const r=factor(); v=op==='*'?v*r:v/r; } return v; }
+  function expr(){ let v=term(); while(s[i]==='+'||s[i]==='-'){ const op=s[i++]; const r=term(); v=op==='+'?v+r:v-r; } return v; }
+  try{ const v=expr(); if(i!==s.length||!isFinite(v)) return NaN; return v; }catch(e){ return NaN; }
+}
+function allocate(total, weights){
+  const sum = weights.reduce((a,b)=>a+b,0);
+  if(sum<=0) return weights.map(()=>0);
+  const raw = weights.map(w=>total*w/sum), fl = raw.map(Math.floor);
+  let rem = total - fl.reduce((a,b)=>a+b,0);
+  const order = raw.map((r,i)=>[r-fl[i],i]).sort((a,b)=>b[0]-a[0]||a[1]-b[1]);
+  for(let k=0;k<rem;k++) fl[order[k%order.length][1]]++;
+  return fl;
+}
+function guessCat(desc){
+  const words = String(desc||'').toLowerCase().split(/[^a-z]+/);
+  if(words.includes('breakfast')||words.includes('brunch')) return {cat:'meal',meal:'breakfast'};
+  if(words.includes('lunch')) return {cat:'meal',meal:'lunch'};
+  if(words.includes('dinner')||words.includes('supper')) return {cat:'meal',meal:'dinner'};
+  for(const c of Object.keys(CAT_WORDS)) if(words.some(w=>CAT_WORDS[c].includes(w))) return {cat:c,meal:c==='meal'?'other':null};
+  return {cat:'other',meal:null};
+}
+function toast(msg){ const t=document.getElementById('toast'); t.innerHTML='<div>'+esc(msg)+'</div>'; clearTimeout(toast._t); toast._t=setTimeout(()=>{t.innerHTML='';},2600); }
+function errText(e){
+  const c=e&&e.code;
+  if(c==='quota_exceeded') return 'Kitty is full - delete an old group to make room.';
+  if(c==='invalid_argument'){ return "That didn't save - you might only have view access."; }
+  if(c==='revoked') return 'Your access to Kitty has changed.';
+  return "Couldn't save just now - try again.";
+}
+async function write(fn){
+  try{ await fn(); return true; }
+  catch(e){
+    if(e && e.code==='unavailable'){ await new Promise(r=>setTimeout(r,400+Math.random()*600)); try{ await fn(); return true; }catch(e2){ toast(errText(e2)); return false; } }
+    if(e && e.code==='invalid_argument' && S.canWrite===null) { S.canWrite=false; render(); }
+    toast(errText(e)); return false;
+  }
+}
+
+/* ---------- model ---------- */
+const G = id => S.groups[id];
+const myMid = g => { if(!g||!S.uid) return null; const m=(g.members||[]).find(m=>m.uid===S.uid); return m?m.id:null; };
+const mem = (g,mid) => (g.members||[]).find(m=>m.id===mid);
+function mName(g,mid,you){ if(you!==false && mid===myMid(g)) return 'You'; const m=mem(g,mid); return m?m.name:'Someone'; }
+function avColour(g,mid){ const i=(g.members||[]).findIndex(m=>m.id===mid); return AVC[(i<0?0:i)%AVC.length]; }
+function initial(g,mid){ const m=mem(g,mid); return esc(((m&&m.name)||'?').trim().charAt(0).toUpperCase()); }
+function avatar(g,mid,cls){ return '<span class="av '+(cls||'')+'" style="background:'+avColour(g,mid)+'" aria-hidden="true">'+initial(g,mid)+'</span>'; }
+function expensesOf(gid){ return (S.exp[gid]||[]).slice().sort((a,b)=> (b.date||'').localeCompare(a.date||'') || (b.createdAt||0)-(a.createdAt||0)); }
+function calcGroup(g){
+  const ex=S.exp[g.id]||[], pays=S.pay[g.id]||[], bal={};
+  (g.members||[]).forEach(m=>bal[m.id]=0);
+  let spent=0;
+  ex.forEach(x=>{ const b=x.base||0; spent+=b; bal[x.paidBy]=(bal[x.paidBy]||0)+b; Object.keys(x.shares||{}).forEach(m=>{ bal[m]=(bal[m]||0)-x.shares[m]; }); });
+  pays.forEach(p=>{ bal[p.from]=(bal[p.from]||0)+p.amount; bal[p.to]=(bal[p.to]||0)-p.amount; });
+  Object.keys(bal).forEach(m=>{ if(Math.abs(bal[m])<=2) bal[m]=0; });
+  return {bal, spent, transfers:settle(bal)};
+}
+function settle(bal){
+  const cr=[],dr=[];
+  Object.keys(bal).forEach(m=>{ const v=bal[m]; if(v>0) cr.push([m,v]); else if(v<0) dr.push([m,-v]); });
+  cr.sort((a,b)=>b[1]-a[1]); dr.sort((a,b)=>b[1]-a[1]);
+  const out=[]; let i=0,j=0;
+  while(i<dr.length&&j<cr.length){ const a=Math.min(dr[i][1],cr[j][1]); if(a>0) out.push({from:dr[i][0],to:cr[j][0],amount:a}); dr[i][1]-=a; cr[j][1]-=a; if(dr[i][1]===0)i++; if(cr[j][1]===0)j++; }
+  return out;
+}
+function myGroups(){ return Object.values(S.groups).filter(g=>myMid(g)).sort((a,b)=>(b.touchedAt||b.createdAt||0)-(a.touchedAt||a.createdAt||0)); }
+function otherGroups(){ return Object.values(S.groups).filter(g=>!myMid(g)).sort((a,b)=>(a.name||'').localeCompare(b.name||'')); }
+function canEdit(){ return S.canWrite!==false; }
+
+/* ---------- data ---------- */
+function useCap(n){
+  return new Promise(res=>{
+    let tries=0;
+    (function go(){ if(window.claude && typeof window.claude.use==='function'){ Promise.resolve(window.claude.use(n)).then(res,()=>res(null)); } else if(tries++<30){ setTimeout(go,100); } else res(null); })();
+  });
+}
+async function boot(){
+  render();
+  const t=setTimeout(()=>{ S.slow=true; render(); },10000);
+  const [db,user,assets] = await Promise.all([useCap('db'),useCap('user'),useCap('assets')]);
+  S.db=db; S.user=user; S.assets=assets;
+  if(!db){ clearTimeout(t); S.loading=false; S.err='nodb'; render(); return; }
+  if(user){
+    try{ S.uid = await user.id(); }catch(e){}
+    try{ const c = await user.can('data.write'); S.canWrite = (c===false)?false:(c===true?true:null); }catch(e){ S.canWrite=null; }
+    try{ if(S.uid){ const ps=await user.profiles([S.uid]); S.profileName=(ps&&ps[S.uid]&&ps[S.uid].name)||''; } }catch(e){}
+  }
+  db.collection('groups').onSnapshot(snap=>{
+    if(!snap.metadata.fromCache){ clearTimeout(t); S.slow=false; }
+    S.loading=false;
+    const g={}; snap.docs.forEach(d=>{ g[d.id]=Object.assign({id:d.id},d.data()); });
+    S.groups=g; syncSubs(); route(); render();
+  }, e=>{ clearTimeout(t); S.loading=false; S.err=e.code||'err'; render(); });
+}
+function syncSubs(){
+  const want=new Set(Object.values(S.groups).filter(g=>myMid(g)||g.id===S.gid).map(g=>g.id));
+  Object.keys(S.subs).forEach(gid=>{ if(!want.has(gid)){ S.subs[gid].forEach(u=>u()); delete S.subs[gid]; } });
+  want.forEach(gid=>{
+    if(S.subs[gid]) return;
+    const ref=S.db.doc('groups/'+gid);
+    const u1=ref.collection('expenses').onSnapshot(s=>{ S.exp[gid]=s.docs.map(d=>Object.assign({id:d.id},d.data())); render(); },()=>{});
+    const u2=ref.collection('payments').onSnapshot(s=>{ S.pay[gid]=s.docs.map(d=>Object.assign({id:d.id},d.data())); render(); },()=>{});
+    S.subs[gid]=[u1,u2];
+  });
+}
+
+/* ---------- routing ---------- */
+function route(){
+  const h=(location.hash||'').replace(/^#/,'');
+  if(h.indexOf('g-')===0){
+    const gid=h.slice(2);
+    if(S.groups[gid]){
+      if(S.view!=='group'||S.gid!==gid){ S.view='group'; S.gid=gid; S.tab='list'; syncSubs(); }
+      const g=S.groups[gid];
+      if(!myMid(g) && canEdit() && S.uid && !S.joinAsked[gid] && !S.sheet){ S.joinAsked[gid]=true; openSheet('join'); }
+      return;
+    }
+  }
+  if(S.view!=='home'){ S.view='home'; S.gid=null; }
+}
+function go(gid){
+  if(gid){ S.view='group'; S.gid=gid; S.tab='list'; syncSubs(); try{ location.hash='g-'+gid; }catch(e){} }
+  else { S.view='home'; S.gid=null; try{ location.hash='home'; }catch(e){} }
+  route(); render(); window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',()=>{ route(); render(); });
+
+/* ---------- render: main ---------- */
+function setPage(c){ document.body.style.background=c; document.documentElement.style.setProperty('--page',c); const tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content=c.indexOf('var(')===0?'#FFF4D6':c; }
+function render(){
+  const app=document.getElementById('app');
+  if(S.loading){ setPage('var(--bg)'); app.innerHTML='<div class="top"><div class="logo">kitty</div></div><p class="muted" style="font-weight:600;margin-top:24px">'+(S.slow?"Can't reach Kitty's data yet - check your connection.":'Loading...')+'</p>'; return; }
+  if(S.err){ setPage('var(--bg)'); app.innerHTML='<div class="top"><div class="logo">kitty</div></div><div class="banner" style="margin-top:24px">'+(S.err==='nodb'?'Kitty needs you to be signed in to Claude to load your groups.':'Kitty can\'t load right now. Try reopening the page.')+'</div>'; return; }
+  if(S.view==='group' && S.gid && G(S.gid)) renderGroup(app,G(S.gid)); else renderHome(app);
+}
+
+function renderHome(app){
+  setPage('var(--bg)');
+  const mine=myGroups(), others=otherGroups();
+  const tot={};
+  mine.forEach(g=>{ const c=calcGroup(g); const v=c.bal[myMid(g)]||0; tot[g.currency]=(tot[g.currency]||0)+v; });
+  const curs=Object.keys(tot).filter(c=>tot[c]!==0);
+  let lab='All square', big=fmt(0,'GBP'), bigCls='';
+  if(curs.length===1){ const v=tot[curs[0]]; lab=v>0?"All in, you're up":"All in, you're down"; big=fmt(Math.abs(v),curs[0]); }
+  else if(curs.length>1){ lab='All in'; big=curs.map(c=>(tot[c]<0?'-':'+')+fmt(Math.abs(tot[c]),c)).join(' · '); bigCls=' sm'; }
+  let h='<div class="stack">';
+  h+='<div class="top"><div class="logo">kitty</div>'+(canEdit()?'<button class="round" data-a="newGroup" aria-label="New group">'+IC.addp+'</button>':'')+'</div>';
+  if(S.canWrite===false) h+='<div class="banner">You can see Kitty but can\'t add anything yet. Ask whoever shared it to invite you as an Editor.</div>';
+  h+='<div class="banner">Test version - everything is saved on this phone only.</div>';
+  h+='<div class="hero"><div><div class="lab">'+lab+'</div><div class="big'+bigCls+'">'+esc(big)+'</div></div>'+IC.jar+'</div>';
+  if(!mine.length){
+    h+='<div class="card empty"><div style="font-size:22px;font-weight:800">No groups yet</div><div class="muted" style="font-weight:500">Start one for a trip, the flat or a night out, then add your friends.</div>'+(canEdit()?'<button class="btn primary" data-a="newGroup">'+IC.plus+'Start a group</button>':'')+'</div>';
+  } else {
+    h+='<div class="grid2">';
+    mine.forEach((g,i)=>{
+      const c=calcGroup(g), me=myMid(g), v=c.bal[me]||0, wide=i===0;
+      const col=g.colour||COLOURS[0];
+      const lab2 = v>0?'You get back':v<0?'You owe':'All square';
+      const avs='<span class="avs" style="--cardbg:'+col+'">'+(g.members||[]).slice(0,5).map(m=>avatar(g,m.id)).join('')+'</span>';
+      h+='<button class="gcard'+(wide?' wide':'')+'" style="background:'+col+'" data-a="open" data-g="'+esc(g.id)+'">';
+      if(wide){
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="nm">'+esc(g.name)+'</span>'+avs+'</div>';
+        h+='<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:10px"><div style="display:flex;flex-direction:column"><span class="lab">'+lab2+'</span><span class="amt">'+fmt(Math.abs(v),g.currency)+'</span></div>';
+        h+='<span class="lab" style="text-align:right">'+fmt(c.spent,g.currency)+' spent</span>';
+        h+='</div>';
+      } else {
+        h+='<span class="nm">'+esc(g.name)+'</span><div style="display:flex;flex-direction:column;margin-top:auto"><span class="lab">'+lab2+'</span><span class="amt">'+fmt(Math.abs(v),g.currency)+'</span></div>';
+      }
+      h+='</button>';
+    });
+    h+='</div>';
+  }
+  if(others.length && canEdit()){
+    h+='<div class="sec">Other groups</div><div class="list">';
+    others.forEach(g=>{ h+='<div class="orow"><div style="display:flex;align-items:center;gap:10px;min-width:0"><span style="width:22px;height:22px;border-radius:11px;border:2px solid var(--ink);background:'+(g.colour||COLOURS[0])+';flex-shrink:0"></span><span style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(g.name)+'</span></div><button class="btn sm" data-a="open" data-g="'+esc(g.id)+'">Join</button></div>'; });
+    h+='</div>';
+  }
+  h+='</div>';
+  if(canEdit()) h+='<div class="dock"><div class="in"><button class="btn primary grow" data-a="addAny">'+IC.plus+'Add expense</button></div></div>';
+  app.innerHTML=h;
+}
+
+function renderGroup(app,g){
+  const col=g.colour||COLOURS[0];
+  setPage(col);
+  const c=calcGroup(g), me=myMid(g), loaded=!!S.exp[g.id];
+  let h='<div class="stack">';
+  h+='<div class="top"><button class="round" data-a="home" aria-label="Back to your groups">'+IC.back+'</button><div class="r"><button class="round" data-a="invite" aria-label="Invite people with a QR code">'+IC.qr+'</button>'+(canEdit()?'<button class="round" data-a="settings" aria-label="Group settings">'+IC.gear+'</button>':'')+'</div></div>';
+  h+='<h1 class="h1">'+esc(g.name)+'</h1>';
+  if(!me && canEdit()) h+='<div class="banner" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span>You\'re not in this group yet.</span><button class="btn sm primary" data-a="join">Join</button></div>';
+  // summary
+  h+='<div class="card" style="display:flex;flex-direction:column;gap:12px">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:10px"><div style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:600">Total spent</span><span style="font-size:30px;font-weight:800;letter-spacing:-.02em">'+fmt(c.spent,g.currency)+'</span></div>'+'</div>';
+  const fc=forecast(g,c.spent); if(fc) h+='<div style="font-size:14px;font-weight:600">'+fc+'</div>';
+  if(me){ const v=c.bal[me]||0; h+='<div style="font-size:16px;font-weight:800;border-top:1.5px solid var(--line);padding-top:10px">'+(v>0?'You get back '+fmt(v,g.currency):v<0?'You owe '+fmt(-v,g.currency):"You're all square")+'</div>'; }
+  h+='</div>';
+  // people
+  h+='<div class="ppl">';
+  (g.members||[]).forEach(m=>{ const v=c.bal[m.id]||0; const bg=v>0?'#CFE3FF':v<0?'#FFF4D6':'#fff'; h+='<div class="pp" style="background:'+bg+'"><b>'+esc(m.id===me?'You':m.name)+'</b><span>'+(v>0?'+':v<0?'-':'')+fmt(Math.abs(v),g.currency)+'</span></div>'; });
+  h+='</div>';
+  // tabs
+  const tabs=[['list','Expenses'],['timeline','Timeline'],['settle','Settle']];
+  h+='<div class="tabs" role="tablist">'+tabs.map(t=>'<button role="tab" aria-selected="'+(S.tab===t[0])+'" data-a="tab" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
+  if(!loaded) h+='<p class="muted" style="font-weight:600">Loading expenses...</p>';
+  else if(S.tab==='list') h+=renderList(g);
+  else if(S.tab==='timeline') h+=renderTimeline(g);
+  else h+=renderSettle(g,c);
+  h+='</div>';
+  if(canEdit()) h+='<div class="dock"><div class="in"><button class="btn grow" data-a="settleTab">Settle up</button><button class="btn primary" style="flex:1.4" data-a="addExp">'+IC.plus+'Add expense</button></div></div>';
+  app.innerHTML=h;
+}
+function forecast(g,spent){
+  if(!g.endDate) return '';
+  const ex=S.exp[g.id]||[]; if(!ex.length) return 'Ends '+esc(dLong(g.endDate));
+  const t=today(); if(t>g.endDate) return '';
+  const first=ex.reduce((a,x)=>x.date&&x.date<a?x.date:a, t);
+  const elapsed=Math.max(1,dDiff(first,t)+1), total=Math.max(elapsed,dDiff(first,g.endDate)+1);
+  if(elapsed<2) return 'Ends '+esc(dLong(g.endDate));
+  const proj=Math.round(spent/elapsed*total);
+  return 'At this rate, about '+fmt(proj,g.currency)+' by '+esc(dLong(g.endDate));
+}
+function itemMeta(g,x){
+  const n=Object.keys(x.shares||{}).length, parts=[];
+  parts.push(dShort(x.date));
+  if(x.currency!==g.currency) parts.push(fmt(x.amount,x.currency));
+  else parts.push(n===(g.members||[]).length&&x.mode==='equal'?'split '+n+' ways':n===1?'for '+mName(g,Object.keys(x.shares)[0]):'split '+n+' ways');
+  return esc(parts.join(' · '));
+}
+function flagText(g,x){
+  const ids=Object.keys(x.notMine||{}).filter(k=>x.notMine[k]);
+  if(!ids.length) return '';
+  const names=ids.map(id=>mName(g,id));
+  return names.join(', ')+(ids.length===1?(names[0]==='You'?' said not yours':' says not theirs'):' say not theirs');
+}
+function renderList(g){
+  const ex=expensesOf(g.id);
+  if(!ex.length) return '<div class="card empty"><div style="font-size:20px;font-weight:800">Nothing in yet</div><div class="muted" style="font-weight:500">Add the first expense and Kitty works out who owes what.</div></div>';
+  let h='<div class="list">';
+  ex.forEach(x=>{
+    const fl=flagText(g,x);
+    h+='<button class="item" data-a="exp" data-e="'+esc(x.id)+'">'+avatar(g,x.paidBy,'lg')+'<span class="t"><b>'+esc(x.desc)+'</b><span>'+(fl?'<span class="flag">'+esc(fl)+'</span>':mName(g,x.paidBy)==='You'?'You paid · '+itemMeta(g,x):esc(mName(g,x.paidBy))+' paid · '+itemMeta(g,x))+'</span></span><span class="a">'+fmt(x.base,g.currency)+'</span></button>';
+  });
+  return h+'</div>';
+}
+function renderTimeline(g){
+  const ex=expensesOf(g.id);
+  if(!ex.length) return '<div class="card empty"><div style="font-size:20px;font-weight:800">Your trip, day by day</div><div class="muted" style="font-weight:500">Add expenses with photos and notes and they show up here.</div></div>';
+  const days={}; ex.forEach(x=>{ (days[x.date]=days[x.date]||[]).push(x); });
+  let h='';
+  Object.keys(days).sort().reverse().forEach(d=>{
+    const tot=days[d].reduce((a,x)=>a+(x.base||0),0);
+    h+='<div class="day"><span>'+esc(dLong(d))+'</span><span style="font-size:15px">'+fmt(tot,g.currency)+'</span></div>';
+    days[d].forEach(x=>{
+      h+='<button class="tl" data-a="exp" data-e="'+esc(x.id)+'">'+(x.photoId?'<img src="/_blob/'+esc(x.photoId)+'" alt="Photo for '+esc(x.desc)+'" loading="lazy">':'')+'<div class="b"><div class="row"><span>'+esc(x.desc)+'</span><span>'+fmt(x.base,g.currency)+'</span></div><p>'+esc(mName(g,x.paidBy))+' paid · '+esc(catLabel(x))+'</p>'+(x.note?'<p style="color:var(--ink);font-weight:500">'+esc(x.note)+'</p>':'')+'</div></button>';
+    });
+  });
+  return '<div class="stack" style="gap:12px">'+h+'</div>';
+}
+function renderSettle(g,c){
+  const me=myMid(g);
+  let h='';
+  if(!c.transfers.length) h+='<div class="card empty"><div style="font-size:20px;font-weight:800">All square</div><div class="muted" style="font-weight:500">Nobody owes anybody.</div></div>';
+  else {
+    h+='<div class="sec">Fewest payments to settle</div><div class="list">';
+    c.transfers.forEach((t,i)=>{
+      const mine=t.from===me||t.to===me;
+      h+='<div class="xfer">'+avatar(g,t.from,'lg')+'<div class="t"><b>'+esc(mName(g,t.from))+'</b> '+(t.from===me?'pay':'pays')+' <b>'+esc(mName(g,t.to))+'</b><div style="font-size:18px;font-weight:800">'+fmt(t.amount,g.currency)+'</div>'+((mem(g,t.to)||{}).pay?'<button class="btn sm" style="margin-top:6px;height:36px;font-size:13px" data-a="payInfo" data-m="'+esc(t.to)+'">'+esc(mName(g,t.to,false))+"'s bank details</button>":'')+'</div>'+(canEdit()?'<button class="btn sm'+(mine?' primary':'')+'" data-a="markPaid" data-i="'+i+'">Paid</button>':'')+'</div>';
+    });
+    h+='</div>';
+  }
+  const pays=(S.pay[g.id]||[]).slice().sort((a,b)=>(b.at||0)-(a.at||0));
+  if(canEdit()) h+='<button class="btn sm" style="align-self:flex-start" data-a="recordPay">Record a different payment</button>';
+  if(pays.length){
+    h+='<div class="sec">Payments made</div><div class="list">';
+    pays.forEach(p=>{ h+='<div class="orow"><span style="font-size:15px"><b>'+esc(mName(g,p.from))+'</b> paid <b>'+esc(mName(g,p.to))+'</b><br><span class="muted" style="font-size:13px">'+esc(dLong(p.date))+'</span></span><span style="display:flex;align-items:center;gap:8px"><b>'+fmt(p.amount,g.currency)+'</b>'+(canEdit()?'<button class="x" data-a="delPay" data-p="'+esc(p.id)+'" aria-label="Remove this payment">'+IC.x+'</button>':'')+'</span></div>'; });
+    h+='</div>';
+  }
+  return '<div class="stack" style="gap:12px">'+h+'</div>';
+}
+
+/* ---------- sheets ---------- */
+function openSheet(kind,data){ S.sheet={kind,data:data||{}}; renderSheet(); }
+function closeSheet(){ S.sheet=null; S.form=null; document.getElementById('sheet').innerHTML=''; }
+function head(title){ return '<div class="hd"><h2 id="sh-t">'+esc(title)+'</h2><button class="x" data-a="close" aria-label="Close">'+IC.x+'</button></div>'; }
+function renderSheet(){
+  const el=document.getElementById('sheet');
+  if(!S.sheet){ el.innerHTML=''; return; }
+  const oldPn=el.querySelector('.pn'), keepScroll=oldPn&&el.dataset.kind===S.sheet.kind?oldPn.scrollTop:0;
+  el.dataset.kind=S.sheet.kind;
+  const k=S.sheet.kind; let b='';
+  if(k==='group') b=sheetGroup();
+  else if(k==='expense') b=sheetExpense();
+  else if(k==='detail') b=sheetDetail();
+  else if(k==='join') b=sheetJoin();
+  else if(k==='invite') b=sheetInvite();
+  else if(k==='pick') b=sheetPick();
+  else if(k==='pay') b=sheetPay();
+  else if(k==='payInfo') b=sheetPayInfo();
+  else if(k==='confirm') b=head(S.confirm.title)+'<p style="margin:0;font-size:16px;font-weight:500">'+esc(S.confirm.text)+'</p><div style="display:flex;gap:10px"><button class="btn grow" data-a="close">Cancel</button><button class="btn grow dark" data-a="confirmYes">'+esc(S.confirm.yes)+'</button></div>';
+  el.innerHTML='<div class="ov" data-a="ovClose"><div class="pn" role="dialog" aria-modal="true" aria-labelledby="sh-t">'+b+'</div></div>';
+  if(keepScroll){ const pn=el.querySelector('.pn'); if(pn) pn.scrollTop=keepScroll; }
+  if(k==='invite') drawQR();
+  if(k==='expense') updatePreview();
+  if(!S.sheet.focused){ S.sheet.focused=true; const f=el.querySelector('[data-autofocus]'); if(f) setTimeout(()=>{ try{f.focus();}catch(e){} },50); }
+}
+function confirmBox(title,text,yes,fn){ S.confirm={title,text,yes,fn}; openSheet('confirm'); }
+
+/* group create / edit */
+function sheetGroup(){
+  const f=S.form, isNew=!f.id;
+  let h=head(isNew?'New group':'Group settings');
+  h+='<div class="f"><label for="g-name">Name</label><input class="inp" id="g-name" data-f="name" value="'+esc(f.name)+'" placeholder="e.g. Lisbon weekend" maxlength="60" '+(isNew?'data-autofocus':'')+'></div>';
+  h+='<div class="f"><span class="lbl">Colour</span><div class="chips">'+COLOURS.map(c=>'<button class="sw" style="background:'+c+'" aria-pressed="'+(f.colour===c)+'" aria-label="Colour '+c+'" data-a="gColour" data-c="'+c+'"></button>').join('')+'</div></div>';
+  const hasMoney=!isNew && ((S.exp[f.id]||[]).length>0 || (S.pay[f.id]||[]).length>0);
+  h+='<div class="f"><label for="g-cur">Currency</label><select class="inp" id="g-cur" data-f="currency">'+CURS.map(c=>'<option'+(c===f.currency?' selected':'')+'>'+c+'</option>').join('')+'</select></div>';
+  if(hasMoney && f.currency!==f.oldCurrency){
+    h+='<div class="f"><label for="g-rate">Exchange rate: 1 '+esc(f.oldCurrency)+' = how many '+esc(f.currency)+'?</label><input class="inp" id="g-rate" data-f="convRate" inputmode="decimal" value="'+esc(f.convRate)+'" placeholder="e.g. 1.27"><div class="hint">Everything in this group switches to '+esc(f.currency)+'. Anything originally paid in '+esc(f.currency)+' goes back to its exact amount, and everything else is converted at this rate.</div></div>';
+  }
+  h+='<div class="f"><label for="g-end">Ends on (optional - for the spending forecast)</label><input class="inp" type="date" id="g-end" data-f="endDate" value="'+esc(f.endDate)+'"></div>';
+  h+='<div class="f"><span class="lbl">Who\'s in?</span><div class="card" style="padding:6px 14px">';
+  f.members.forEach((m,i)=>{
+    const isMe=m.uid&&m.uid===S.uid, used=!isNew && memberUsed(f.id,m.id);
+    h+='<div class="mem"><label class="sr" for="m-'+i+'">Name</label><input class="inp" id="m-'+i+'" data-m="'+i+'" value="'+esc(m.name)+'" placeholder="Name" maxlength="30">'+(isMe?'<span style="font-size:13px;font-weight:700;width:44px;text-align:center">you</span>':used?'<span style="width:44px"></span>':'<button class="x" data-a="mDel" data-i="'+i+'" aria-label="Remove '+esc(m.name||'person')+'">'+IC.x+'</button>')+'</div>';
+  });
+  h+='<button class="btn sm" style="margin:8px 0" data-a="mAdd">'+IC.plus+'Add someone</button></div><div class="hint">Add anyone - friends without Claude can still be in it, you just add their spending for them.</div></div>';
+  if(!isNew){
+    const me=f.members.find(m=>m.uid===S.uid);
+    if(me){ const i=f.members.indexOf(me); h+='<div class="f"><label for="g-pay">Your bank details or payment link</label><textarea class="inp" id="g-pay" data-pay="'+i+'" placeholder="e.g. Sort code and account number, or a Monzo/Revolut link" maxlength="300">'+esc(me.pay||'')+'</textarea><div class="hint">Shown to people who owe you when they settle up.</div></div>'; }
+  }
+  h+='<div class="hint bad" id="g-err"></div>';
+  h+='<button class="btn primary" data-a="saveGroup">'+(isNew?'Start the group':'Save')+'</button>';
+  if(!isNew) h+='<button class="btn" data-a="delGroup"><span class="danger">Delete this group</span></button>';
+  return h;
+}
+function memberUsed(gid,mid){
+  return (S.exp[gid]||[]).some(x=>x.paidBy===mid||(x.shares&&x.shares[mid]!=null)) || (S.pay[gid]||[]).some(p=>p.from===mid||p.to===mid);
+}
+function newGroupForm(){
+  S.form={id:null,name:'',colour:COLOURS[Object.keys(S.groups).length%COLOURS.length],currency:'GBP',budget:'',endDate:'',members:[{id:rid('m'),name:S.profileName?S.profileName.split(' ')[0]:'',uid:S.uid||null},{id:rid('m'),name:'',uid:null}]};
+  openSheet('group');
+}
+function editGroupForm(g){
+  S.form={id:g.id,name:g.name,colour:g.colour||COLOURS[0],currency:g.currency,oldCurrency:g.currency,convRate:'',budget:g.budget?String(g.budget/100):'',endDate:g.endDate||'',members:(g.members||[]).map(m=>Object.assign({},m))};
+  openSheet('group');
+}
+async function saveGroup(){
+  const f=S.form, err=document.getElementById('g-err');
+  const name=(f.name||'').trim();
+  if(!name){ err.textContent='Give it a name.'; return; }
+  const members=f.members.map(m=>Object.assign({},m,{name:(m.name||'').trim()})).filter(m=>m.name||m.uid);
+  members.forEach(m=>{ if(!m.name) m.name='Me'; });
+  if(!members.length){ err.textContent='Add at least one person.'; return; }
+  const clean=members.map(m=>{ const o={id:m.id,name:m.name.slice(0,30),uid:m.uid||null}; if(m.pay) o.pay=String(m.pay).slice(0,300); return o; });
+  const body={name:name.slice(0,60),colour:f.colour,currency:f.currency,budget:0,endDate:f.endDate||'',members:clean,touchedAt:Date.now()};
+  if(!f.id){
+    const id=rid('k');
+    body.createdAt=Date.now(); body.createdBy=S.uid||null; body.rates={};
+    if(!clean.some(m=>m.uid===S.uid) && S.uid){ clean[0].uid=S.uid; }
+    const ok=await write(()=>S.db.doc('groups/'+id).set(body));
+    if(ok){ closeSheet(); go(id); toast('Group started'); }
+  } else {
+    const g=G(f.id), hasMoney=(S.exp[f.id]||[]).length>0||(S.pay[f.id]||[]).length>0;
+    if(g && f.currency!==g.currency && hasMoney){
+      const r=calc(f.convRate);
+      if(!(r>0)){ err.textContent='Add the exchange rate to convert this group.'; return; }
+      err.textContent='Converting...';
+      const ok=await convertGroup(g,f.currency,r,body);
+      if(ok){ closeSheet(); toast('Switched to '+f.currency); } else err.textContent='Some of it didn\'t convert - try again.';
+      return;
+    }
+    const ok=await write(()=>S.db.doc('groups/'+f.id).update(body));
+    if(ok){ closeSheet(); toast('Saved'); }
+  }
+}
+async function convertGroup(g,cur,r,body){
+  const from=g.currency, base='groups/'+g.id;
+  for(const x of (S.exp[g.id]||[])){
+    const y=Object.assign({},x); delete y.id;
+    let nb, nr;
+    if(x.currency===cur){ nb=x.amount; nr=1; }
+    else if(x.currency===from){ nb=Math.round(x.amount*r); nr=r; }
+    else { nr=(x.rate||1)*r; nb=Math.round(x.amount*nr); }
+    const ids=Object.keys(x.shares||{});
+    const parts=allocate(nb,ids.map(id=>x.shares[id]));
+    const shares={}; ids.forEach((id,i)=>shares[id]=parts[i]);
+    y.base=nb; y.rate=nr; y.shares=shares; y.exact=Object.assign({},x.exact||{}); y.weights=Object.assign({},x.weights||{}); y.notMine=Object.assign({},x.notMine||{}); y.updatedAt=Date.now();
+    if(!(await write(()=>S.db.doc(base+'/expenses/'+x.id).set(y)))) return false;
+  }
+  for(const p of (S.pay[g.id]||[])){
+    const y=Object.assign({},p); delete y.id; y.amount=Math.round(p.amount*r);
+    if(!(await write(()=>S.db.doc(base+'/payments/'+p.id).set(y)))) return false;
+  }
+  const rates={}; Object.keys(g.rates||{}).forEach(k=>{ if(k!==cur) rates[k]=+(g.rates[k]*r).toFixed(6); }); rates[from]=+r.toFixed(6);
+  const full=Object.assign({},g); delete full.id;
+  Object.assign(full,body,{currency:cur,rates});
+  return write(()=>S.db.doc(base).set(full));
+}
+async function deleteGroup(gid){
+  const ex=S.exp[gid]||[], ps=S.pay[gid]||[];
+  for(const x of ex){ await write(()=>S.db.doc('groups/'+gid+'/expenses/'+x.id).delete()); if(x.photoId&&S.assets){ try{ await S.assets.delete(x.photoId); }catch(e){} } }
+  for(const p of ps){ await write(()=>S.db.doc('groups/'+gid+'/payments/'+p.id).delete()); }
+  const ok=await write(()=>S.db.doc('groups/'+gid).delete());
+  if(ok){ closeSheet(); go(null); toast('Group deleted'); }
+}
+
+/* join */
+function sheetJoin(){
+  const g=G(S.gid); if(!g) return head('Join');
+  const free=(g.members||[]).filter(m=>!m.uid);
+  let h=head('Join '+g.name);
+  h+='<p style="margin:0;font-weight:500">Which one are you? That way Kitty shows what you owe and what you\'re owed.</p>';
+  if(free.length){ h+='<div class="list">'+free.map(m=>'<button class="item" data-a="joinAs" data-m="'+esc(m.id)+'">'+avatar(g,m.id,'lg')+'<span class="t"><b>'+esc(m.name)+'</b></span></button>').join('')+'</div>'; }
+  h+='<div class="f"><label for="j-name">'+(free.length?"I'm not on the list - add me as":'Your name')+'</label><input class="inp" id="j-name" value="'+esc(S.profileName?S.profileName.split(' ')[0]:'')+'" maxlength="30"></div><button class="btn primary" data-a="joinNew">Join</button>';
+  return h;
+}
+async function joinAs(mid,newName){
+  const g=G(S.gid); if(!g||!S.uid) return;
+  const snap=await S.db.doc('groups/'+g.id).get().catch(()=>null);
+  const cur=snap&&snap.exists?snap.data():g;
+  const members=(cur.members||[]).map(m=>Object.assign({},m));
+  if(members.some(m=>m.uid===S.uid)){ closeSheet(); return; }
+  if(mid){ const m=members.find(m=>m.id===mid); if(!m||m.uid){ toast('Someone already picked that name'); return; } m.uid=S.uid; }
+  else { const n=(newName||'').trim(); if(!n){ toast('Add your name'); return; } members.push({id:rid('m'),name:n.slice(0,30),uid:S.uid}); }
+  const ok=await write(()=>S.db.doc('groups/'+g.id).update({members,touchedAt:Date.now()}));
+  if(ok){ closeSheet(); syncSubs(); toast("You're in"); }
+}
+
+/* invite */
+function inviteLink(g){ return APP_URL+'#g-'+g.id; }
+function sheetInvite(){
+  const g=G(S.gid);
+  let h=head('Invite to '+g.name);
+  h+='<div class="qr" id="qr" aria-label="QR code linking to this group"></div>';
+  h+='<div class="link" id="inv-link">'+esc(inviteLink(g))+'</div>';
+  h+='<button class="btn dark" data-a="copyLink">Copy link</button>';
+  h+='<p style="margin:0;font-size:14px;font-weight:500">New people also need access to Kitty itself: on the Kitty page, tap <b>Share</b> and invite them by email as an <b>Editor</b>. After that, this code or link takes them straight to this group, and they pick their name.</p>';
+  return h;
+}
+function drawQR(){
+  const el=document.getElementById('qr'), g=G(S.gid); if(!el||!g) return;
+  if(typeof QRCode==='undefined'){ el.innerHTML='<span class="muted" style="font-weight:600">QR code unavailable - use the link below.</span>'; return; }
+  try{ new QRCode(el,{text:inviteLink(g),width:220,height:220,colorDark:'#1A1A1A',colorLight:'#FFFFFF',correctLevel:QRCode.CorrectLevel.M}); el.title=''; }catch(e){ el.textContent='QR code unavailable - use the link below.'; }
+}
+
+/* pick group */
+function sheetPick(){
+  let h=head('Which group?');
+  h+='<div class="list">'+myGroups().map(g=>'<button class="item" data-a="pickG" data-g="'+esc(g.id)+'"><span style="width:38px;height:38px;border-radius:19px;border:2px solid var(--ink);background:'+(g.colour||COLOURS[0])+';flex-shrink:0"></span><span class="t"><b>'+esc(g.name)+'</b><span>'+(g.members||[]).length+' people · '+esc(g.currency)+'</span></span></button>').join('')+'</div>';
+  return h;
+}
+
+/* expense form */
+function newExpenseForm(gid,existing){
+  const g=G(gid), me=myMid(g), ids=(g.members||[]).map(m=>m.id);
+  if(existing){
+    const x=existing, inc={}, exact={}, shares={};
+    ids.forEach(id=>{ inc[id]=x.shares&&x.shares[id]!=null; exact[id]=x.exact&&x.exact[id]!=null?String(x.exact[id]/100):''; shares[id]=x.weights&&x.weights[id]!=null?x.weights[id]:1; });
+    S.form={id:x.id,gid,desc:x.desc,amountStr:String(x.amount/100),currency:x.currency,rate:x.currency!==g.currency?String(x.rate):'',paidBy:x.paidBy,date:x.date,cat:x.catManual?(x.cat==='food'?'meal':x.cat):'auto',meal:x.meal||'other',note:x.note||'',mode:x.mode||'equal',inc,exact,shares,photoId:x.photoId||null,uploading:false,notMine:Object.assign({},x.notMine||{}),createdAt:x.createdAt,createdBy:x.createdBy};
+  } else {
+    const inc={}, exact={}, shares={}; ids.forEach(id=>{ inc[id]=true; exact[id]=''; shares[id]=1; });
+    S.form={id:null,gid,desc:'',amountStr:'',currency:g.currency,rate:'',paidBy:me||ids[0],date:today(),cat:'auto',meal:'other',note:'',mode:'equal',inc,exact,shares,photoId:null,uploading:false,notMine:{}};
+  }
+  openSheet('expense');
+}
+function rateFor(g,cur){ return (g.rates&&g.rates[cur])?String(g.rates[cur]):''; }
+function sheetExpense(){
+  const f=S.form, g=G(f.gid);
+  let h=head(f.id?'Edit expense':'Add expense');
+  h+='<div class="f"><label for="e-desc">What was it?</label><input class="inp" id="e-desc" data-f="desc" value="'+esc(f.desc)+'" placeholder="e.g. Dinner at Ramiro" maxlength="60" '+(f.id?'':'data-autofocus')+'></div>';
+  h+='<div class="f"><label for="e-amt">How much? <span class="muted" style="font-weight:500">(you can type sums like 34.50+12)</span></label><div class="amtwrap"><input class="inp amt" id="e-amt" data-f="amountStr" inputmode="decimal" value="'+esc(f.amountStr)+'" placeholder="0.00" autocomplete="off"><label class="sr" for="e-cur">Currency</label><select class="inp" id="e-cur" data-f="currency">'+CURS.map(c=>'<option'+(c===f.currency?' selected':'')+'>'+c+'</option>').join('')+'</select></div><div class="hint" id="calcPrev"></div></div>';
+  if(f.currency!==g.currency){
+    h+='<div class="f"><label for="e-rate">Exchange rate: 1 '+esc(f.currency)+' = how many '+esc(g.currency)+'?</label><input class="inp" id="e-rate" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="e.g. 0.85"><div class="hint">Kitty remembers this rate for next time.</div></div>';
+  }
+  h+='<div class="f"><span class="lbl">Who paid?</span><div class="chips">'+(g.members||[]).map(m=>'<button class="chip" aria-pressed="'+(f.paidBy===m.id)+'" data-a="payer" data-m="'+esc(m.id)+'">'+esc(m.id===myMid(g)?'You':m.name)+'</button>').join('')+'</div></div>';
+  h+='<div class="f"><span class="lbl">Split</span><div class="split3">'+[['equal','Equally'],['exact','Amounts'],['shares','Shares']].map(m=>'<button class="chip" aria-pressed="'+(f.mode===m[0])+'" data-a="mode" data-m="'+m[0]+'">'+m[1]+'</button>').join('')+'</div>';
+  h+='<div class="card" style="padding:4px 14px">';
+  (g.members||[]).forEach(m=>{
+    const on=!!f.inc[m.id];
+    h+='<div class="prow"><button class="tick" role="checkbox" aria-checked="'+on+'" aria-label="Include '+esc(m.name)+'" data-a="inc" data-m="'+esc(m.id)+'">'+(on?IC.tick:'')+'</button><span class="nm">'+esc(m.id===myMid(g)?'You':m.name)+(f.notMine[m.id]?' <span class="flag" style="font-size:12px">says not theirs</span>':'')+'</span>';
+    if(on && f.mode==='exact') h+='<label class="sr" for="ex-'+esc(m.id)+'">Amount for '+esc(m.name)+'</label><input class="inp" id="ex-'+esc(m.id)+'" data-ex="'+esc(m.id)+'" inputmode="decimal" value="'+esc(f.exact[m.id])+'" placeholder="0.00">';
+    else if(on && f.mode==='shares') h+='<span style="display:flex;align-items:center;gap:6px"><button class="x" style="width:36px;height:36px" data-a="shr" data-m="'+esc(m.id)+'" data-d="-1" aria-label="Fewer shares for '+esc(m.name)+'">-</button><b style="min-width:20px;text-align:center">'+(f.shares[m.id]||0)+'</b><button class="x" style="width:36px;height:36px" data-a="shr" data-m="'+esc(m.id)+'" data-d="1" aria-label="More shares for '+esc(m.name)+'">+</button></span><span class="sh" id="pp-'+esc(m.id)+'"></span>';
+    else if(on) h+='<span class="sh" id="pp-'+esc(m.id)+'"></span>';
+    h+='</div>';
+  });
+  h+='</div><div class="hint" id="splitInfo"></div></div>';
+  h+='<div class="f"><span class="lbl">What kind?</span><div id="catBox">'+catChips(f)+'</div></div>';
+  h+='<div class="f"><label for="e-date">Date</label><input class="inp" type="date" id="e-date" data-f="date" value="'+esc(f.date)+'"></div>';
+  h+='<div class="f"><label for="e-note">Note (optional)</label><textarea class="inp" id="e-note" data-f="note" maxlength="400" placeholder="Anything worth remembering">'+esc(f.note)+'</textarea></div>';
+  if(S.assets || f.photoId){
+    h+='<div class="f"><span class="lbl">Photo (optional)</span>';
+    if(f.photoId) h+='<img class="photo" src="/_blob/'+esc(f.photoId)+'" alt="Attached photo"><button class="btn sm" data-a="rmPhoto">Remove photo</button>';
+    else if(S.assets) h+='<label class="btn sm" style="align-self:flex-start;cursor:pointer">'+IC.cam+(f.uploading?'Uploading...':'Add a photo or receipt')+'<input type="file" accept="image/*" id="e-photo" class="sr" '+(f.uploading?'disabled':'')+'></label>';
+    h+='</div>';
+  }
+  h+='<div class="hint bad" id="e-err"></div>';
+  h+='<button class="btn primary" data-a="saveExp" '+(f.uploading?'disabled':'')+'>'+(f.id?'Save':'Add it')+'</button>';
+  if(f.id) h+='<button class="btn" data-a="delExp"><span class="danger">Delete expense</span></button>';
+  return h;
+}
+function effCat(f){ return f.cat==='auto'?guessCat(f.desc):{cat:f.cat,meal:f.cat==='meal'?(f.meal||'other'):null}; }
+function catChips(f){
+  const e=effCat(f);
+  let h='<div class="chips">'+Object.keys(CATS).map(c=>'<button class="chip" aria-pressed="'+(e.cat===c)+'" data-a="cat" data-c="'+c+'">'+CATS[c]+'</button>').join('')+'</div>';
+  if(e.cat==='meal') h+='<div class="lbl" style="margin:12px 0 6px">Which meal?</div><div class="chips">'+Object.keys(MEALS).map(m=>'<button class="chip" aria-pressed="'+(e.meal===m)+'" data-a="meal" data-c="'+m+'">'+MEALS[m]+'</button>').join('')+'</div>';
+  return h;
+}
+function computeShares(f,g){
+  const v=calc(f.amountStr); const total=(v>0)?Math.round(v*100):0;
+  const ids=(g.members||[]).map(m=>m.id).filter(id=>f.inc[id]);
+  let parts;
+  if(f.mode==='equal') parts=allocate(total,ids.map(()=>1));
+  else if(f.mode==='shares') parts=allocate(total,ids.map(id=>Math.max(0,Number(f.shares[id])||0)));
+  else parts=ids.map(id=>{ const x=calc(f.exact[id]); return x>0?Math.round(x*100):0; });
+  const foreign=f.currency!==g.currency;
+  const rate=foreign?calc(f.rate):1;
+  const base=(rate>0)?Math.round(total*rate):0;
+  const baseParts=foreign?allocate(base,parts):parts;
+  return {total,ids,parts,rate,base,baseParts,sum:parts.reduce((a,b)=>a+b,0),foreign};
+}
+function updatePreview(){
+  const f=S.form; if(!f||!S.sheet||S.sheet.kind!=='expense') return; const g=G(f.gid);
+  const cp=document.getElementById('calcPrev'), si=document.getElementById('splitInfo');
+  const v=calc(f.amountStr), r=computeShares(f,g);
+  if(cp){
+    let t='';
+    if(v===null) t=''; else if(isNaN(v)) t="That sum doesn't add up"; else if(/[+\-*/x×÷]/i.test(String(f.amountStr).replace(/^-/,''))) t='= '+fmt(r.total,f.currency);
+    if(r.foreign && r.total && r.rate>0) t+=(t?'  ·  ':'')+'≈ '+fmt(r.base,g.currency);
+    cp.textContent=t; cp.classList.toggle('bad', v!==null && isNaN(v));
+  }
+  r.ids.forEach((id,i)=>{ const el=document.getElementById('pp-'+id); if(el) el.textContent=fmt(r.parts[i],f.currency); });
+  if(si){
+    si.classList.remove('bad');
+    if(!r.ids.length){ si.textContent='Tick at least one person'; si.classList.add('bad'); }
+    else if(f.mode==='exact'){ const left=r.total-r.sum; si.textContent= left===0?'Adds up':(left>0?fmt(left,f.currency)+' still to assign':fmt(-left,f.currency)+' too much'); if(left!==0) si.classList.add('bad'); }
+    else si.textContent='';
+  }
+  if(f.cat==='auto'){ const cb=document.getElementById('catBox'); if(cb){ const k=JSON.stringify(guessCat(f.desc)); if(cb.dataset.k!==k){ cb.dataset.k=k; cb.innerHTML=catChips(f); } } }
+}
+async function saveExpense(){
+  const f=S.form, g=G(f.gid), err=document.getElementById('e-err');
+  const desc=(f.desc||'').trim(); const r=computeShares(f,g);
+  if(!desc){ err.textContent='Say what it was.'; return; }
+  if(!(r.total>0)){ err.textContent='Add an amount.'; return; }
+  if(r.foreign && !(r.rate>0)){ err.textContent='Add the exchange rate.'; return; }
+  if(!r.ids.length){ err.textContent='Tick at least one person.'; return; }
+  if(f.mode==='exact' && r.sum!==r.total){ err.textContent="The amounts don't add up to the total."; return; }
+  if(f.mode==='shares' && r.parts.every(p=>p===0)){ err.textContent='Give someone at least one share.'; return; }
+  const shares={}, exact={}, weights={};
+  r.ids.forEach((id,i)=>{ shares[id]=r.baseParts[i]; if(f.mode==='exact') exact[id]=r.parts[i]; if(f.mode==='shares') weights[id]=Number(f.shares[id])||0; });
+  const notMine={}; Object.keys(f.notMine||{}).forEach(k=>{ if(f.notMine[k] && shares[k]!=null) notMine[k]=true; });
+  const catManual=f.cat!=='auto', ec=effCat(f);
+  const body={desc:desc.slice(0,60),amount:r.total,currency:f.currency,rate:r.foreign?r.rate:1,base:r.base,paidBy:f.paidBy,date:f.date||today(),cat:ec.cat,meal:ec.meal||null,catManual,note:(f.note||'').slice(0,400),mode:f.mode,shares,exact,weights,photoId:f.photoId||null,notMine,createdAt:f.createdAt||Date.now(),createdBy:f.createdBy||S.uid||null,updatedAt:Date.now()};
+  const id=f.id||rid('e');
+  const ok=await write(()=>S.db.doc('groups/'+g.id+'/expenses/'+id).set(body));
+  if(!ok) return;
+  closeSheet(); toast(f.id?'Saved':'Added');
+  const upd={touchedAt:Date.now()}; if(r.foreign) upd.rates={[f.currency]:r.rate};
+  write(()=>S.db.doc('groups/'+g.id).update(upd));
+}
+async function uploadPhoto(file){
+  const f=S.form; if(!f||!S.assets||!file) return;
+  f.uploading=true; renderSheet();
+  let blob=file;
+  try{
+    const bmp=await createImageBitmap(file);
+    const sc=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+    const c=document.createElement('canvas'); c.width=Math.round(bmp.width*sc); c.height=Math.round(bmp.height*sc);
+    c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+    blob=await new Promise(res=>c.toBlob(b=>res(b||file),'image/jpeg',0.82));
+  }catch(e){ blob=file; }
+  try{ const a=await S.assets.upload(blob); if(S.form===f){ f.photoId=a.id; } }
+  catch(e){ toast(e&&e.code==='quota_exceeded'?'No room for more photos':"Couldn't upload that photo"); }
+  if(S.form===f){ f.uploading=false; renderSheet(); }
+}
+
+/* expense detail */
+function sheetDetail(){
+  const g=G(S.gid), x=(S.exp[g.id]||[]).find(e=>e.id===S.sheet.data.id);
+  if(!x) return head('Expense')+'<p>This expense has been removed.</p>';
+  const me=myMid(g);
+  let h=head(x.desc);
+  h+='<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:10px"><div style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:600">'+esc(mName(g,x.paidBy))+' paid</span><span style="font-size:36px;font-weight:800;letter-spacing:-.02em">'+fmt(x.base,g.currency)+'</span></div><span style="font-size:14px;font-weight:600;text-align:right">'+esc(dLong(x.date))+'<br>'+esc(catLabel(x))+'</span></div>';
+  if(x.currency!==g.currency) h+='<div class="hint">'+fmt(x.amount,x.currency)+' at 1 '+esc(x.currency)+' = '+esc(String(x.rate))+' '+esc(g.currency)+'</div>';
+  if(x.photoId) h+='<img class="photo" src="/_blob/'+esc(x.photoId)+'" alt="Photo for '+esc(x.desc)+'">';
+  if(x.note) h+='<p style="margin:0;font-size:16px;font-weight:500">'+esc(x.note)+'</p>';
+  h+='<div class="card" style="padding:4px 14px">'+Object.keys(x.shares||{}).map(mid=>'<div class="prow">'+avatar(g,mid)+'<span class="nm">'+esc(mName(g,mid))+(x.notMine&&x.notMine[mid]?' <span class="flag" style="font-size:12px">says not theirs</span>':'')+'</span><span class="sh">'+fmt(x.shares[mid],g.currency)+'</span></div>').join('')+'</div>';
+  const flagged=Object.keys(x.notMine||{}).filter(k=>x.notMine[k]);
+  if(canEdit()){
+    if(flagged.length && (x.paidBy===me || !me)){
+      flagged.forEach(fid=>{ h+='<div class="banner" style="display:flex;flex-direction:column;gap:10px"><span>'+esc(mName(g,fid,false))+' says this isn\'t theirs.</span><div style="display:flex;gap:8px"><button class="btn sm primary" data-a="nmRemove" data-m="'+esc(fid)+'">Take them off</button><button class="btn sm" data-a="nmKeep" data-m="'+esc(fid)+'">Keep them on</button></div></div>'; });
+    }
+    if(me && x.paidBy!==me && x.shares && x.shares[me]!=null){
+      const on=x.notMine&&x.notMine[me];
+      h+='<button class="btn" data-a="nmToggle">'+(on?'Actually, it is mine':"This isn't mine")+'</button>';
+      if(!on) h+='<div class="hint" style="margin-top:-8px">'+esc(mName(g,x.paidBy,false))+' will see it and can take you off.</div>';
+    }
+    h+='<button class="btn dark" data-a="editExp">Edit</button>';
+  }
+  return h;
+}
+async function setNotMine(x,mid,val){
+  const g=G(S.gid); const body=Object.assign({},x); delete body.id;
+  body.notMine=Object.assign({},x.notMine||{}); if(val) body.notMine[mid]=true; else delete body.notMine[mid];
+  body.shares=Object.assign({},x.shares||{}); body.exact=Object.assign({},x.exact||{}); body.weights=Object.assign({},x.weights||{});
+  return write(()=>S.db.doc('groups/'+g.id+'/expenses/'+x.id).set(body));
+}
+async function removeFromExpense(x,mid){
+  const g=G(S.gid); const ids=Object.keys(x.shares||{}).filter(k=>k!==mid);
+  if(!ids.length){ toast("They're the only one on it - delete it instead"); return; }
+  const body=Object.assign({},x); delete body.id;
+  let parts;
+  if(x.mode==='exact'){ toast('This one has set amounts - edit it to change them'); newExpenseForm(g.id,x); S.form.inc[mid]=false; delete S.form.notMine[mid]; renderSheet(); return; }
+  if(x.mode==='shares'){ parts=allocate(x.base,ids.map(id=>(x.weights&&x.weights[id])||0)); }
+  else parts=allocate(x.base,ids.map(()=>1));
+  const shares={}; ids.forEach((id,i)=>shares[id]=parts[i]);
+  body.shares=shares; body.notMine=Object.assign({},x.notMine||{}); delete body.notMine[mid];
+  if(x.mode==='shares'){ body.weights=Object.assign({},x.weights||{}); delete body.weights[mid]; }
+  body.exact={}; body.updatedAt=Date.now();
+  const ok=await write(()=>S.db.doc('groups/'+g.id+'/expenses/'+x.id).set(body));
+  if(ok){ toast('Updated'); renderSheet(); }
+}
+
+/* payments */
+function sheetPay(){
+  const g=G(S.gid), d=S.sheet.data;
+  let h=head('Record a payment');
+  const opts=sel=>(g.members||[]).map(m=>'<option value="'+esc(m.id)+'"'+(m.id===sel?' selected':'')+'>'+esc(m.id===myMid(g)?'You':m.name)+'</option>').join('');
+  h+='<div class="grid2"><div class="f"><label for="p-from">Who paid</label><select class="inp" id="p-from">'+opts(d.from||myMid(g))+'</select></div><div class="f"><label for="p-to">Who to</label><select class="inp" id="p-to">'+opts(d.to||((g.members||[]).find(m=>m.id!==myMid(g))||{}).id)+'</select></div></div>';
+  h+='<div class="f"><label for="p-amt">Amount ('+esc(g.currency)+')</label><input class="inp" id="p-amt" inputmode="decimal" value="'+esc(d.amount?String(d.amount/100):'')+'" placeholder="0.00"></div>';
+  h+='<div class="hint bad" id="p-err"></div><button class="btn primary" data-a="savePay">Record it</button>';
+  return h;
+}
+async function savePay(){
+  const g=G(S.gid), from=document.getElementById('p-from').value, to=document.getElementById('p-to').value, v=calc(document.getElementById('p-amt').value), err=document.getElementById('p-err');
+  if(from===to){ err.textContent='Pick two different people.'; return; }
+  if(!(v>0)){ err.textContent='Add an amount.'; return; }
+  await addPayment(g,from,to,Math.round(v*100));
+}
+async function addPayment(g,from,to,amount){
+  const ok=await write(()=>S.db.doc('groups/'+g.id+'/payments/'+rid('p')).set({from,to,amount,date:today(),at:Date.now(),by:S.uid||null}));
+  if(ok){ closeSheet(); toast('Payment recorded'); write(()=>S.db.doc('groups/'+g.id).update({touchedAt:Date.now()})); }
+}
+function sheetPayInfo(){
+  const g=G(S.gid), m=mem(g,S.sheet.data.mid)||{};
+  return head(m.name+"'s details")+'<div class="link" id="pi-text" style="font-size:16px;white-space:pre-wrap">'+esc(m.pay||'')+'</div><button class="btn dark" data-a="copyPay">Copy</button>';
+}
+async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast('Copied'); }catch(e){ toast('Press and hold the text to copy it'); } }
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-a]'); if(!t) return;
+  const a=t.dataset.a;
+  if(a==='ovClose'){ if(e.target===t) closeSheet(); return; }
+  const g=S.gid?G(S.gid):null;
+  switch(a){
+    case 'close': closeSheet(); break;
+    case 'home': go(null); break;
+    case 'open': go(t.dataset.g); break;
+    case 'tab': S.tab=t.dataset.t; render(); break;
+    case 'settleTab': S.tab='settle'; render(); window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); break;
+    case 'newGroup': newGroupForm(); break;
+    case 'settings': if(g) editGroupForm(g); break;
+    case 'invite': openSheet('invite'); break;
+    case 'join': openSheet('join'); break;
+    case 'joinAs': joinAs(t.dataset.m); break;
+    case 'joinNew': joinAs(null,document.getElementById('j-name').value); break;
+    case 'addAny': { const mine=myGroups(); if(!mine.length) newGroupForm(); else if(mine.length===1) newExpenseForm(mine[0].id); else openSheet('pick'); break; }
+    case 'pickG': newExpenseForm(t.dataset.g); break;
+    case 'addExp': if(g){ if(!myMid(g)){ openSheet('join'); } else newExpenseForm(g.id); } break;
+    case 'gColour': S.form.colour=t.dataset.c; renderSheet(); break;
+    case 'mAdd': S.form.members.push({id:rid('m'),name:'',uid:null}); renderSheet(); { const ins=document.querySelectorAll('[data-m]'); const last=ins[ins.length-1]; if(last&&last.tagName==='INPUT') last.focus(); } break;
+    case 'mDel': S.form.members.splice(Number(t.dataset.i),1); renderSheet(); break;
+    case 'saveGroup': saveGroup(); break;
+    case 'delGroup': { const gid=S.form.id; confirmBox('Delete this group?','All its expenses and payments go too. This can\'t be undone.','Delete',()=>deleteGroup(gid)); break; }
+    case 'payer': S.form.paidBy=t.dataset.m; renderSheet(); break;
+    case 'mode': S.form.mode=t.dataset.m; renderSheet(); break;
+    case 'inc': S.form.inc[t.dataset.m]=!S.form.inc[t.dataset.m]; renderSheet(); break;
+    case 'shr': { const m=t.dataset.m; S.form.shares[m]=Math.max(0,(Number(S.form.shares[m])||0)+Number(t.dataset.d)); renderSheet(); break; }
+    case 'cat': { const f=S.form; if(t.dataset.c==='meal'&&f.cat!=='meal'){ const e=effCat(f); f.meal=e.cat==='meal'?e.meal:'other'; } f.cat=t.dataset.c; document.getElementById('catBox').innerHTML=catChips(f); break; }
+    case 'meal': { const f=S.form; f.cat='meal'; f.meal=t.dataset.c; document.getElementById('catBox').innerHTML=catChips(f); break; }
+    case 'rmPhoto': S.form.photoId=null; renderSheet(); break;
+    case 'saveExp': saveExpense(); break;
+    case 'delExp': { const f=S.form; confirmBox('Delete this expense?','"'+f.desc+'" comes off everyone\'s balance.','Delete',async()=>{ const x=(S.exp[f.gid]||[]).find(e=>e.id===f.id); const ok=await write(()=>S.db.doc('groups/'+f.gid+'/expenses/'+f.id).delete()); if(ok){ closeSheet(); toast('Deleted'); if(x&&x.photoId&&S.assets){ try{ await S.assets.delete(x.photoId); }catch(e){} } } }); break; }
+    case 'exp': openSheet('detail',{id:t.dataset.e}); break;
+    case 'editExp': { const x=(S.exp[g.id]||[]).find(e=>e.id===S.sheet.data.id); if(x) newExpenseForm(g.id,x); break; }
+    case 'nmToggle': { const x=(S.exp[g.id]||[]).find(e=>e.id===S.sheet.data.id); const me=myMid(g); if(x) setNotMine(x,me,!(x.notMine&&x.notMine[me])).then(ok=>{ if(ok){ toast('Updated'); renderSheet(); } }); break; }
+    case 'nmKeep': { const x=(S.exp[g.id]||[]).find(e=>e.id===S.sheet.data.id); if(x) setNotMine(x,t.dataset.m,false).then(ok=>{ if(ok) renderSheet(); }); break; }
+    case 'nmRemove': { const x=(S.exp[g.id]||[]).find(e=>e.id===S.sheet.data.id); if(x) removeFromExpense(x,t.dataset.m); break; }
+    case 'markPaid': { const c=calcGroup(g), tr=c.transfers[Number(t.dataset.i)]; if(tr) confirmBox('Mark as paid?',mName(g,tr.from)+' '+(tr.from===myMid(g)?'paid':'paid')+' '+mName(g,tr.to)+' '+fmt(tr.amount,g.currency)+'.','Yes, paid',()=>addPayment(g,tr.from,tr.to,tr.amount)); break; }
+    case 'recordPay': openSheet('pay',{}); break;
+    case 'savePay': savePay(); break;
+    case 'delPay': { const pid=t.dataset.p; confirmBox('Remove this payment?','It goes back on the balances.','Remove',async()=>{ const ok=await write(()=>S.db.doc('groups/'+g.id+'/payments/'+pid).delete()); if(ok){ closeSheet(); toast('Removed'); } }); break; }
+    case 'payInfo': openSheet('payInfo',{mid:t.dataset.m}); break;
+    case 'copyPay': { const m=mem(g,S.sheet.data.mid); if(m) copyText(m.pay||''); break; }
+    case 'copyLink': copyText(inviteLink(g)); break;
+    case 'confirmYes': { const fn=S.confirm&&S.confirm.fn; closeSheet(); if(fn) fn(); break; }
+  }
+});
+document.addEventListener('input',e=>{
+  const t=e.target; if(!S.form) return;
+  if(t.dataset.f){ S.form[t.dataset.f]=t.value; if(t.dataset.f==='currency' && S.sheet.kind==='expense'){ const g=G(S.form.gid); S.form.rate=t.value!==g.currency?rateFor(g,t.value):''; renderSheet(); return; } if(t.dataset.f==='currency'&&S.sheet.kind==='group'){ const g=S.form.id&&G(S.form.id); if(g&&t.value!==g.currency){ const r=g.rates&&g.rates[t.value]; S.form.convRate=r?String(+(1/r).toFixed(6)):''; } renderSheet(); return; } updatePreview(); }
+  else if(t.dataset.ex){ S.form.exact[t.dataset.ex]=t.value; updatePreview(); }
+  else if(t.dataset.m!=null && t.tagName==='INPUT'){ S.form.members[Number(t.dataset.m)].name=t.value; }
+  else if(t.dataset.pay!=null){ S.form.members[Number(t.dataset.pay)].pay=t.value; }
+});
+document.addEventListener('change',e=>{ const t=e.target; if(t.id==='e-photo' && t.files && t.files[0]) uploadPhoto(t.files[0]); if(t.tagName==='SELECT' && t.dataset.f && S.form){ S.form[t.dataset.f]=t.value; } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && S.sheet) closeSheet(); });
+
+boot();
+})();
+</script>
+</body>
+</html>

@@ -164,6 +164,23 @@ textarea.inp{height:auto;min-height:76px;padding:12px 14px;resize:vertical}
 .mini.on{border-style:solid;background:#fff}
 .mini input[type=date]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
 .savebar{position:sticky;bottom:calc(-1 * (env(safe-area-inset-bottom) + 24px));margin:0 -20px calc(-1 * (env(safe-area-inset-bottom) + 24px));padding:12px 20px calc(env(safe-area-inset-bottom) + 20px);background:var(--bg);border-top:2px solid var(--ink);display:flex;gap:10px}
+.catart{display:inline-flex;flex-shrink:0;line-height:0}
+.hero-cat svg{filter:drop-shadow(0 0 0 transparent)}
+@keyframes kBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.bob{animation:kBob 2.6s ease-in-out infinite}
+#toast div button{pointer-events:auto;border:none;background:var(--accent);color:var(--ink);font:inherit;font-weight:800;font-size:14px;height:32px;padding:0 12px;border-radius:16px;margin-left:6px;cursor:pointer}
+#party{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(255,244,214,.94);animation:kFade .2s ease}
+#party .big{font-size:40px;font-weight:800;letter-spacing:-.03em;animation:kPopIn .5s .15s cubic-bezier(.2,.9,.3,1.3) both}
+#party .sub{font-size:16px;font-weight:600;color:var(--muted);animation:kFade .4s .35s both}
+#party .catart{animation:kJump .9s cubic-bezier(.3,.7,.4,1.2) both}
+#party i{position:absolute;width:10px;height:14px;border-radius:3px;top:-20px;animation:kFall 1.8s linear forwards}
+@keyframes kPopIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes kJump{0%{transform:translateY(60px) scale(.6);opacity:0}45%{transform:translateY(-18px) scale(1.08);opacity:1}70%{transform:translateY(4px) scale(.97)}100%{transform:none}}
+@keyframes kFall{to{transform:translateY(110vh) rotate(540deg)}}
+.remhint{font-size:13px;font-weight:700;color:var(--warn);margin-top:-10px}
+.srch{display:flex;flex-direction:column}
+.srch .item .t>span{display:flex;align-items:center;margin-top:4px}
+.srch .item .g{font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;border:1.5px solid var(--ink);margin-right:6px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 #toast{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 12px);z-index:40;pointer-events:none}
 #toast div{background:var(--ink);color:var(--bg);font-weight:700;padding:12px 18px;border-radius:999px;font-size:15px;max-width:90vw;white-space:nowrap}
@@ -198,10 +215,13 @@ const CAT_WORDS = {
   groceries:['shop','shopping','supermarket','groceries','tesco','sainsburys','waitrose','aldi','lidl','market','walmart','target','costco'],
   tickets:['ticket','tickets','museum','gig','show','entry','tour','concert','cinema','tickets','gallery','match']
 };
+const CAT_SVG = '<svg viewBox="0 0 100 100" width="SZ" height="SZ" aria-hidden="true"><g  stroke="#1A1A1A" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"><circle cx="50" cy="13" r="9" fill="#FFC93C"></circle><path d="M22 46 C21 36 22 24 25 17 C27 13 31 13 34 16 L43 26 H57 L66 16 C69 13 73 13 75 17 C78 24 79 36 78 46 C83 53 85 60 85 66 C85 81 70 90 50 90 C30 90 15 81 15 66 C15 60 17 53 22 46 Z" fill="#FFF4D6"></path><path d="M43 35 H57"></path><ellipse cx="27" cy="71" rx="5.5" ry="3.6" fill="#F7A1AE" stroke="none"></ellipse><ellipse cx="73" cy="71" rx="5.5" ry="3.6" fill="#F7A1AE" stroke="none"></ellipse><circle cx="37" cy="62" r="7" fill="#1A1A1A" stroke="none"></circle><circle cx="63" cy="62" r="7" fill="#1A1A1A" stroke="none"></circle><circle cx="39.5" cy="59.5" r="2.4" fill="#fff" stroke="none"></circle><circle cx="65.5" cy="59.5" r="2.4" fill="#fff" stroke="none"></circle><path d="M46 72 Q50 75.5 54 72" fill="none" stroke-width="3.6"></path></g></svg>';
+const cat = (sz,cls) => '<span class="catart '+(cls||'')+'">'+CAT_SVG.replace(/SZ/g,sz)+'</span>';
 const IC = {
   back:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
   qr:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-7"/></svg>',
   gear:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  search:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>',
   plus:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   addp:'<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M19 8v6M16 11h6"/></svg>',
   x:'<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
@@ -251,7 +271,7 @@ function guessCat(desc){
   for(const c of Object.keys(CAT_WORDS)) if(words.some(w=>CAT_WORDS[c].includes(w))) return {cat:c,meal:c==='meal'?'other':null};
   return {cat:'other',meal:null};
 }
-function toast(msg,ok){ const t=document.getElementById('toast'); t.innerHTML=''; void t.offsetWidth; t.innerHTML='<div>'+(ok?'<span class="ck">'+IC.tick+'</span>':'')+esc(msg)+'</div>'; clearTimeout(toast._t); toast._t=setTimeout(()=>{t.innerHTML='';},2600); }
+function toast(msg,ok,action,ms){ const t=document.getElementById('toast'); t.innerHTML=''; void t.offsetWidth; t.innerHTML='<div>'+(ok?'<span class="ck">'+IC.tick+'</span>':'')+esc(msg)+(action?'<button data-a="undo">'+esc(action)+'</button>':'')+'</div>'; clearTimeout(toast._t); toast._t=setTimeout(()=>{t.innerHTML='';},ms||2600); }
 function errText(e){
   const c=e&&e.code;
   if(c==='quota_exceeded') return 'Kitty is full - delete an old group to make room.';
@@ -391,12 +411,12 @@ function renderHome(app){
   if(curs.length===1){ const v=tot[curs[0]]; lab=v>0?"All in, you're up":"All in, you're down"; big=fmt(Math.abs(v),curs[0]); bigHtml=cnt('hero',Math.abs(v),curs[0]); }
   else if(curs.length>1){ lab='All in'; big=curs.map(c=>(tot[c]<0?'-':'+')+fmt(Math.abs(tot[c]),c)).join(' · '); bigCls=' sm'; }
   let h='<div class="stack">';
-  h+='<div class="top"><div class="logo">kitty</div>'+(canEdit()?'<button class="round" data-a="newGroup" aria-label="New group">'+IC.addp+'</button>':'')+'</div>';
+  h+='<div class="top"><div class="logo">kitty</div><div class="r">'+(myGroups().length?'<button class="round" data-a="search" aria-label="Search expenses">'+IC.search+'</button>':'')+(canEdit()?'<button class="round" data-a="newGroup" aria-label="New group">'+IC.addp+'</button>':'')+'</div></div>';
   if(S.canWrite===false) h+='<div class="banner">You can see Kitty but can\'t add anything yet. Ask whoever shared it to invite you as an Editor.</div>';
   h+='<div class="banner">Test version - everything is saved on this phone only.</div>';
-  h+='<div class="hero"><div><div class="lab">'+lab+'</div><div class="big'+bigCls+'">'+(bigHtml||esc(big))+'</div></div>'+IC.jar+'</div>';
+  h+='<div class="hero"><div><div class="lab">'+lab+'</div><div class="big'+bigCls+'">'+(bigHtml||esc(big))+'</div></div>'+cat(64,'hero-cat')+'</div>';
   if(!mine.length){
-    h+='<div class="card empty"><div style="font-size:22px;font-weight:800">No groups yet</div><div class="muted" style="font-weight:500">Start one for a trip, the flat or a night out, then add your friends.</div>'+(canEdit()?'<button class="btn primary" data-a="newGroup">'+IC.plus+'Start a group</button>':'')+'</div>';
+    h+='<div class="card empty">'+cat(84,'bob')+'<div style="font-size:22px;font-weight:800">No groups yet</div><div class="muted" style="font-weight:500">Start one for a trip, the flat or a night out, then add your friends.</div>'+(canEdit()?'<button class="btn primary" data-a="newGroup">'+IC.plus+'Start a group</button>':'')+'</div>';
   } else {
     h+='<div class="grid2">';
     mine.forEach((g,i)=>{
@@ -481,7 +501,7 @@ function flagText(g,x){
 }
 function renderList(g){
   const ex=expensesOf(g.id);
-  if(!ex.length) return '<div class="card empty"><div style="font-size:20px;font-weight:800">Nothing in yet</div><div class="muted" style="font-weight:500">Add the first expense and Kitty works out who owes what.</div></div>';
+  if(!ex.length) return '<div class="card empty">'+cat(72,'bob')+'<div style="font-size:20px;font-weight:800">Nothing in yet</div><div class="muted" style="font-weight:500">Add the first expense and Kitty works out who owes what.</div></div>';
   let h='<div class="list">';
   const seen=S.seen[g.id]; S.seen[g.id]=new Set(ex.map(x=>x.id));
   ex.forEach(x=>{
@@ -507,7 +527,7 @@ function renderTimeline(g){
 function renderSettle(g,c){
   const me=myMid(g);
   let h='';
-  if(!c.transfers.length) h+='<div class="card empty"><div style="font-size:20px;font-weight:800">All square</div><div class="muted" style="font-weight:500">Nobody owes anybody.</div></div>';
+  if(!c.transfers.length) h+='<div class="card empty">'+cat(72,'bob')+'<div style="font-size:20px;font-weight:800">All square</div><div class="muted" style="font-weight:500">Nobody owes anybody.</div></div>';
   else {
     h+='<div class="sec">Fewest payments to settle</div><div class="list">';
     c.transfers.forEach((t,i)=>{
@@ -562,6 +582,7 @@ function renderSheet(){
   else if(k==='pick') b=sheetPick();
   else if(k==='pay') b=sheetPay();
   else if(k==='payInfo') b=sheetPayInfo();
+  else if(k==='search') b=sheetSearch();
   else if(k==='confirm') b=head(S.confirm.title)+'<p style="margin:0;font-size:16px;font-weight:500">'+esc(S.confirm.text)+'</p><div style="display:flex;gap:10px"><button class="btn grow" data-a="close">Cancel</button><button class="btn grow dark" data-a="confirmYes">'+esc(S.confirm.yes)+'</button></div>';
   el.innerHTML='<div class="ov" data-a="ovClose"><div class="pn" role="dialog" aria-modal="true" aria-labelledby="sh-t"><div class="grab" aria-hidden="true"></div>'+b+'</div></div>';
   if(keepScroll){ const pn=el.querySelector('.pn'); if(pn) pn.scrollTop=keepScroll; }
@@ -729,6 +750,27 @@ function newExpenseForm(gid,existing){
   openSheet('expense');
 }
 function rateFor(g,cur){ return (g.rates&&g.rates[cur])?String(g.rates[cur]):''; }
+function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim(); }
+function findPrev(g,desc){
+  const d=norm(desc); if(d.length<3) return null;
+  const ex=expensesOf(g.id);
+  return ex.find(x=>norm(x.desc)===d) || (d.split(' ')[0].length>=4 ? ex.find(x=>norm(x.desc).split(' ')[0]===d.split(' ')[0]) : null) || null;
+}
+function applyPrev(){
+  const f=S.form; if(!f||f.id||f.touchedSplit||f.showSplit) return;
+  const g=G(f.gid), x=findPrev(g,f.desc);
+  if(!x||x.id===f.prevApplied) return;
+  const ids=(g.members||[]).map(m=>m.id); if(!ids.includes(x.paidBy)) return;
+  f.prevApplied=x.id; f.paidBy=x.paidBy; f.mode=x.mode==='exact'?'equal':(x.mode||'equal');
+  ids.forEach(id=>{ f.inc[id]=x.shares&&x.shares[id]!=null; if(x.weights&&x.weights[id]!=null) f.shares[id]=x.weights[id]; });
+  if(!ids.some(id=>f.inc[id])) ids.forEach(id=>f.inc[id]=true);
+  if(x.currency!==f.currency){ f.currency=x.currency; f.rate=x.currency!==g.currency?rateFor(g,x.currency):''; renderSheet(); const d=document.getElementById('e-desc'); if(d){ d.focus(); d.setSelectionRange(d.value.length,d.value.length); } }
+  if(f.cat==='auto' && x.catManual){ f.cat=x.cat; f.meal=x.meal||'other'; }
+  const sr=document.querySelector('.sumrow span'); if(sr) sr.innerHTML=splitSummary(f,g);
+  const cb=document.getElementById('catBox'); if(cb) cb.innerHTML=catChips(f);
+  const rh=document.getElementById('remHint'); if(rh) rh.textContent='Filled in from last time';
+  updatePreview();
+}
 function splitSummary(f,g){
   const ids=(g.members||[]).map(m=>m.id), on=ids.filter(id=>f.inc[id]), payer=f.paidBy===myMid(g)?'you':(mem(g,f.paidBy)||{}).name||'someone';
   let how;
@@ -745,6 +787,7 @@ function sheetExpense(){
   if(f.currency!==g.currency){
     h+='<div class="f"><label for="e-rate">1 '+esc(f.currency)+' = how many '+esc(g.currency)+'?</label><input class="inp" id="e-rate" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="e.g. 0.85"></div>';
   }
+  h+='<div class="remhint" id="remHint" aria-live="polite"></div>';
   h+='<button class="sumrow" data-a="toggleSplit" aria-expanded="'+(!!f.showSplit)+'"><span>'+splitSummary(f,g)+'</span><span aria-hidden="true" style="font-weight:800">'+(f.showSplit?'Done':'Change')+'</span></button>';
   if(f.showSplit){
     h+='<div class="f"><span class="lbl">Who paid?</span><div class="chips">'+(g.members||[]).map(m=>'<button class="chip" aria-pressed="'+(f.paidBy===m.id)+'" data-a="payer" data-m="'+esc(m.id)+'">'+esc(m.id===myMid(g)?'You':m.name)+'</button>').join('')+'</div></div>';
@@ -814,7 +857,7 @@ function updatePreview(){
 }
 async function saveExpense(){
   const f=S.form, g=G(f.gid), err=document.getElementById('e-err');
-  const desc=(f.desc||'').trim(); const r=computeShares(f,g);
+  let desc=(f.desc||'').trim(); desc=desc.charAt(0).toUpperCase()+desc.slice(1); const r=computeShares(f,g);
   if(!desc){ err.textContent='Say what it was.'; return; }
   if(!(r.total>0)){ err.textContent='Add an amount.'; return; }
   if(r.foreign && !(r.rate>0)){ err.textContent='Add the exchange rate.'; return; }
@@ -912,9 +955,44 @@ async function savePay(){
   if(!(v>0)){ err.textContent='Add an amount.'; return; }
   await addPayment(g,from,to,Math.round(v*100));
 }
+async function softDelete(path,item,msg,photoId){
+  const body=Object.assign({},item); delete body.id;
+  if(S.undo){ clearTimeout(S.undo.timer); S.undo.finish(); }
+  const ok=await write(()=>S.db.doc(path).delete()); if(!ok) return;
+  closeSheet();
+  const u={path,body,finish:()=>{ if(photoId&&S.assets){ S.assets.delete(photoId).catch(()=>{}); } }};
+  u.timer=setTimeout(()=>{ if(S.undo===u){ S.undo=null; } u.finish(); },6000);
+  S.undo=u; toast(msg,false,'Undo',6000);
+}
+function party(g){
+  const el=document.createElement('div'); el.id='party'; el.setAttribute('data-a','partyClose'); el.setAttribute('role','status');
+  const cols=['#FF7A45','#FFC93C','#F7A1AE','#2563EB','#047857'];
+  let bits=''; for(let i=0;i<36;i++){ bits+='<i style="left:'+(Math.random()*100)+'%;background:'+cols[i%cols.length]+';animation-delay:'+(Math.random()*0.5)+'s;animation-duration:'+(1.4+Math.random())+'s"></i>'; }
+  el.innerHTML=bits+cat(140)+'<div class="big">All square!</div><div class="sub">'+esc(g.name)+' is settled up</div>';
+  document.body.appendChild(el); clearTimeout(party._t); party._t=setTimeout(endParty,2600);
+}
+function endParty(){ const el=document.getElementById('party'); if(el) el.remove(); }
 async function addPayment(g,from,to,amount){
+  const c=calcGroup(g), bal=Object.assign({},c.bal); bal[from]=(bal[from]||0)+amount; bal[to]=(bal[to]||0)-amount;
+  const square=Object.values(bal).every(v=>Math.abs(v)<=2) && (S.exp[g.id]||[]).length>0;
   const ok=await write(()=>S.db.doc('groups/'+g.id+'/payments/'+rid('p')).set({from,to,amount,date:today(),at:Date.now(),by:S.uid||null}));
-  if(ok){ closeSheet(); toast('Settled',true); write(()=>S.db.doc('groups/'+g.id).update({touchedAt:Date.now()})); }
+  if(ok){ closeSheet(); if(square) setTimeout(()=>party(g),250); else toast('Settled',true); write(()=>S.db.doc('groups/'+g.id).update({touchedAt:Date.now()})); }
+}
+function searchResults(q){
+  const n=norm(q); if(!n) return [];
+  const out=[];
+  myGroups().forEach(g=>{ (S.exp[g.id]||[]).forEach(x=>{ const hay=norm([x.desc,x.note,catLabel(x),mName(g,x.paidBy,false),g.name].join(' ')); if(n.split(' ').every(w=>hay.includes(w))) out.push({g,x}); }); });
+  return out.sort((a,b)=>(b.x.date||'').localeCompare(a.x.date||'')).slice(0,60);
+}
+function searchList(q){
+  const r=searchResults(q);
+  if(!norm(q)) return '<div class="hint" style="text-align:center;padding:12px">Search by what it was, who paid, the type or the group.</div>';
+  if(!r.length) return '<div class="hint" style="text-align:center;padding:12px">Nothing matches "'+esc(q)+'"</div>';
+  const tot=r.reduce((a,{x})=>a+(x.base||0),0), cur=r[0].g.currency, one=r.every(({g})=>g.currency===cur);
+  return '<div class="hint">'+r.length+' found'+(one?' · '+fmt(tot,cur)+' in total':'')+'</div><div class="list">'+r.map(({g,x})=>'<button class="item" data-a="srOpen" data-g="'+esc(g.id)+'" data-e="'+esc(x.id)+'">'+avatar(g,x.paidBy,'lg')+'<span class="t"><b>'+esc(x.desc)+'</b><span><span class="g" style="background:'+(g.colour||COLOURS[0])+'">'+esc(g.name)+'</span>'+esc(dLong(x.date))+'</span></span><span class="a">'+fmt(x.base,g.currency)+'</span></button>').join('')+'</div>';
+}
+function sheetSearch(){
+  return head('Search')+'<div class="f"><label class="sr" for="s-q">Search</label><input class="inp" id="s-q" data-search="1" placeholder="e.g. taxi, Sam, dinner" value="'+esc(S.sheet.data.q||'')+'" data-autofocus autocomplete="off"></div><div class="srch" id="s-res">'+searchList(S.sheet.data.q||'')+'</div>';
 }
 function sheetPayInfo(){
   const g=G(S.gid), m=mem(g,S.sheet.data.mid)||{};
@@ -948,17 +1026,17 @@ document.addEventListener('click',e=>{
     case 'mDel': S.form.members.splice(Number(t.dataset.i),1); renderSheet(); break;
     case 'saveGroup': saveGroup(); break;
     case 'delGroup': { const gid=S.form.id; confirmBox('Delete this group?','All its expenses and payments go too. This can\'t be undone.','Delete',()=>deleteGroup(gid)); break; }
-    case 'payer': S.form.paidBy=t.dataset.m; renderSheet(); break;
-    case 'mode': S.form.mode=t.dataset.m; renderSheet(); break;
-    case 'inc': S.form.inc[t.dataset.m]=!S.form.inc[t.dataset.m]; renderSheet(); break;
-    case 'shr': { const m=t.dataset.m; S.form.shares[m]=Math.max(0,(Number(S.form.shares[m])||0)+Number(t.dataset.d)); renderSheet(); break; }
+    case 'payer': S.form.touchedSplit=true; S.form.paidBy=t.dataset.m; renderSheet(); break;
+    case 'mode': S.form.touchedSplit=true; S.form.mode=t.dataset.m; renderSheet(); break;
+    case 'inc': S.form.touchedSplit=true; S.form.inc[t.dataset.m]=!S.form.inc[t.dataset.m]; renderSheet(); break;
+    case 'shr': { S.form.touchedSplit=true; const m=t.dataset.m; S.form.shares[m]=Math.max(0,(Number(S.form.shares[m])||0)+Number(t.dataset.d)); renderSheet(); break; }
     case 'cat': { const f=S.form; if(t.dataset.c==='meal'&&f.cat!=='meal'){ const e=effCat(f); f.meal=e.cat==='meal'?e.meal:'other'; } f.cat=t.dataset.c; document.getElementById('catBox').innerHTML=catChips(f); break; }
     case 'meal': { const f=S.form; f.cat='meal'; f.meal=t.dataset.c; document.getElementById('catBox').innerHTML=catChips(f); break; }
     case 'rmPhoto': S.form.photoId=null; renderSheet(); break;
     case 'saveExp': saveExpense(); break;
     case 'toggleSplit': S.form.showSplit=!S.form.showSplit; renderSheet(); break;
     case 'toggleNote': S.form.showNote=!S.form.showNote; renderSheet(); { const n=document.getElementById('e-note'); if(n) n.focus(); } break;
-    case 'delExp': { const f=S.form; confirmBox('Delete this expense?','"'+f.desc+'" comes off everyone\'s balance.','Delete',async()=>{ const x=(S.exp[f.gid]||[]).find(e=>e.id===f.id); const ok=await write(()=>S.db.doc('groups/'+f.gid+'/expenses/'+f.id).delete()); if(ok){ closeSheet(); toast('Deleted'); if(x&&x.photoId&&S.assets){ try{ await S.assets.delete(x.photoId); }catch(e){} } } }); break; }
+    case 'delExp': { const f=S.form; const x=(S.exp[f.gid]||[]).find(e=>e.id===f.id); if(x) softDelete('groups/'+f.gid+'/expenses/'+x.id,x,'"'+x.desc+'" deleted',x.photoId); break; }
     case 'exp': openSheet('detail',{id:t.dataset.e}); break;
     case 'editExp': { const x=(S.exp[g.id]||[]).find(e=>e.id===S.sheet.data.id); if(x) newExpenseForm(g.id,x); break; }
     case 'nmToggle': { const x=(S.exp[g.id]||[]).find(e=>e.id===S.sheet.data.id); const me=myMid(g); if(x) setNotMine(x,me,!(x.notMine&&x.notMine[me])).then(ok=>{ if(ok){ toast('Updated'); renderSheet(); } }); break; }
@@ -967,7 +1045,11 @@ document.addEventListener('click',e=>{
     case 'markPaid': { const c=calcGroup(g), tr=c.transfers[Number(t.dataset.i)]; if(tr) confirmBox('Mark as paid?',mName(g,tr.from)+' '+(tr.from===myMid(g)?'paid':'paid')+' '+mName(g,tr.to)+' '+fmt(tr.amount,g.currency)+'.','Yes, paid',()=>addPayment(g,tr.from,tr.to,tr.amount)); break; }
     case 'recordPay': openSheet('pay',{}); break;
     case 'savePay': savePay(); break;
-    case 'delPay': { const pid=t.dataset.p; confirmBox('Remove this payment?','It goes back on the balances.','Remove',async()=>{ const ok=await write(()=>S.db.doc('groups/'+g.id+'/payments/'+pid).delete()); if(ok){ closeSheet(); toast('Removed'); } }); break; }
+    case 'delPay': { const p=(S.pay[g.id]||[]).find(x=>x.id===t.dataset.p); if(p) softDelete('groups/'+g.id+'/payments/'+p.id,p,'Payment removed'); break; }
+    case 'undo': { const u=S.undo; S.undo=null; document.getElementById('toast').innerHTML=''; if(u){ clearTimeout(u.timer); write(()=>S.db.doc(u.path).set(u.body)).then(ok=>{ if(ok) toast('Back again',true); }); } break; }
+    case 'search': openSheet('search',{q:''}); break;
+    case 'srOpen': { closeSheet(); go(t.dataset.g); setTimeout(()=>openSheet('detail',{id:t.dataset.e}),330); break; }
+    case 'partyClose': endParty(); break;
     case 'payInfo': openSheet('payInfo',{mid:t.dataset.m}); break;
     case 'copyPay': { const m=mem(g,S.sheet.data.mid); if(m) copyText(m.pay||''); break; }
     case 'copyLink': copyText(inviteLink(g)); break;
@@ -975,9 +1057,11 @@ document.addEventListener('click',e=>{
   }
 });
 document.addEventListener('input',e=>{
-  const t=e.target; if(!S.form) return;
-  if(t.dataset.f){ S.form[t.dataset.f]=t.value; if(t.dataset.f==='currency' && S.sheet.kind==='expense'){ const g=G(S.form.gid); S.form.rate=t.value!==g.currency?rateFor(g,t.value):''; renderSheet(); return; } if(t.dataset.f==='currency'&&S.sheet.kind==='group'){ const g=S.form.id&&G(S.form.id); if(g&&t.value!==g.currency){ const r=g.rates&&g.rates[t.value]; S.form.convRate=r?String(+(1/r).toFixed(6)):''; } renderSheet(); return; } updatePreview(); }
-  else if(t.dataset.ex){ S.form.exact[t.dataset.ex]=t.value; updatePreview(); }
+  const t=e.target;
+  if(t.dataset.search){ S.sheet.data.q=t.value; const r=document.getElementById('s-res'); if(r) r.innerHTML=searchList(t.value); return; }
+  if(!S.form) return;
+  if(t.dataset.f){ S.form[t.dataset.f]=t.value; if(t.dataset.f==='currency' && S.sheet.kind==='expense'){ const g=G(S.form.gid); S.form.rate=t.value!==g.currency?rateFor(g,t.value):''; renderSheet(); return; } if(t.dataset.f==='currency'&&S.sheet.kind==='group'){ const g=S.form.id&&G(S.form.id); if(g&&t.value!==g.currency){ const r=g.rates&&g.rates[t.value]; S.form.convRate=r?String(+(1/r).toFixed(6)):''; } renderSheet(); return; } if(t.dataset.f==='desc' && S.sheet.kind==='expense'){ clearTimeout(applyPrev._t); applyPrev._t=setTimeout(applyPrev,250); } updatePreview(); }
+  else if(t.dataset.ex){ S.form.touchedSplit=true; S.form.exact[t.dataset.ex]=t.value; updatePreview(); }
   else if(t.dataset.m!=null && t.tagName==='INPUT'){ S.form.members[Number(t.dataset.m)].name=t.value; }
   else if(t.dataset.pay!=null){ S.form.members[Number(t.dataset.pay)].pay=t.value; }
 });

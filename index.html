@@ -416,7 +416,7 @@ function renderHome(app){
     mine.forEach(g=>{
       const c=calcGroup(g), v=c.bal[myMid(g)]||0;
       const lab2=v>0?'you get back':v<0?'you owe':'all square';
-      h+='<button class="grow-row" data-a="open" data-g="'+esc(g.id)+'"><span class="n">'+esc(g.name)+'</span><span class="v '+sign(v)+'">'+(v>0?'+':v<0?'-':'')+fmt(Math.abs(v),g.currency)+'</span><span class="s">'+(g.members||[]).length+' people · '+fmt(c.spent,g.currency)+' spent</span><span class="s r">'+lab2+'</span></button>';
+      h+='<button class="grow-row" data-a="open" data-g="'+esc(g.id)+'"><span class="n">'+esc(g.name)+'</span><span class="v '+sign(v)+'">'+(v>0?'+':v<0?'-':'')+fmt(Math.abs(v),g.currency)+'</span><span class="s">'+(dateRange(g)?esc(dateRange(g)):(g.members||[]).length+' people')+' · '+fmt(c.spent,g.currency)+' spent</span><span class="s r">'+lab2+'</span></button>';
     });
     h+='</div>';
   }
@@ -438,7 +438,7 @@ function renderGroup(app,g){
   if(!me && canEdit()) h+='<div class="banner" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span>You\'re not in this group yet.</span><button class="btn sm primary" data-a="join">Join</button></div>';
   const v=me?(c.bal[me]||0):0;
   const fc=forecast(g,c.spent);
-  h+='<div class="gtop"><h1 class="h1">'+esc(g.name)+' <span class="muted" style="font-weight:400">· '+(g.members||[]).length+' people</span></h1><span class="big">'+cnt('spent-'+g.id,c.spent,g.currency)+'</span><span class="sub">spent'+(me?(v>0?' · you get back <span class="pos">'+cnt('me-'+g.id,v,g.currency)+'</span>':v<0?' · you owe <span class="neg">'+cnt('me-'+g.id,-v,g.currency)+'</span>':" · you're all square"):'')+'</span>'+(fc?'<span class="sub">'+fc+'</span>':'')+'</div>';
+  h+='<div class="gtop"><h1 class="h1">'+esc(g.name)+' <span class="muted" style="font-weight:400">· '+(g.members||[]).length+' people'+(dateRange(g)?' · '+esc(dateRange(g)):'')+'</span></h1><span class="big">'+cnt('spent-'+g.id,c.spent,g.currency)+'</span><span class="sub">spent'+(me?(v>0?' · you get back <span class="pos">'+cnt('me-'+g.id,v,g.currency)+'</span>':v<0?' · you owe <span class="neg">'+cnt('me-'+g.id,-v,g.currency)+'</span>':" · you're all square"):'')+'</span>'+(fc?'<span class="sub">'+fc+'</span>':'')+'</div>';
   h+='<div class="people">';
   (g.members||[]).forEach(m=>{ const b=c.bal[m.id]||0; h+='<div class="person"><span>'+esc(m.id===me?'You':m.name)+'</span><span class="num '+sign(b)+'">'+(b>0?'+':b<0?'-':'')+fmt(Math.abs(b),g.currency)+'</span></div>'; });
   h+='</div>';
@@ -452,13 +452,20 @@ function renderGroup(app,g){
   if(canEdit()) h+='<div class="dock"><div class="in"><button class="btn grow" data-a="settleTab">Settle up</button><button class="btn primary" style="flex:1.4" data-a="addExp">Add expense</button></div></div>';
   app.innerHTML=h;
 }
+function dateRange(g){
+  const a=g.startDate, b=g.endDate; if(!a&&!b) return '';
+  const f=d=>{ const x=pd(d); return ord(x.getDate())+' '+x.toLocaleDateString('en-GB',{month:'short'}); };
+  if(a&&b) return a===b?f(a):f(a)+' - '+f(b);
+  return a?'from '+f(a):'until '+f(b);
+}
 function forecast(g,spent){
-  if(!g.endDate) return '';
-  const ex=S.exp[g.id]||[]; if(!ex.length) return 'Ends '+esc(dLong(g.endDate));
-  const t=today(); if(t>g.endDate) return '';
-  const first=ex.reduce((a,x)=>x.date&&x.date<a?x.date:a, t);
+  const t=today(), ex=S.exp[g.id]||[];
+  if(g.startDate && t<g.startDate){ const n=dDiff(t,g.startDate); return n===1?'Starts tomorrow':'Starts in '+n+' days'; }
+  if(!g.endDate || t>g.endDate) return '';
+  if(!ex.length) return g.endDate===t?'Last day today':'Ends '+esc(dLong(g.endDate));
+  const first=g.startDate||ex.reduce((a,x)=>x.date&&x.date<a?x.date:a, t);
   const elapsed=Math.max(1,dDiff(first,t)+1), total=Math.max(elapsed,dDiff(first,g.endDate)+1);
-  if(elapsed<2) return 'Ends '+esc(dLong(g.endDate));
+  if(elapsed<2||total<=elapsed) return g.endDate===t?'Last day today':'Ends '+esc(dLong(g.endDate));
   const proj=Math.round(spent/elapsed*total);
   return 'At this rate, about '+fmt(proj,g.currency)+' by '+esc(dLong(g.endDate));
 }
@@ -578,7 +585,7 @@ function sheetGroup(){
   if(hasMoney && f.currency!==f.oldCurrency){
     h+='<div class="f"><label for="g-rate">Exchange rate: 1 '+esc(f.oldCurrency)+' = how many '+esc(f.currency)+'?</label><input class="inp" id="g-rate" data-f="convRate" inputmode="decimal" value="'+esc(f.convRate)+'" placeholder="e.g. 1.27"><div class="hint">Everything in this group switches to '+esc(f.currency)+'. Anything originally paid in '+esc(f.currency)+' goes back to its exact amount, and everything else is converted at this rate.</div></div>';
   }
-  h+='<div class="f"><label for="g-end">End date (optional)</label><input class="inp" type="date" id="g-end" data-f="endDate" value="'+esc(f.endDate)+'"></div>';
+  h+='<div class="f"><span class="lbl">Trip dates (optional)</span><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px"><div class="f"><label for="g-start" class="sr">From</label><span class="hint" style="min-height:0">From</span><input class="inp" type="date" id="g-start" data-f="startDate" value="'+esc(f.startDate)+'"></div><div class="f"><label for="g-end" class="sr">To</label><span class="hint" style="min-height:0">To</span><input class="inp" type="date" id="g-end" data-f="endDate" value="'+esc(f.endDate)+'"></div></div></div>';
   h+='<div class="f"><span class="lbl">Who\'s in?</span><div>';
   f.members.forEach((m,i)=>{
     const isMe=m.uid&&m.uid===S.uid, used=!isNew && memberUsed(f.id,m.id);
@@ -598,11 +605,11 @@ function memberUsed(gid,mid){
   return (S.exp[gid]||[]).some(x=>x.paidBy===mid||(x.shares&&x.shares[mid]!=null)) || (S.pay[gid]||[]).some(p=>p.from===mid||p.to===mid);
 }
 function newGroupForm(){
-  S.form={id:null,name:'',colour:COLOURS[Object.keys(S.groups).length%COLOURS.length],currency:'GBP',budget:'',endDate:'',members:[{id:rid('m'),name:S.profileName?S.profileName.split(' ')[0]:'',uid:S.uid||null},{id:rid('m'),name:'',uid:null}]};
+  S.form={id:null,name:'',colour:COLOURS[Object.keys(S.groups).length%COLOURS.length],currency:'GBP',budget:'',startDate:'',endDate:'',members:[{id:rid('m'),name:S.profileName?S.profileName.split(' ')[0]:'',uid:S.uid||null},{id:rid('m'),name:'',uid:null}]};
   openSheet('group');
 }
 function editGroupForm(g){
-  S.form={id:g.id,name:g.name,colour:g.colour||COLOURS[0],currency:g.currency,oldCurrency:g.currency,convRate:'',budget:g.budget?String(g.budget/100):'',endDate:g.endDate||'',members:(g.members||[]).map(m=>Object.assign({},m))};
+  S.form={id:g.id,name:g.name,colour:g.colour||COLOURS[0],currency:g.currency,oldCurrency:g.currency,convRate:'',budget:g.budget?String(g.budget/100):'',startDate:g.startDate||'',endDate:g.endDate||'',members:(g.members||[]).map(m=>Object.assign({},m))};
   openSheet('group');
 }
 async function saveGroup(){
@@ -613,7 +620,8 @@ async function saveGroup(){
   members.forEach(m=>{ if(!m.name) m.name='Me'; });
   if(!members.length){ err.textContent='Add at least one person.'; return; }
   const clean=members.map(m=>{ const o={id:m.id,name:m.name.slice(0,30),uid:m.uid||null}; if(m.pay) o.pay=String(m.pay).slice(0,300); return o; });
-  const body={name:name.slice(0,60),colour:f.colour,currency:f.currency,budget:0,endDate:f.endDate||'',members:clean,touchedAt:Date.now()};
+  if(f.startDate&&f.endDate&&f.endDate<f.startDate){ err.textContent='The trip has to end after it starts.'; return; }
+  const body={name:name.slice(0,60),colour:f.colour,currency:f.currency,budget:0,startDate:f.startDate||'',endDate:f.endDate||'',members:clean,touchedAt:Date.now()};
   if(!f.id){
     const id=rid('k');
     body.createdAt=Date.now(); body.createdBy=S.uid||null; body.rates={};

@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Kitty">
-<meta name="theme-color" content="#FFF4D6">
+<meta name="theme-color" content="#F7F6F3">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -207,7 +207,7 @@ const CAT_WORDS = {
   groceries:['shop','shopping','supermarket','groceries','tesco','sainsburys','waitrose','aldi','lidl','market','walmart','target','costco'],
   tickets:['ticket','tickets','museum','gig','show','entry','tour','concert','cinema','tickets','gallery','match']
 };
-const CAT_SVG = '<svg viewBox="0 0 100 100" width="SZ" height="SZ" aria-hidden="true"><g  stroke="#1A1A1A" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"><circle cx="50" cy="13" r="9" fill="#FFC93C"></circle><path d="M22 46 C21 36 22 24 25 17 C27 13 31 13 34 16 L43 26 H57 L66 16 C69 13 73 13 75 17 C78 24 79 36 78 46 C83 53 85 60 85 66 C85 81 70 90 50 90 C30 90 15 81 15 66 C15 60 17 53 22 46 Z" fill="#FFF4D6"></path><path d="M43 35 H57"></path><ellipse cx="27" cy="71" rx="5.5" ry="3.6" fill="#F7A1AE" stroke="none"></ellipse><ellipse cx="73" cy="71" rx="5.5" ry="3.6" fill="#F7A1AE" stroke="none"></ellipse><circle cx="37" cy="62" r="7" fill="#1A1A1A" stroke="none"></circle><circle cx="63" cy="62" r="7" fill="#1A1A1A" stroke="none"></circle><circle cx="39.5" cy="59.5" r="2.4" fill="#fff" stroke="none"></circle><circle cx="65.5" cy="59.5" r="2.4" fill="#fff" stroke="none"></circle><path d="M46 72 Q50 75.5 54 72" fill="none" stroke-width="3.6"></path></g></svg>';
+const CAT_SVG = '<svg viewBox="0 0 100 100" width="SZ" height="SZ" aria-hidden="true"><g  stroke-linejoin="round" stroke-linecap="round"><circle cx="50" cy="12" r="8" fill="#1F4FD1"></circle><path d="M22 46 C21 36 22 24 25 17 C27 13 31 13 34 16 L43 26 H57 L66 16 C69 13 73 13 75 17 C78 24 79 36 78 46 C83 53 85 60 85 66 C85 81 70 90 50 90 C30 90 15 81 15 66 C15 60 17 53 22 46 Z" fill="none" stroke="#111111" stroke-width="3"></path><path d="M43 35 H57" stroke="#111111" stroke-width="3"></path><circle cx="38" cy="62" r="5.5" fill="#111111"></circle><circle cx="62" cy="62" r="5.5" fill="#111111"></circle><path d="M46 71 Q50 74.5 54 71" fill="none" stroke="#111111" stroke-width="2.6"></path></g></svg>';
 const cat = (sz,cls) => '<span class="catart '+(cls||'')+'">'+CAT_SVG.replace(/SZ/g,sz)+'</span>';
 const IC = {
   back:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
@@ -382,7 +382,7 @@ function countUp(){
     (function step(t){ const q=Math.min(1,(t-t0)/d), e=1-Math.pow(1-q,3); el.textContent=fmt(Math.round(from+(v-from)*e),cur); if(q<1&&el.isConnected) requestAnimationFrame(step); })(t0);
   });
 }
-function setPage(c){ document.body.style.background=c; document.documentElement.style.setProperty('--page',c); const tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content=c.indexOf('var(')===0?'#FFF4D6':c; }
+function setPage(c){ document.body.style.background=c; document.documentElement.style.setProperty('--page',c); const tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content=c.indexOf('var(')===0?'#F7F6F3':c; }
 function render(){
   const app=document.getElementById('app');
   const nav=S.nav; S.nav=null;

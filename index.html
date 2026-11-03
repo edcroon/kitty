@@ -538,6 +538,30 @@ function renderTimeline(g){
   });
   return '<div class="list">'+h+'</div>';
 }
+function working(g,c){
+  const open=!!S.showWorking;
+  let h='<button class="linkbtn" style="margin:16px 0 0;font-size:14px;display:block" data-a="working" aria-expanded="'+open+'">'+(open?'Hide the working':'How did we get this?')+'</button>';
+  if(!open) return h;
+  const me=myMid(g), ex=S.exp[g.id]||[], pays=S.pay[g.id]||[];
+  const line=(label,v,cls)=>'<span class="l1" style="font-size:14px;padding:3px 0"><b style="font-weight:400" class="muted">'+label+'</b><i aria-hidden="true"></i><span class="num '+(cls||'')+'">'+v+'</span></span>';
+  const money=v=>fmt(Math.abs(v),g.currency);
+  h+='<div class="list" style="margin-top:8px">';
+  (g.members||[]).forEach(m=>{
+    const paid=ex.filter(x=>x.paidBy===m.id).reduce((a,x)=>a+(x.base||0),0);
+    const share=ex.reduce((a,x)=>a+((x.shares&&x.shares[m.id])||0),0);
+    const sent=pays.filter(p=>p.from===m.id).reduce((a,p)=>a+p.amount,0);
+    const got=pays.filter(p=>p.to===m.id).reduce((a,p)=>a+p.amount,0);
+    const bal=c.bal[m.id]||0;
+    h+='<div class="item" style="cursor:default;gap:4px"><span style="font-size:16px;font-weight:500;margin-bottom:2px">'+esc(m.id===me?'You':m.name)+'</span>';
+    h+=line('Paid for things',money(paid));
+    h+=line('Share of everything','- '+money(share));
+    if(sent) h+=line('Paid back to others','+ '+money(sent));
+    if(got) h+=line('Received from others','- '+money(got));
+    h+='<span class="l1" style="font-size:14px;padding:5px 0 0;border-top:1px solid var(--line);margin-top:3px"><b style="font-weight:500">'+(bal>0?'Gets back':bal<0?'Owes':'All square')+'</b><i aria-hidden="true"></i><span class="num '+sign(bal)+'">'+money(bal)+'</span></span></div>';
+  });
+  h+='</div><p class="hint" style="margin-top:10px;line-height:1.45">Then Kitty matches the people who owe with the people who are owed, using as few payments as possible. That\'s why someone might pay a person they never actually shared an expense with - it all comes out the same.</p>';
+  return h;
+}
 function renderSettle(g,c){
   const me=myMid(g);
   let h='';
@@ -546,11 +570,12 @@ function renderSettle(g,c){
     h+='<div class="list">';
     c.transfers.forEach((t,i)=>{
       const mine=t.from===me||t.to===me;
-      h+='<div class="xfer"><div class="t">'+esc(mName(g,t.from))+' '+(t.from===me?'pay':'pays')+' '+esc(mName(g,t.to))+'<span class="num">'+fmt(t.amount,g.currency)+'</span>'+((mem(g,t.to)||{}).pay?'<button class="linkbtn" data-a="payInfo" data-m="'+esc(t.to)+'">'+esc(mName(g,t.to,false))+"'s bank details</button>":'')+'</div>'+(canEdit()?'<button class="btn sm'+(mine?' primary':'')+'" data-a="markPaid" data-i="'+i+'">Paid</button>':'')+'</div>';
+      h+='<div class="xfer"><div class="t">'+esc(mName(g,t.from))+' '+(t.from===me?'pay':'pays')+' '+(t.to===me?'you':esc(mName(g,t.to)))+'<span class="num">'+fmt(t.amount,g.currency)+'</span>'+((mem(g,t.to)||{}).pay?'<button class="linkbtn" data-a="payInfo" data-m="'+esc(t.to)+'">'+esc(mName(g,t.to,false))+"'s bank details</button>":'')+'</div>'+(canEdit()?'<button class="btn sm'+(mine?' primary':'')+'" data-a="markPaid" data-i="'+i+'">Paid</button>':'')+'</div>';
     });
     h+='</div>';
   }
-  if(canEdit()) h+='<button class="linkbtn" style="margin:14px 0 0;font-size:14px" data-a="recordPay">Record a different payment</button>';
+  if((S.exp[g.id]||[]).length) h+=working(g,c);
+  if(canEdit()) h+='<button class="linkbtn" style="margin:14px 0 0;font-size:14px;display:block" data-a="recordPay">Record a different payment</button>';
   const pays=(S.pay[g.id]||[]).slice().sort((a,b)=>(b.at||0)-(a.at||0));
   if(pays.length){
     h+='<div class="sec" style="margin-top:22px">Payments made</div><div class="list">';
@@ -1065,6 +1090,7 @@ document.addEventListener('click',e=>{
     case 'search': openSheet('search',{q:''}); break;
     case 'srOpen': { closeSheet(); go(t.dataset.g); setTimeout(()=>openSheet('detail',{id:t.dataset.e}),330); break; }
     case 'partyClose': endParty(); break;
+    case 'working': S.showWorking=!S.showWorking; render(); break;
     case 'payInfo': openSheet('payInfo',{mid:t.dataset.m}); break;
     case 'copyPay': { const m=mem(g,S.sheet.data.mid); if(m) copyText(m.pay||''); break; }
     case 'copyLink': copyText(inviteLink(g)); break;

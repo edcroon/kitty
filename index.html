@@ -61,8 +61,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .person{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line);font-size:15px}
 .person:first-child{border-top:1px solid var(--line)}
 .person .num{font-size:15px}
-.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line)}
-.tabs button{border:none;background:none;font-size:15px;color:var(--muted);padding:10px 0;margin-bottom:-1px;border-bottom:1.5px solid transparent;cursor:pointer}
+.tabs{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line)}
+.sbar{height:3px;background:var(--line);margin-top:5px}.sbar>div{height:3px;background:var(--ink);transition:width .5s cubic-bezier(.2,.8,.3,1)}
+.srow{padding:9px 0;border-bottom:1px solid var(--line)}
+.srow .l1{display:flex;align-items:baseline}.srow .l1 i{flex:1;border-bottom:1px dotted var(--muted);margin:0 8px 4px;min-width:12px}
+.srow .pc{font-size:12px;color:var(--muted);margin-right:10px;font-family:var(--mono)}
+.tabs button{border:none;background:none;font-size:15px;white-space:nowrap;color:var(--muted);padding:10px 0;margin-bottom:-1px;border-bottom:1.5px solid transparent;cursor:pointer}
 .tabs button[aria-selected=true]{color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
 .list{display:flex;flex-direction:column}
 .item{display:flex;flex-direction:column;gap:2px;padding:12px 0;border:none;border-bottom:1px solid var(--line);width:100%;background:none;text-align:left;cursor:pointer;font:inherit;color:inherit}
@@ -494,11 +498,12 @@ function renderGroup(app,g){
   h+='<div class="people">';
   (g.members||[]).forEach(m=>{ const b=c.bal[m.id]||0; h+='<div class="person"><span>'+esc(m.id===me?'You':m.name)+'</span><span class="num '+sign(b)+'">'+(b>0?'+':b<0?'-':'')+fmt(Math.abs(b),g.currency)+'</span></div>'; });
   h+='</div>';
-  const tabs=[['list','Expenses'],['timeline','Timeline'],['settle','Settle']];
+  const tabs=[['list','Expenses'],['timeline','Timeline'],['spend','Spending'],['settle','Settle']];
   h+='<div><div class="tabs" role="tablist">'+tabs.map(t=>'<button role="tab" aria-selected="'+(S.tab===t[0])+'" data-a="tab" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
   if(!loaded) h+='<p class="muted">Loading expenses...</p>';
   else if(S.tab==='list') h+=renderList(g);
   else if(S.tab==='timeline') h+=renderTimeline(g);
+  else if(S.tab==='spend') h+=renderSpending(g,c);
   else h+=renderSettle(g,c);
   h+='</div></div>';
   if(canEdit()) h+='<div class="dock"><div class="in"><button class="btn grow" data-a="settleTab">Settle up</button><button class="btn primary" style="flex:1.4" data-a="addExp">Add expense</button></div></div>';
@@ -581,6 +586,22 @@ function working(g,c){
     h+='<span class="l1" style="font-size:14px;padding:5px 0 0;border-top:1px solid var(--line);margin-top:3px"><b style="font-weight:500">'+(bal>0?'Gets back':bal<0?'Owes':'All square')+'</b><i aria-hidden="true"></i><span class="num '+sign(bal)+'">'+money(bal)+'</span></span></div>';
   });
   h+='</div><p class="hint" style="margin-top:10px;line-height:1.45">Then Kitty matches the people who owe with the people who are owed, using as few payments as possible. That\'s why someone might pay a person they never actually shared an expense with - it all comes out the same.</p>';
+  return h;
+}
+function renderSpending(g,c){
+  const ex=S.exp[g.id]||[];
+  if(!ex.length) return '<div class="empty">'+cat(64,'bob',true)+'<div class="t">Nothing spent yet</div><div class="d">Once there are expenses, you\'ll see what went where, day by day.</div></div>';
+  const tot=ex.reduce((a,x)=>a+(x.base||0),0), n=(g.members||[]).length||1;
+  const days={}; ex.forEach(x=>{ days[x.date]=(days[x.date]||0)+(x.base||0); });
+  let nDays=Object.keys(days).length;
+  if(g.startDate&&g.endDate){ const t=today(), end=t<g.endDate?(t<g.startDate?g.startDate:t):g.endDate; nDays=Math.max(1,dDiff(g.startDate,end)+1); }
+  const types={}; ex.forEach(x=>{ const k=catLabel(x); types[k]=(types[k]||0)+(x.base||0); });
+  const row=(name,v,mx,pc)=>'<div class="srow"><div class="l1"><span style="font-size:15px">'+esc(name)+'</span><i aria-hidden="true"></i>'+(pc!=null?'<span class="pc">'+pc+'%</span>':'')+'<span class="num" style="font-size:15px">'+fmt(v,g.currency)+'</span></div><div class="sbar"><div style="width:'+Math.max(1,Math.round(v/mx*100))+'%"></div></div></div>';
+  let h='<p class="muted" style="font-size:14px;margin:14px 0 4px">About <span class="num" style="color:var(--ink)">'+fmt(Math.round(tot/n),g.currency)+'</span> each · <span class="num" style="color:var(--ink)">'+fmt(Math.round(tot/Math.max(1,nDays)),g.currency)+'</span> a day</p>';
+  const dk=Object.keys(days).sort(), mxd=Math.max(...dk.map(d=>days[d]));
+  h+='<div class="sec" style="margin-top:12px">By day</div>'+dk.map(d=>row(dLong(d),days[d],mxd)).join('');
+  const tk=Object.keys(types).sort((a,b)=>types[b]-types[a]), mxt=types[tk[0]];
+  h+='<div class="sec" style="margin-top:22px">By type</div>'+tk.map(t=>row(t,types[t],mxt,Math.round(types[t]/tot*100))).join('');
   return h;
 }
 function renderSettle(g,c){

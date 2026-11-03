@@ -1100,12 +1100,13 @@ function popCat(text){
     P.eyes.style.transform='scaleY('+(1-.6*p)+')';
     raf=requestAnimationFrame(frame); };
   document.addEventListener('pointerdown',e=>{ const b=e.target.closest('.catbtn'); if(!b||e.button>0) return;
+    if(b.classList.contains('tiger')){ b.classList.remove('tiger'); b._skip=true; setTimeout(()=>b._skip=false,500); b.animate([{transform:'scale(.8)'},{transform:'scale(1.08)'},{transform:'none'}],{duration:320,easing:'ease-out'}); return; }
     b.P={coin:b.querySelector('.k-coin'),body:b.querySelector('.k-body'),eyes:b.querySelector('.k-eyes')};
     b.classList.remove('pet'); b.getAnimations({subtree:true}).forEach(a=>a.cancel());
     [b.P.coin,b.P.body,b.P.eyes].forEach(x=>x.style.transition='none');
     c=b; t0=performance.now(); p=0; b.classList.add('charging'); raf=requestAnimationFrame(frame); });
   const release=cancel=>{ if(!c) return; const b=c,P=b.P,k=Math.max(p,.22),fl=b.fl; b.fl=null; c=null; cancelAnimationFrame(raf); b.classList.remove('charging');
-    if(b.tg){ b.tg=0; clearTimeout(b._tg); b._tg=setTimeout(()=>{ b.classList.remove('tiger'); b.animate([{transform:'scale(.8)'},{transform:'scale(1.08)'},{transform:'none'}],{duration:320,easing:'ease-out'}); },6000); }
+    if(b.tg) b.tg=0;
     if(fl){ const a=fl.animate([{transform:fl.style.transform},{transform:'scale(1)'}],{duration:340,easing:'cubic-bezier(.6,0,.9,.4)',fill:'forwards'}); a.onfinish=()=>{ fl.remove(); P.coin.style.opacity=''; }; }
     const els=[P.coin,P.body,P.eyes], from=els.map(x=>x.style.transform||'none'); els.forEach(x=>{ x.style.transform=''; x.style.transition=''; });
     if(cancel){ els.forEach((x,i)=>x.animate([{transform:from[i]},{transform:'none'}],{duration:220,easing:'ease-out'})); return; }

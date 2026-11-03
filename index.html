@@ -311,10 +311,10 @@ function guessCat(desc){
   document.addEventListener('touchstart',e=>{ const r=e.target.closest('.swipe'); if(!r){ x0=null; return; } row=r; item=r.querySelector('.item'); x0=e.touches[0].clientX; y0=e.touches[0].clientY; dx=0; mode=null; },{passive:true});
   document.addEventListener('touchmove',e=>{ if(x0==null||!row) return; const mx=e.touches[0].clientX-x0, my=e.touches[0].clientY-y0;
     if(!mode){ if(Math.abs(mx)>8&&Math.abs(mx)>Math.abs(my)*1.3) mode='h'; else if(Math.abs(my)>8) mode='v'; }
-    if(mode!=='h') return; dx=Math.min(0,mx); row.classList.add('drag'); item.style.transform='translateX('+dx+'px)'; const th=Math.max(140,row.offsetWidth*0.4); row.style.setProperty('--p',String(Math.max(0,Math.min(1,(-dx-(th-50))/50)))); },{passive:true});
+    if(mode!=='h') return; dx=Math.min(0,mx); row.classList.add('drag'); item.style.transform='translateX('+dx+'px)'; const th=row.offsetWidth*0.5; row.style.setProperty('--p',String(Math.max(0,Math.min(1,(-dx-(th-70))/70)))); },{passive:true});
   document.addEventListener('touchend',()=>{ if(x0==null||!row) return; const r=row, it=item; r.classList.remove('drag');
     if(mode==='h'){ swipeBlock=Date.now();
-      if(dx<-Math.max(140,r.offsetWidth*0.4)){ r.style.setProperty('--p','1'); it.style.transform='translateX(-110%)'; const id=r.dataset.sw, g=G(S.gid), x=g&&(S.exp[g.id]||[]).find(e=>e.id===id); setTimeout(()=>{ if(x) softDelete('groups/'+g.id+'/expenses/'+x.id,x,'"'+x.desc+'" deleted',x.photoId); },180); }
+      if(-dx>=r.offsetWidth*0.5){ r.style.setProperty('--p','1'); it.style.transform='translateX(-110%)'; const id=r.dataset.sw, g=G(S.gid), x=g&&(S.exp[g.id]||[]).find(e=>e.id===id); setTimeout(()=>{ if(x) softDelete('groups/'+g.id+'/expenses/'+x.id,x,'"'+x.desc+'" deleted',x.photoId); },180); }
       else { it.style.transform=''; const p0=parseFloat(r.style.getPropertyValue('--p'))||0, t0=performance.now(); (function fade(t){ const q=Math.min(1,(t-t0)/380), e=1-Math.pow(1-q,2); r.style.setProperty('--p',String(p0*(1-e))); if(q<1) requestAnimationFrame(fade); })(t0); } }
     x0=null; row=null; item=null; mode=null; },{passive:true});
 })();

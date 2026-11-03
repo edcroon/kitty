@@ -15,8 +15,7 @@
 <script src="shim.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{--bg:#F7F6F3;--ink:#111111;--muted:#6B6862;--line:#E1DDD6;--pos:#1F4FD1;--neg:#B4430F;--warn:#B4430F;--mono:'IBM Plex Mono',ui-monospace,Menlo,monospace}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -835,6 +834,8 @@ function sheetInvite(){
 }
 function drawQR(){
   const el=document.getElementById('qr'), g=G(S.gid); if(!el||!g) return;
+  if(typeof QRCode==='undefined' && !drawQR.loading){ drawQR.loading=true; el.innerHTML='<span class="muted">Loading code...</span>'; const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'; sc.onload=()=>{ drawQR.loading=false; const e2=document.getElementById('qr'); if(e2){ e2.innerHTML=''; drawQR(); } }; sc.onerror=()=>{ drawQR.loading=false; const e2=document.getElementById('qr'); if(e2) e2.textContent='QR code unavailable - use the link below.'; }; document.head.appendChild(sc); return; }
+  if(drawQR.loading) return;
   if(typeof QRCode==='undefined'){ el.innerHTML='<span class="muted" style="font-weight:600">QR code unavailable - use the link below.</span>'; return; }
   try{ new QRCode(el,{text:inviteLink(g),width:220,height:220,colorDark:'#1A1A1A',colorLight:'#FFFFFF',correctLevel:QRCode.CorrectLevel.M}); el.title=''; }catch(e){ el.textContent='QR code unavailable - use the link below.'; }
 }
@@ -1195,6 +1196,20 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && S.sheet) closeSh
 
 boot();
 })();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  let first=!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{ try{ r.update(); }catch(e){} }).catch(()=>{});
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(first){ first=false; return; }
+    if(performance.now()<4000 && !document.querySelector('#sheet .pn')){ location.reload(); return; }
+    if(document.getElementById('kupd')) return;
+    const b=document.createElement('button'); b.id='kupd'; b.textContent='New version of Kitty - tap to update';
+    b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 12px);z-index:60;background:#111;color:#F7F6F3;border:none;border-radius:2px;padding:11px 16px;font:inherit;font-size:14px;white-space:nowrap';
+    b.onclick=()=>location.reload(); document.body.appendChild(b);
+  });
+}
 </script>
 </body>
 </html>

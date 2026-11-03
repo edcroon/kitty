@@ -46,7 +46,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .grow-row .s{font-size:12px;color:var(--muted)}
 .grow-row .s.r{text-align:right}
 .pos{color:var(--pos)}.neg{color:var(--neg)}.zero{color:var(--muted)}
-.dock{position:fixed;left:0;right:0;bottom:0;padding:12px 24px calc(env(safe-area-inset-bottom) + 14px);background:var(--bg);border-top:1px solid var(--line);z-index:10}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:12px 24px calc(env(safe-area-inset-bottom) + 14px);background:var(--bg);border-top:1px solid var(--line);z-index:10}
 .dock .in{max-width:432px;margin:0 auto;display:flex;gap:10px}
 .btn{height:52px;border-radius:2px;border:1px solid var(--ink);font-size:15px;font-weight:500;cursor:pointer;padding:0 18px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
 .btn.primary,.btn.dark{background:var(--ink);color:var(--bg)}
@@ -151,6 +151,27 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .catart{display:inline-flex;flex-shrink:0;line-height:0}
 @keyframes kBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 .bob{animation:kBob 2.8s ease-in-out infinite}
+/* cat play */
+.kcat{overflow:visible}
+.k-body,.k-eyes,.k-coin{transform-box:fill-box}
+.k-body{transform-origin:50% 100%}
+.k-eyes{transform-origin:50% 50%}
+.k-coin{transform-origin:50% 50%}
+.catbtn{border:none;background:none;padding:0;cursor:pointer;-webkit-user-select:none;user-select:none}
+.catbtn:active .k-body{transform:scale(1.06,.86)}
+.catbtn .k-body{transition:transform .08s ease-out}
+.pet .k-body{animation:kSquish .55s cubic-bezier(.3,.7,.4,1.5)}
+.pet .k-coin{animation:kCoin .85s cubic-bezier(.45,0,.6,1)}
+.pet .k-eyes,.blink .k-eyes{animation:kBlink .22s ease}
+@keyframes kSquish{0%{transform:scale(1.06,.86)}35%{transform:scale(.94,1.1)}60%{transform:scale(1.03,.97)}100%{transform:none}}
+@keyframes kCoin{0%{transform:none}22%{transform:translateY(-16px) rotate(-30deg)}55%{transform:translateY(30px) rotate(180deg);opacity:1}56%{opacity:0;transform:translateY(30px)}70%{opacity:0;transform:translateY(-12px)}100%{opacity:1;transform:none}}
+@keyframes kBlink{0%,100%{transform:none}50%{transform:scaleY(.12)}}
+#popcat{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 64px);z-index:9;pointer-events:none;display:flex;justify-content:center}
+#popcat .in{display:flex;flex-direction:row-reverse;align-items:center;gap:10px;padding-left:70px;animation:kPeek 1.7s cubic-bezier(.3,.7,.4,1.2) forwards}
+#popcat .lbl2{font-size:13px;font-weight:500;background:var(--ink);color:var(--bg);padding:4px 10px;border-radius:2px;opacity:0;animation:kFade .2s .35s forwards}
+#popcat .k-coin{animation:kCoin .85s .35s cubic-bezier(.45,0,.6,1) both}
+#popcat .k-body{animation:kSquish .55s .62s cubic-bezier(.3,.7,.4,1.5) both}
+@keyframes kPeek{0%{transform:translateY(110px)}18%{transform:translateY(-6px)}26%{transform:translateY(0)}82%{transform:translateY(0)}100%{transform:translateY(120px)}}
 /* toast */
 #toast .gone{opacity:0!important}
 #toast{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 12px);z-index:40;pointer-events:none}
@@ -212,8 +233,8 @@ const CAT_WORDS = {
   groceries:['shop','shopping','supermarket','groceries','tesco','sainsburys','waitrose','aldi','lidl','market','walmart','target','costco'],
   tickets:['ticket','tickets','museum','gig','show','entry','tour','concert','cinema','tickets','gallery','match']
 };
-const CAT_SVG = '<svg viewBox="0 0 100 100" width="SZ" height="SZ" aria-hidden="true"><g  stroke-linejoin="round" stroke-linecap="round"><circle cx="50" cy="12" r="8" fill="#1F4FD1"></circle><path d="M22 46 C21 36 22 24 25 17 C27 13 31 13 34 16 L43 26 H57 L66 16 C69 13 73 13 75 17 C78 24 79 36 78 46 C83 53 85 60 85 66 C85 81 70 90 50 90 C30 90 15 81 15 66 C15 60 17 53 22 46 Z" fill="none" stroke="#111111" stroke-width="3"></path><path d="M43 35 H57" stroke="#111111" stroke-width="3"></path><circle cx="38" cy="62" r="5.5" fill="#111111"></circle><circle cx="62" cy="62" r="5.5" fill="#111111"></circle><path d="M46 71 Q50 74.5 54 71" fill="none" stroke="#111111" stroke-width="2.6"></path></g></svg>';
-const cat = (sz,cls) => '<span class="catart '+(cls||'')+'">'+CAT_SVG.replace(/SZ/g,sz)+'</span>';
+const CAT_SVG = '<svg viewBox="0 0 100 100" width="SZ" height="SZ" aria-hidden="true" class="kcat"><g stroke-linejoin="round" stroke-linecap="round"><circle class="k-coin" cx="50" cy="12" r="8" fill="#1F4FD1"></circle><g class="k-body"><path d="M22 46 C21 36 22 24 25 17 C27 13 31 13 34 16 L43 26 H57 L66 16 C69 13 73 13 75 17 C78 24 79 36 78 46 C83 53 85 60 85 66 C85 81 70 90 50 90 C30 90 15 81 15 66 C15 60 17 53 22 46 Z" fill="#F7F6F3" stroke="#111111" stroke-width="3"></path><path d="M43 35 H57" stroke="#111111" stroke-width="3" fill="none"></path><g class="k-eyes"><circle cx="38" cy="62" r="5.5" fill="#111111"></circle><circle cx="62" cy="62" r="5.5" fill="#111111"></circle></g><path class="k-mouth" d="M46 71 Q50 74.5 54 71" fill="none" stroke="#111111" stroke-width="2.6"></path></g></g></svg>';
+const cat = (sz,cls,press) => press?'<button class="catart catbtn '+(cls||'')+'" data-a="pet" aria-label="Kitty">'+CAT_SVG.replace(/SZ/g,sz)+'</button>':'<span class="catart '+(cls||'')+'">'+CAT_SVG.replace(/SZ/g,sz)+'</span>';
 const IC = {
   back:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
   qr:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-7"/></svg>',
@@ -424,7 +445,7 @@ function render(){
   if(S.view==='group' && S.gid && G(S.gid)) renderGroup(app,G(S.gid)); else renderHome(app);
 }
 
-function brand(){ return '<div class="brand">'+cat(26)+'<span>Kitty</span></div>'; }
+function brand(){ return '<div class="brand">'+cat(28,'',true)+'<span>Kitty</span></div>'; }
 function sign(v){ return v>0?'pos':v<0?'neg':'zero'; }
 function renderHome(app){
   setPage('var(--bg)');
@@ -441,7 +462,7 @@ function renderHome(app){
   h+='<div class="banner">Test version - everything is saved on this phone only.</div>';
   h+='<div class="hero"><span class="lab">'+lab+'</span><span class="big'+bigCls+'">'+bigHtml+'</span><span class="sub">'+sub+'</span></div>';
   if(!mine.length){
-    h+='<div class="empty">'+cat(72,'bob')+'<div class="t">No groups yet</div><div class="d">Start one for a trip, the flat or a night out, then add your friends.</div>'+(canEdit()?'<button class="btn primary" data-a="newGroup" style="margin-top:8px">'+IC.plus+'Start a group</button>':'')+'</div>';
+    h+='<div class="empty">'+cat(72,'bob',true)+'<div class="t">No groups yet</div><div class="d">Start one for a trip, the flat or a night out, then add your friends.</div>'+(canEdit()?'<button class="btn primary" data-a="newGroup" style="margin-top:8px">'+IC.plus+'Start a group</button>':'')+'</div>';
   } else {
     h+='<div class="sec">Groups</div><div class="rows">';
     mine.forEach(g=>{
@@ -520,13 +541,13 @@ function expRow(g,x,cls){
 }
 function renderList(g){
   const ex=expensesOf(g.id), sw=canEdit();
-  if(!ex.length) return '<div class="empty">'+cat(64,'bob')+'<div class="t">Nothing in yet</div><div class="d">Add the first expense and Kitty works out who owes what.</div></div>';
+  if(!ex.length) return '<div class="empty">'+cat(64,'bob',true)+'<div class="t">Nothing in yet</div><div class="d">Add the first expense and Kitty works out who owes what.</div></div>';
   const seen=S.seen[g.id]; S.seen[g.id]=new Set(ex.map(x=>x.id));
   return '<div class="list">'+ex.map(x=>{ const r=expRow(g,x,(seen&&!seen.has(x.id))?' new':''); return sw?'<div class="swipe" data-sw="'+esc(x.id)+'"><span class="del" aria-hidden="true">Delete</span>'+r+'</div>':r; }).join('')+'</div>'+(sw&&ex.length?'<p class="hint" style="margin-top:8px">Swipe an expense left to delete it.</p>':'');
 }
 function renderTimeline(g){
   const ex=expensesOf(g.id);
-  if(!ex.length) return '<div class="empty">'+cat(64,'bob')+'<div class="t">Your trip, day by day</div><div class="d">Add expenses with photos and notes and they show up here.</div></div>';
+  if(!ex.length) return '<div class="empty">'+cat(64,'bob',true)+'<div class="t">Your trip, day by day</div><div class="d">Add expenses with photos and notes and they show up here.</div></div>';
   const days={}; ex.forEach(x=>{ (days[x.date]=days[x.date]||[]).push(x); });
   let h='';
   Object.keys(days).sort().reverse().forEach(d=>{
@@ -565,7 +586,7 @@ function working(g,c){
 function renderSettle(g,c){
   const me=myMid(g);
   let h='';
-  if(!c.transfers.length) h+='<div class="empty">'+cat(64,'bob')+'<div class="t">All square</div><div class="d">Nobody owes anybody.</div></div>';
+  if(!c.transfers.length) h+='<div class="empty">'+cat(64,'bob',true)+'<div class="t">All square</div><div class="d">Nobody owes anybody.</div></div>';
   else {
     h+='<div class="list">';
     c.transfers.forEach((t,i)=>{
@@ -911,7 +932,7 @@ async function saveExpense(){
   const id=f.id||rid('e');
   const ok=await write(()=>S.db.doc('groups/'+g.id+'/expenses/'+id).set(body));
   if(!ok) return;
-  closeSheet(); toast(f.id?'Saved':'Added to '+g.name,true);
+  closeSheet(); if(f.id) toast('Saved',true); else setTimeout(()=>popCat('Added'),260);
   const upd={touchedAt:Date.now()}; if(r.foreign) upd.rates={[f.currency]:r.rate};
   write(()=>S.db.doc('groups/'+g.id).update(upd));
 }
@@ -1003,6 +1024,14 @@ async function softDelete(path,item,msg,photoId){
   u.timer=setTimeout(()=>{ if(S.undo===u){ S.undo=null; } u.finish(); },6000);
   S.undo=u; toast(msg,false,'Undo',6000);
 }
+function popCat(text){
+  let el=document.getElementById('popcat'); if(el) el.remove();
+  if(!document.querySelector('.dock')){ toast(text,true); return; }
+  el=document.createElement('div'); el.id='popcat'; el.setAttribute('role','status');
+  el.innerHTML='<div class="in"><span class="lbl2">'+esc(text)+'</span>'+cat(88)+'</div>';
+  document.body.appendChild(el); clearTimeout(popCat._t); popCat._t=setTimeout(()=>{ el.remove(); },1800);
+}
+setInterval(()=>{ const cs=[...document.querySelectorAll('.catbtn:not(.pet)')]; if(!cs.length||document.hidden) return; const c=cs[Math.floor(Math.random()*cs.length)]; c.classList.add('blink'); setTimeout(()=>c.classList.remove('blink'),260); },4200);
 function party(g){
   const el=document.createElement('div'); el.id='party'; el.setAttribute('data-a','partyClose'); el.setAttribute('role','status');
   const cols=['#FF7A45','#FFC93C','#F7A1AE','#2563EB','#047857'];
@@ -1090,6 +1119,7 @@ document.addEventListener('click',e=>{
     case 'search': openSheet('search',{q:''}); break;
     case 'srOpen': { closeSheet(); go(t.dataset.g); setTimeout(()=>openSheet('detail',{id:t.dataset.e}),330); break; }
     case 'partyClose': endParty(); break;
+    case 'pet': { t.classList.remove('pet'); void t.offsetWidth; t.classList.add('pet'); clearTimeout(t._p); t._p=setTimeout(()=>t.classList.remove('pet'),900); break; }
     case 'working': S.showWorking=!S.showWorking; render(); break;
     case 'payInfo': openSheet('payInfo',{mid:t.dataset.m}); break;
     case 'copyPay': { const m=mem(g,S.sheet.data.mid); if(m) copyText(m.pay||''); break; }

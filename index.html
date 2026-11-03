@@ -127,6 +127,18 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .tick svg{width:14px;height:14px}
 .x{width:44px;height:44px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
 .qty{width:32px;height:32px;border:1px solid var(--line);border-radius:2px;background:transparent;cursor:pointer;font-size:16px;padding:0}
+.cal{border-bottom:1px solid var(--line);padding:4px 0 12px}
+.calhd{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:500;margin:0 -12px}
+.calg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:2px}
+.cw{font-size:11px;letter-spacing:.06em;color:var(--muted);text-align:center;padding:4px 0 6px}
+.cd{height:40px;border:none;background:none;font-family:var(--mono);font-size:14px;cursor:pointer;padding:0;color:var(--ink)}
+.cd.tdy{text-decoration:underline;text-underline-offset:4px}
+.cd.inr{background:#E9E4DA}
+.cd.st{background:linear-gradient(90deg,transparent 50%,#E9E4DA 50%)}
+.cd.en{background:linear-gradient(90deg,#E9E4DA 50%,transparent 50%)}
+.cd.sel{color:var(--bg);position:relative;z-index:0}
+.cd.sel::before{content:'';position:absolute;inset:2px;background:var(--ink);z-index:-1}
+.calft{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding-top:10px}
 .photo{display:block;width:100%;max-height:300px;object-fit:cover}
 .qr{border-top:1px solid var(--ink);border-bottom:1px solid var(--line);padding:22px 0;display:flex;justify-content:center}
 .qr img,.qr canvas{display:block}
@@ -684,7 +696,7 @@ function sheetGroup(){
   if(hasMoney && f.currency!==f.oldCurrency){
     h+='<div class="f"><label for="g-rate">Exchange rate: 1 '+esc(f.oldCurrency)+' = how many '+esc(f.currency)+'?</label><input class="inp" id="g-rate" data-f="convRate" inputmode="decimal" value="'+esc(f.convRate)+'" placeholder="e.g. 1.27"><div class="hint">Everything in this group switches to '+esc(f.currency)+'. Anything originally paid in '+esc(f.currency)+' goes back to its exact amount, and everything else is converted at this rate.</div></div>';
   }
-  h+='<div class="f"><span class="lbl">Trip dates (optional)</span><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px"><div class="f"><label for="g-start" class="sr">From</label><span class="hint" style="min-height:0">From</span><input class="inp" type="date" id="g-start" data-f="startDate" value="'+esc(f.startDate)+'"></div><div class="f"><label for="g-end" class="sr">To</label><span class="hint" style="min-height:0">To</span><input class="inp" type="date" id="g-end" data-f="endDate" value="'+esc(f.endDate)+'"></div></div></div>';
+  h+='<div class="f"><span class="lbl">Trip dates (optional)</span><button class="sumrow" data-a="calOpen" aria-expanded="'+(!!f.showCal)+'"><span>'+(f.startDate?esc(dateRange({startDate:f.startDate,endDate:f.endDate||f.startDate})):'<span class="muted">Add dates</span>')+'</span><span class="go">'+(f.showCal?'Done':(f.startDate?'Change':'Add'))+'</span></button>'+(f.showCal?calHtml(f):'')+'</div>';
   h+='<div class="f"><span class="lbl">Who\'s in?</span><div>';
   f.members.forEach((m,i)=>{
     const isMe=m.uid&&m.uid===S.uid, used=!isNew && memberUsed(f.id,m.id);
@@ -698,6 +710,22 @@ function sheetGroup(){
   h+='<div class="hint bad" id="g-err"></div>';
   h+='<button class="btn primary" data-a="saveGroup">'+(isNew?'Start the group':'Save')+'</button>';
   if(!isNew) h+='<button class="btn" data-a="delGroup"><span class="danger">Delete this group</span></button>';
+  return h;
+}
+function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function calHtml(f){
+  const base=f.calMonth||(f.startDate||today()).slice(0,7);
+  const [y,mo]=base.split('-').map(Number), first=new Date(y,mo-1,1), days=new Date(y,mo,0).getDate();
+  const lead=(first.getDay()+6)%7, t=today(), a=f.startDate, b=f.endDate;
+  let h='<div class="cal" role="group" aria-label="Pick trip dates"><div class="calhd"><button class="x" data-a="calNav" data-d="-1" aria-label="Previous month">'+IC.back+'</button><span>'+first.toLocaleDateString('en-GB',{month:'long',year:'numeric'})+'</span><button class="x" data-a="calNav" data-d="1" aria-label="Next month" style="transform:scaleX(-1)">'+IC.back+'</button></div>';
+  h+='<div class="calg">'+['M','T','W','T','F','S','S'].map(d=>'<span class="cw">'+d+'</span>').join('');
+  for(let i=0;i<lead;i++) h+='<span></span>';
+  for(let d=1;d<=days;d++){
+    const iso=isoOf(new Date(y,mo-1,d));
+    const sel=iso===a||iso===b, inr=a&&b&&iso>a&&iso<b;
+    h+='<button class="cd'+(sel?' sel':'')+(inr?' inr':'')+(iso===t?' tdy':'')+(iso===a&&b&&b!==a?' st':'')+(iso===b&&a!==b?' en':'')+'" data-a="calDay" data-d="'+iso+'" aria-pressed="'+sel+'" aria-label="'+esc(dLong(iso))+'">'+d+'</button>';
+  }
+  h+='</div><div class="calft"><span class="muted">'+(!a?'Tap the first day':(!b?'Now tap the last day':esc(dateRange({startDate:a,endDate:b}))+' · '+(dDiff(a,b)+1)+' days'))+'</span>'+(a?'<button class="linkbtn" style="margin:0" data-a="calClear">Clear</button>':'')+'</div></div>';
   return h;
 }
 function memberUsed(gid,mid){
@@ -719,6 +747,7 @@ async function saveGroup(){
   members.forEach(m=>{ if(!m.name) m.name='Me'; });
   if(!members.length){ err.textContent='Add at least one person.'; return; }
   const clean=members.map(m=>{ const o={id:m.id,name:m.name.slice(0,30),uid:m.uid||null}; if(m.pay) o.pay=String(m.pay).slice(0,300); return o; });
+  if(f.startDate&&!f.endDate) f.endDate=f.startDate;
   if(f.startDate&&f.endDate&&f.endDate<f.startDate){ err.textContent='The trip has to end after it starts.'; return; }
   const body={name:name.slice(0,60),colour:f.colour,currency:f.currency,budget:0,startDate:f.startDate||'',endDate:f.endDate||'',members:clean,touchedAt:Date.now()};
   if(!f.id){
@@ -1141,6 +1170,10 @@ document.addEventListener('click',e=>{
     case 'search': openSheet('search',{q:''}); break;
     case 'srOpen': { closeSheet(); go(t.dataset.g); setTimeout(()=>openSheet('detail',{id:t.dataset.e}),330); break; }
     case 'partyClose': endParty(); break;
+    case 'calOpen': S.form.showCal=!S.form.showCal; if(S.form.showCal) S.form.calMonth=(S.form.startDate||today()).slice(0,7); renderSheet(); break;
+    case 'calNav': { const [y,mo]=S.form.calMonth.split('-').map(Number); const d=new Date(y,mo-1+Number(t.dataset.d),1); S.form.calMonth=isoOf(d).slice(0,7); renderSheet(); break; }
+    case 'calDay': { const f=S.form, d=t.dataset.d; if(!f.startDate||f.endDate){ f.startDate=d; f.endDate=''; } else if(d<f.startDate){ f.startDate=d; } else { f.endDate=d; } renderSheet(); break; }
+    case 'calClear': S.form.startDate=''; S.form.endDate=''; renderSheet(); break;
     case 'pet': { t.classList.remove('pet'); void t.offsetWidth; t.classList.add('pet'); clearTimeout(t._p); t._p=setTimeout(()=>t.classList.remove('pet'),900); break; }
     case 'working': S.showWorking=!S.showWorking; render(); break;
     case 'payInfo': openSheet('payInfo',{mid:t.dataset.m}); break;

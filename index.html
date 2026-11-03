@@ -230,6 +230,12 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 #toast .ck svg{width:16px;height:16px}
 #toast div button{pointer-events:auto;border:none;border-left:1px solid #444;background:none;color:var(--bg);font:inherit;font-size:14px;font-weight:600;padding:0 0 0 12px;margin-left:2px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 /* party */
+#kbar{position:fixed;left:0;right:0;top:0;z-index:70;background:var(--bg);border-top:1px solid var(--line);display:none;will-change:transform}
+#kbar.on{display:block}
+#kbar .in{max-width:480px;margin:0 auto;display:flex;align-items:center;gap:4px;padding:6px 14px}
+#kbar .kb{position:relative;display:flex;align-items:center;gap:7px;height:40px;padding:0 10px;border:none;background:none;font:inherit;font-size:15px;color:var(--ink);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#kbar .kb input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+#kbar .kb.on{color:var(--pos)}#kbar .sp{flex:1}
 #party{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(247,246,243,.96);animation:kFade .2s ease}
 #party .big{font-size:34px;font-weight:600;letter-spacing:-.02em;animation:kPopIn .5s .15s cubic-bezier(.2,.9,.3,1.3) both}
 #party .sub{font-size:15px;color:var(--muted);animation:kFade .4s .35s both}
@@ -296,6 +302,9 @@ let catWoke=false; window.KITTY_CAT=(...a)=>cat(...a); const isNight=()=>{ const
 const cat = (sz,cls,press,fat) => { const se=season(), k=(cls||'')+(se?' ss-'+se:''), svg=CAT_SVG.replace(/SZ/g,sz).replace('BODYD',catBody(fat));
   return press?'<button class="catart catbtn '+k+(isNight()&&!catWoke?' asleep':'')+'" data-a="pet" aria-label="Kitty">'+svg+'</button>':'<span class="catart '+k+'">'+svg+'</span>'; };
 const IC = {
+  cal:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+  ppl:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.6 3-5.6 6-5.6s5.4 2 6 5.6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.4c2.4.2 4 1.9 4.5 4.6"/></svg>',
+  note:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.5h10l4 4v13H5z"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/></svg>',
   back:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
   qr:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-7"/></svg>',
   gear:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
@@ -1130,6 +1139,38 @@ function popCat(text,kind,g){
   el.innerHTML='<div class="in"><span class="lbl2">'+esc(text)+'</span>'+cat(88,kind?'r-'+kind:'')+'</div>';
   document.body.appendChild(el); clearTimeout(popCat._t); popCat._t=setTimeout(()=>{ el.remove(); },2300);
 }
+
+
+{ const _rs=renderSheet; renderSheet=function(){ _rs.apply(this,arguments); window.dispatchEvent(new Event('kitty-sheet')); }; }
+// A strip above the keyboard while you type an expense: date, who paid, photo and note, like Splitwise.
+(()=>{
+  const bar=document.createElement('div'); bar.id='kbar'; document.body.appendChild(bar);
+  const vv=window.visualViewport;
+  const typing=t=>t&&t.matches&&t.matches('#sheet input:not([type=date]):not([type=file]):not([type=checkbox]),#sheet textarea')&&S.sheet&&S.sheet.kind==='expense'&&S.form;
+  const fill=()=>{ const f=S.form, g=G(f.gid); if(!g) return;
+    const who=f.paidBy===myMid(g)?'You paid':(mName(g,f.paidBy)||'Someone')+' paid';
+    let h='<div class="in"><label class="kb">'+IC.cal+'<span>'+(f.date===today()?'Today':esc(dLong(f.date)))+'</span><input type="date" id="kb-date" value="'+esc(f.date)+'" aria-label="Date"></label>';
+    h+='<button class="kb" data-a="kbPaid">'+IC.ppl+'<span>'+esc(who)+'</span></button><span class="sp"></span>';
+    if(S.assets && !f.photoId) h+='<label class="kb" aria-label="Add a photo">'+IC.cam+'<input type="file" accept="image/*" id="kb-photo"></label>';
+    h+='<button class="kb'+(f.note?' on':'')+'" data-a="kbNote" aria-label="Note">'+IC.note+'</button></div>';
+    bar.innerHTML=h; };
+  const pos=()=>{ if(!bar.classList.contains('on')) return; const h=bar.offsetHeight, top=vv?vv.offsetTop+vv.height-h:innerHeight-h; bar.style.transform='translateY('+top+'px)'; };
+  const show=()=>{ fill(); bar.classList.add('on'); pos(); };
+  const hide=()=>bar.classList.remove('on');
+  document.addEventListener('focusin',e=>{ if(typing(e.target)) show(); });
+  document.addEventListener('focusout',()=>setTimeout(()=>{ if(!typing(document.activeElement)) hide(); },60));
+  if(vv){ vv.addEventListener('resize',pos); vv.addEventListener('scroll',pos); }
+  // keep the keyboard up when tapping the strip's buttons
+  bar.addEventListener('pointerdown',e=>{ if(e.target.closest('button')) e.preventDefault(); });
+  bar.addEventListener('click',e=>{ const b=e.target.closest('[data-a]'); if(!b||!S.form) return; e.stopPropagation(); const f=S.form;
+    if(b.dataset.a==='kbNote'){ f.showNote=true; renderSheet(); const n=document.getElementById('e-note'); if(n){ n.focus(); n.scrollIntoView({block:'center'}); } }
+    if(b.dataset.a==='kbPaid'){ f.showSplit=true; document.activeElement&&document.activeElement.blur(); renderSheet(); const w=document.querySelector('#sheet [data-a="payer"]'); if(w) w.scrollIntoView({block:'center',behavior:'smooth'}); }
+  });
+  bar.addEventListener('change',e=>{ const t=e.target, f=S.form; if(!f) return;
+    if(t.id==='kb-date'){ f.date=t.value||today(); renderSheet(); fill(); }
+    if(t.id==='kb-photo' && t.files && t.files[0]) uploadPhoto(t.files[0]); });
+  window.addEventListener('kitty-sheet',()=>{ if(bar.classList.contains('on')) fill(); });
+})();
 
 // Playing with the cat.
 // Hold: the coin rises and keeps growing until it fills the screen, currency symbols flashing inside; let go and it slams into the slot.

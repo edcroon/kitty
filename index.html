@@ -176,14 +176,12 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .k-tipsy,.k-hic,.k-fish{display:none}
 .r-drinks .k-blush,.r-drinks .k-tipsy,.r-drinks .k-hic{display:inline}.r-drinks .k-eyes,.r-drinks .k-mouth,.r-drinks .k-acc{display:none}
 .r-drinks .k-blush{transform-box:fill-box;transform-origin:50% 50%;transform:scale(1.35)}
-.r-drinks svg{transform-origin:50% 95%;animation:kTipsy 1.5s ease-in-out .5s 1}
-@keyframes kTipsy{0%,100%{transform:none}18%{transform:rotate(-14deg) translateX(-4px)}38%{transform:rotate(11deg) translateX(3px)}58%{transform:rotate(-9deg) translateX(-2px) translateY(2px)}78%{transform:rotate(6deg)}}
+.r-drinks svg{transform-origin:50% 100%;animation:kTipsy .62s ease-in-out .35s 3 alternate both}
+@keyframes kTipsy{0%{transform:rotate(-20deg) translateX(-5px)}100%{transform:rotate(16deg) translateX(5px)}}
 .k-tipsy path{transform-box:fill-box;transform-origin:50% 50%}.r-drinks .k-tipsy path:not(:last-child){animation:kSpin 1s linear .4s 2}
 @keyframes kSpin{to{transform:rotate(360deg)}}
 .k-hic circle{transform-box:fill-box;transform-origin:50% 50%;opacity:0}.r-drinks .k-hic circle{animation:kHic .7s ease-out both}.r-drinks .k-hic circle:first-child{animation-delay:.8s}.r-drinks .k-hic circle+circle{animation-delay:1.2s}
 @keyframes kHic{0%{opacity:0;transform:scale(.2) translateY(6px)}40%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.15) translateY(-8px)}}
-.r-stay .k-sleep,.r-stay .k-zz{display:inline}.r-stay .k-eyes{display:none}.r-stay .k-mouth{transform-box:fill-box;transform-origin:50% 0;animation:kYawn 1s .55s ease-in-out both}
-@keyframes kYawn{0%,100%{transform:none}35%,65%{transform:scale(1.4,3.4)}}
 .r-meal .k-fish{display:inline}.r-meal .k-mouth{display:none}
 .k-fish-in{transform-box:fill-box;transform-origin:0% 50%}.r-meal .k-fish-in{animation:kFish 1.5s .45s steps(1,end) both}
 @keyframes kFish{0%{opacity:0;transform:translateX(18px)}12%{opacity:1;transform:none}35%{transform:scaleX(.72)}55%{transform:scaleX(.45)}75%{transform:scaleX(.18)}88%,100%{opacity:0;transform:scaleX(0)}}
@@ -1034,7 +1032,7 @@ async function saveExpense(){
   const id=f.id||rid('e');
   const ok=await write(()=>S.db.doc('groups/'+g.id+'/expenses/'+id).set(body));
   if(!ok) return;
-  closeSheet(); if(f.id) toast('Saved',true); else { const kind=ec.cat==='drinks'?'drinks':ec.cat==='stay'?'stay':ec.cat==='meal'?'meal':'nom'; setTimeout(()=>popCat({drinks:'Cheers',stay:'Night night',meal:'Yum'}[kind]||'Nom nom',kind,g),260); }
+  closeSheet(); if(f.id) toast('Saved',true); else { const kind=ec.cat==='drinks'?'drinks':ec.cat==='meal'?'meal':'nom'; setTimeout(()=>popCat({drinks:'Cheers',meal:'Yum'}[kind]||'Nom nom',kind,g),260); }
   const upd={touchedAt:Date.now()}; if(r.foreign) upd.rates={[f.currency]:r.rate};
   write(()=>S.db.doc('groups/'+g.id).update(upd));
 }

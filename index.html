@@ -736,17 +736,17 @@ function confirmBox(title,text,yes,fn){ S.confirm={title,text,yes,fn}; openSheet
 function sheetGroup(){
   const f=S.form, isNew=!f.id;
   let h=head(isNew?'New group':'Group settings');
-  h+='<div class="f"><label for="g-name">Name</label><input class="inp" id="g-name" data-f="name" value="'+esc(f.name)+'" placeholder="e.g. Lisbon weekend" maxlength="60" '+(isNew?'data-autofocus':'')+'></div>';
+  h+='<div class="f"><label for="g-title">Group</label><input autocomplete="off" class="inp" id="g-title" data-f="name" value="'+esc(f.name)+'" placeholder="e.g. Lisbon weekend" maxlength="60" '+(isNew?'data-autofocus':'')+'></div>';
   const hasMoney=!isNew && ((S.exp[f.id]||[]).length>0 || (S.pay[f.id]||[]).length>0);
   h+='<div class="f"><label for="g-cur">Currency</label><select class="inp" id="g-cur" data-f="currency">'+CURS.map(c=>'<option'+(c===f.currency?' selected':'')+'>'+c+'</option>').join('')+'</select></div>';
   if(hasMoney && f.currency!==f.oldCurrency){
-    h+='<div class="f"><label for="g-rate">Exchange rate: 1 '+esc(f.oldCurrency)+' = how many '+esc(f.currency)+'?</label><input class="inp" id="g-rate" data-f="convRate" inputmode="decimal" value="'+esc(f.convRate)+'" placeholder="e.g. 1.27"><div class="hint">Everything in this group switches to '+esc(f.currency)+'. Anything originally paid in '+esc(f.currency)+' goes back to its exact amount, and everything else is converted at this rate.</div></div>';
+    h+='<div class="f"><label for="g-rate">Exchange rate: 1 '+esc(f.oldCurrency)+' = how many '+esc(f.currency)+'?</label><input autocomplete="off" class="inp" id="g-rate" data-f="convRate" inputmode="decimal" value="'+esc(f.convRate)+'" placeholder="e.g. 1.27"><div class="hint">Everything in this group switches to '+esc(f.currency)+'. Anything originally paid in '+esc(f.currency)+' goes back to its exact amount, and everything else is converted at this rate.</div></div>';
   }
   h+='<div class="f"><span class="lbl">Trip dates (optional)</span><button class="sumrow" data-a="calOpen" aria-expanded="'+(!!f.showCal)+'"><span>'+(f.startDate?esc(dateRange({startDate:f.startDate,endDate:f.endDate||f.startDate})):'<span class="muted">Add dates</span>')+'</span><span class="go">'+(f.showCal?'Done':(f.startDate?'Change':'Add'))+'</span></button>'+(f.showCal?calHtml(f):'')+'</div>';
   h+='<div class="f"><span class="lbl">Who\'s in?</span><div>';
   f.members.forEach((m,i)=>{
     const isMe=m.uid&&m.uid===S.uid, used=!isNew && memberUsed(f.id,m.id);
-    h+='<div class="mem"><label class="sr" for="m-'+i+'">Name</label><input class="inp" id="m-'+i+'" data-m="'+i+'" value="'+esc(m.name)+'" placeholder="Name" maxlength="30">'+(isMe?'<span class="muted" style="font-size:13px;width:44px;text-align:center">you</span>':used?'<span style="width:44px"></span>':'<button class="x" data-a="mDel" data-i="'+i+'" aria-label="Remove '+esc(m.name||'person')+'">'+IC.x+'</button>')+'</div>';
+    h+='<div class="mem"><label class="sr" for="m-'+i+'">Friend</label><input autocomplete="off" class="inp" id="m-'+i+'" data-m="'+i+'" value="'+esc(m.name)+'" placeholder="e.g. Sam" maxlength="30">'+(isMe?'<span class="muted" style="font-size:13px;width:44px;text-align:center">you</span>':used?'<span style="width:44px"></span>':'<button class="x" data-a="mDel" data-i="'+i+'" aria-label="Remove '+esc(m.name||'person')+'">'+IC.x+'</button>')+'</div>';
   });
   h+='<button class="btn sm" style="margin:8px 0" data-a="mAdd">'+IC.plus+'Add someone</button></div><div class="hint">Add anyone - friends without Claude can still be in it, you just add their spending for them.</div></div>';
   if(!isNew){
@@ -942,9 +942,9 @@ function sheetExpense(){
   const f=S.form, g=G(f.gid);
   let h=head(f.id?'Edit expense':'Add expense');
   h+='<div class="bigamt"><label class="sr" for="e-cur">Currency</label><select class="cur" id="e-cur" data-f="currency">'+CURS.map(c=>'<option value="'+c+'"'+(c===f.currency?' selected':'')+'>'+esc(sym(c))+' '+c+'</option>').join('')+'</select><label class="sr" for="e-amt">Amount</label><input id="e-amt" data-f="amountStr" inputmode="decimal" value="'+esc(f.amountStr)+'" placeholder="0.00" autocomplete="off" '+(f.id?'':'data-autofocus')+'></div><div class="hint" id="calcPrev" style="text-align:center;margin-top:-10px"></div>';
-  h+='<div class="f"><label class="sr" for="e-desc">What for?</label><input class="inp" id="e-desc" data-f="desc" value="'+esc(f.desc)+'" placeholder="What for? e.g. Dinner at Ramiro" maxlength="60"></div>';
+  h+='<div class="f"><label class="sr" for="e-desc">What for?</label><input autocomplete="off" class="inp" id="e-desc" data-f="desc" value="'+esc(f.desc)+'" placeholder="What for? e.g. Dinner at Ramiro" maxlength="60"></div>';
   if(f.currency!==g.currency){
-    h+='<div class="f"><label for="e-rate">1 '+esc(f.currency)+' = how many '+esc(g.currency)+'?</label><input class="inp" id="e-rate" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="e.g. 0.85"></div>';
+    h+='<div class="f"><label for="e-rate">1 '+esc(f.currency)+' = how many '+esc(g.currency)+'?</label><input autocomplete="off" class="inp" id="e-rate" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="e.g. 0.85"></div>';
   }
   h+='<div class="remhint" id="remHint" aria-live="polite"></div>';
   h+='<button class="sumrow" data-a="toggleSplit" aria-expanded="'+(!!f.showSplit)+'"><span>'+splitSummary(f,g)+'</span><span class="go" aria-hidden="true">'+(f.showSplit?'Done':'Change')+'</span></button>';
@@ -955,7 +955,7 @@ function sheetExpense(){
     (g.members||[]).forEach(m=>{
       const on=!!f.inc[m.id];
       h+='<div class="prow"><button class="tick" role="checkbox" aria-checked="'+on+'" aria-label="Include '+esc(m.name)+'" data-a="inc" data-m="'+esc(m.id)+'">'+(on?IC.tick:'')+'</button><span class="nm">'+esc(m.id===myMid(g)?'You':m.name)+(f.notMine[m.id]?' <span class="flag" style="font-size:12px">says not theirs</span>':'')+'</span>';
-      if(on && f.mode==='exact') h+='<label class="sr" for="ex-'+esc(m.id)+'">Amount for '+esc(m.name)+'</label><input class="inp" id="ex-'+esc(m.id)+'" data-ex="'+esc(m.id)+'" inputmode="decimal" value="'+esc(f.exact[m.id])+'" placeholder="0.00">';
+      if(on && f.mode==='exact') h+='<label class="sr" for="ex-'+esc(m.id)+'">Amount for '+esc(m.name)+'</label><input autocomplete="off" class="inp" id="ex-'+esc(m.id)+'" data-ex="'+esc(m.id)+'" inputmode="decimal" value="'+esc(f.exact[m.id])+'" placeholder="0.00">';
       else if(on && f.mode==='shares') h+='<span style="display:flex;align-items:center;gap:6px"><button class="qty" data-a="shr" data-m="'+esc(m.id)+'" data-d="-1" aria-label="Fewer shares for '+esc(m.name)+'">-</button><b style="min-width:20px;text-align:center">'+(f.shares[m.id]||0)+'</b><button class="qty" data-a="shr" data-m="'+esc(m.id)+'" data-d="1" aria-label="More shares for '+esc(m.name)+'">+</button></span><span class="sh" id="pp-'+esc(m.id)+'"></span>';
       else if(on) h+='<span class="sh" id="pp-'+esc(m.id)+'"></span>';
       h+='</div>';
@@ -1104,7 +1104,7 @@ function sheetPay(){
   let h=head('Record a payment');
   const opts=sel=>(g.members||[]).map(m=>'<option value="'+esc(m.id)+'"'+(m.id===sel?' selected':'')+'>'+esc(m.id===myMid(g)?'You':m.name)+'</option>').join('');
   h+='<div class="grid2"><div class="f"><label for="p-from">Who paid</label><select class="inp" id="p-from">'+opts(d.from||myMid(g))+'</select></div><div class="f"><label for="p-to">Who to</label><select class="inp" id="p-to">'+opts(d.to||((g.members||[]).find(m=>m.id!==myMid(g))||{}).id)+'</select></div></div>';
-  h+='<div class="f"><label for="p-amt">Amount ('+esc(g.currency)+')</label><input class="inp" id="p-amt" inputmode="decimal" value="'+esc(d.amount?String(d.amount/100):'')+'" placeholder="0.00"></div>';
+  h+='<div class="f"><label for="p-amt">Amount ('+esc(g.currency)+')</label><input autocomplete="off" class="inp" id="p-amt" inputmode="decimal" value="'+esc(d.amount?String(d.amount/100):'')+'" placeholder="0.00"></div>';
   h+='<div class="hint bad" id="p-err"></div><button class="btn primary" data-a="savePay">Record it</button>';
   return h;
 }

@@ -19,12 +19,12 @@
 <style>
 :root{--bg:#F7F6F3;--ink:#111111;--muted:#6B6862;--line:#E1DDD6;--pos:#1F4FD1;--neg:#B4430F;--warn:#B4430F;--mono:'IBM Plex Mono',ui-monospace,Menlo,monospace}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;overflow-x:hidden;overscroll-behavior-x:none;touch-action:pan-y;-webkit-text-size-adjust:100%;max-width:100%}
+html,body{margin:0;overflow-x:hidden;overscroll-behavior:none;touch-action:pan-y;-webkit-text-size-adjust:100%;max-width:100%}
 body{background:var(--bg);color:var(--ink);font-family:'Inter Tight','Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-size:16px}
 button{font-family:inherit;color:inherit}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--pos);outline-offset:2px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
-#app{max-width:480px;margin:0 auto;min-height:100vh;padding:calc(env(safe-area-inset-top) + 20px) 24px calc(env(safe-area-inset-bottom) + 112px)}
+#app{box-sizing:border-box;max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;padding:calc(env(safe-area-inset-top) + 20px) 24px calc(env(safe-area-inset-bottom) + 112px)}
 .stack{display:flex;flex-direction:column;gap:18px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 -10px 0 0}
 .top .r{display:flex}
@@ -1146,10 +1146,10 @@ function popCat(text,kind,g){
   const turn=(b,fn)=>{ b.querySelector('svg').animate([{transform:'scaleX(1)'},{transform:'scaleX(0)',offset:.5},{transform:'scaleX(1)'}],{duration:320,easing:'ease-in-out'}); setTimeout(fn,160); };
 
   const frame=()=>{ if(!c) return; const now=performance.now(), t=now-t0, e=Math.min(1,t/900), P=c.P, o=c.o; p=1-(1-e)*(1-e);
-    const u=Math.min(1,t/T), S=Math.pow(c.R,Math.pow(u,1.7)), r=c.r0*S, x=c.cx, y=c.cy-c.rise*p;
-    place(o,x,y,r); c.S=S; c.y=y;
-    if(r>22){ const tx=innerWidth/2-x, ty=innerHeight/2-y, d=Math.hypot(tx,ty)||1, m=Math.min(d,r*.45), fs=Math.min(r*1.1,innerWidth*.5), q=Math.min(1,Math.log(S)/Math.log(c.R));
-      o.txt.setAttribute('x',x+tx/d*m); o.txt.setAttribute('y',y+ty/d*m); o.txt.setAttribute('font-size',fs); o.txt.setAttribute('opacity',Math.min(1,(r-22)/30));
+    const u=Math.min(1,t/T), S=Math.pow(c.R,Math.pow(u,1.7)), r=c.r0*S, y0=c.cy-c.rise*p, tx=innerWidth/2-c.cx, ty=innerHeight/2-y0, d=Math.hypot(tx,ty)||1, w=Math.min(1,Math.max(0,(r-c.r0)/d)), x=c.cx+tx*w, y=y0+ty*w;
+    place(o,x,y,r); c.S=S; c.y=y0; c.fx=x; c.fy=y;
+    if(r>22){ const fs=Math.min(r*1.1,innerWidth*.5), q=Math.min(1,Math.log(S)/Math.log(c.R));
+      o.txt.setAttribute('x',x); o.txt.setAttribute('y',y); o.txt.setAttribute('font-size',fs); o.txt.setAttribute('opacity',Math.min(1,(r-22)/30));
       if(now>=o.next){ o.txt.textContent=SYM[o.i++%SYM.length]; o.next=now+(150-95*q); } }
     if(t>3000&&!c.classList.contains('lion')){ c.classList.add('lion'); c.tg=1; }
     P.body.style.transform='scale('+(1+.07*p)+','+(1-.13*p)+')';
@@ -1219,13 +1219,13 @@ function popCat(text,kind,g){
       hs(); };
     requestAnimationFrame(step); };
 
-  const release=cancel=>{ if(!c) return; const b=c,P=b.P,pp=p,k=Math.max(p,.22),o=b.o,S0=b.S,y0=b.y; c=null; cancelAnimationFrame(raf); b.classList.remove('charging');
+  const release=cancel=>{ if(!c) return; const b=c,P=b.P,pp=p,k=Math.max(p,.22),o=b.o,S0=b.S,y0=b.y,fx=b.fx==null?b.cx:b.fx,fy=b.fy==null?b.y:b.fy; b.fx=b.fy=null; c=null; cancelAnimationFrame(raf); b.classList.remove('charging');
     if(b.tg) b.tg=0;
     const back=S0>1.15?Math.round(140+180*Math.min(1,Math.log(S0)/Math.log(b.R))):0;
     // shrink the big coin back down to coin size, then hand over to the coin in the drawing
     const s0=performance.now(); o.txt.style.transition='opacity .12s'; o.txt.style.opacity=0;
     const step=()=>{ const kk=back?Math.min(1,(performance.now()-s0)/back):1, ee=kk*kk*kk, S=Math.exp(Math.log(S0)*(1-ee));
-      place(o,b.cx,y0,b.r0*S); if(kk<1) requestAnimationFrame(step); else { o.v.remove(); P.coin.style.opacity=''; } };
+      place(o,fx+(b.cx-fx)*ee,fy+(y0-fy)*ee,b.r0*S); if(kk<1) requestAnimationFrame(step); else { o.v.remove(); P.coin.style.opacity=''; } };
     step();
     const cf='translate(0,'+(-26*pp)+'px) rotate('+(-25*pp)+'deg)';
     const fb=P.body.style.transform||'none', fe=P.eyes.style.transform||'none'; [P.body,P.eyes].forEach(x=>{ x.style.transform=''; x.style.transition=''; });

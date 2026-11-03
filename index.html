@@ -490,7 +490,7 @@ function renderGroup(app,g){
   setPage('var(--bg)');
   const c=calcGroup(g), me=myMid(g), loaded=!!S.exp[g.id];
   let h='<div class="stack">';
-  h+='<div class="top"><button class="round back" data-a="home" aria-label="Back to your groups">'+IC.back+'</button><div class="r"><button class="round" data-a="invite" aria-label="Invite people with a QR code">'+IC.qr+'</button>'+(canEdit()?'<button class="round" data-a="settings" aria-label="Group settings">'+IC.dots+'</button>':'')+'</div></div>';
+  h+='<div class="top" style="display:grid;grid-template-columns:1fr auto 1fr"><button class="round back" data-a="home" aria-label="Back to your groups">'+IC.back+'</button>'+cat(30,'',true)+'<div class="r" style="justify-content:flex-end"><button class="round" data-a="invite" aria-label="Invite people with a QR code">'+IC.qr+'</button>'+(canEdit()?'<button class="round" data-a="settings" aria-label="Group settings">'+IC.dots+'</button>':'')+'</div></div>';
   if(!me && canEdit()) h+='<div class="banner" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span>You\'re not in this group yet.</span><button class="btn sm primary" data-a="join">Join</button></div>';
   const v=me?(c.bal[me]||0):0;
   const fc=forecast(g,c.spent);

@@ -1154,7 +1154,10 @@ function popCat(text,kind,g){
     if(S.assets && !f.photoId) h+='<label class="kb" aria-label="Add a photo">'+IC.cam+'<input type="file" accept="image/*" id="kb-photo"></label>';
     h+='<button class="kb'+(f.note?' on':'')+'" data-a="kbNote" aria-label="Note">'+IC.note+'</button></div>';
     bar.innerHTML=h; };
-  const pos=()=>{ if(!bar.classList.contains('on')) return; const h=bar.offsetHeight, top=vv?vv.offsetTop+vv.height-h:innerHeight-h; bar.style.transform='translateY('+top+'px)'; };
+  const pos=()=>{ if(!bar.classList.contains('on')) return;
+    // only while the on-screen keyboard is actually up
+    const full=document.documentElement.clientHeight||innerHeight, kb=vv&&vv.height<full-120; bar.style.visibility=kb?'visible':'hidden'; bar.style.pointerEvents=kb?'':'none';
+    const h=bar.offsetHeight, top=vv?vv.offsetTop+vv.height-h:full-h; bar.style.transform='translateY('+top+'px)'; };
   const show=()=>{ fill(); bar.classList.add('on'); pos(); };
   const hide=()=>bar.classList.remove('on');
   document.addEventListener('focusin',e=>{ if(typing(e.target)) show(); });

@@ -191,7 +191,6 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .r-nom .k-mouth{transform-box:fill-box;transform-origin:50% 0;animation:kChew .2s .62s 3 ease-in-out}
 .r-meal svg{animation:kMunch .25s .7s 4 ease-in-out}@keyframes kMunch{50%{transform:scale(1.04,.95)}}
 @keyframes kChew{50%{transform:scale(1.3,2.2)}}
-.crown{display:inline-block;width:17px;height:13px;margin-left:6px;vertical-align:-1px}
 #party .coin{position:absolute;top:-30px;border-radius:50%;background:#1F4FD1;animation:kRain linear forwards}
 @keyframes kRain{to{transform:translateY(calc(100vh + 60px))}}
 #party .catart svg{transform-origin:50% 90%;animation:kDance .5s ease-in-out .5s 4 alternate}
@@ -557,7 +556,6 @@ function renderHome(app){
   app.innerHTML=h;
 }
 
-const CROWN='<svg class="crown" viewBox="0 0 34 26" role="img" aria-label="owes the most"><title>Owes the most</title><path d="M3 21 L5 6 L12 13 L17 3 L22 13 L29 6 L31 21 Z" fill="#F2C14E" stroke="#111111" stroke-width="2.4" stroke-linejoin="round"/><circle cx="17" cy="3" r="2.2" fill="#111111"/></svg>';
 function renderGroup(app,g){
   setPage('var(--bg)');
   const c=calcGroup(g), me=myMid(g), loaded=!!S.exp[g.id];
@@ -568,8 +566,7 @@ function renderGroup(app,g){
   const fc=forecast(g,c.spent);
   h+='<div class="gtop"><h1 class="h1">'+esc(g.name)+' <span class="muted" style="font-weight:400">· '+(g.members||[]).length+' people'+(dateRange(g)?' · '+esc(dateRange(g)):'')+'</span></h1><span class="big">'+cnt('spent-'+g.id,c.spent,g.currency)+'</span><span class="sub">spent'+(me?(v>0?' · you get back <span class="pos">'+cnt('me-'+g.id,v,g.currency)+'</span>':v<0?' · you owe <span class="neg">'+cnt('me-'+g.id,-v,g.currency)+'</span>':" · you're all square"):'')+'</span>'+(fc?'<span class="sub">'+fc+'</span>':'')+'</div>';
   h+='<div class="people">';
-  const worst=(g.members||[]).reduce((a,m)=>((c.bal[m.id]||0)<-2&&(!a||(c.bal[m.id]||0)<(c.bal[a.id]||0)))?m:a,null);
-  (g.members||[]).forEach(m=>{ const b=c.bal[m.id]||0; h+='<div class="person"><span>'+esc(m.id===me?'You':m.name)+(worst&&worst.id===m.id?CROWN:'')+'</span><span class="num '+sign(b)+'">'+(b>0?'+':b<0?'-':'')+fmt(Math.abs(b),g.currency)+'</span></div>'; });
+  (g.members||[]).forEach(m=>{ const b=c.bal[m.id]||0; h+='<div class="person"><span>'+esc(m.id===me?'You':m.name)+'</span><span class="num '+sign(b)+'">'+(b>0?'+':b<0?'-':'')+fmt(Math.abs(b),g.currency)+'</span></div>'; });
   h+='</div>';
   const tabs=[['list','Expenses'],['timeline','Timeline'],['spend','Spending'],['settle','Settle']];
   h+='<div><div class="tabs" role="tablist">'+tabs.map(t=>'<button role="tab" aria-selected="'+(S.tab===t[0])+'" data-a="tab" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';

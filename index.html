@@ -47,9 +47,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .pos{color:var(--pos)}.neg{color:var(--neg)}.zero{color:var(--muted)}
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:12px 24px calc(env(safe-area-inset-bottom) + 14px);background:var(--bg);border-top:1px solid var(--line);z-index:10}
 .dock .in{max-width:432px;margin:0 auto;display:flex;gap:10px}
-.btn{height:52px;border-radius:2px;border:1px solid var(--ink);font-size:15px;font-weight:500;cursor:pointer;padding:0 18px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.btn{flex-shrink:0;height:52px;border-radius:2px;border:1px solid var(--ink);font-size:15px;font-weight:500;cursor:pointer;padding:0 18px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
 .btn.primary,.btn.dark{background:var(--ink);color:var(--bg)}
-.btn.sm{height:38px;font-size:14px;padding:0 14px}
+.btn.sm{flex-shrink:0;height:38px;font-size:14px;padding:0 14px}
 .btn.grow{flex:1}
 .btn:disabled{opacity:.45;cursor:default}
 .h1{font-size:15px;font-weight:500;margin:0;word-break:break-word}
@@ -79,6 +79,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .swipe .del{position:absolute;inset:0 0 1px 0;display:flex;align-items:center;justify-content:flex-end;padding:0 18px;background:rgba(180,35,24,var(--p,0));color:rgba(255,255,255,var(--p,0));font-size:15px;font-weight:500}
 .swipe .item{position:relative;background:var(--bg);transition:transform .38s cubic-bezier(.25,.8,.3,1)}
 .swipe.drag .item{transition:none}
+.swipe .grow-row{position:relative;background:var(--bg);transition:transform .38s cubic-bezier(.25,.8,.3,1)}.swipe.drag .grow-row{transition:none}
 .empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:36px 12px}
 .empty .t{font-size:18px;font-weight:600}.empty .catart{margin-bottom:8px}
 .empty .d{font-size:14px;color:var(--muted);max-width:280px}
@@ -363,13 +364,15 @@ function guessCat(desc){
 }
 (function(){
   let x0=null,y0=null,dx=0,mode=null,row=null,item=null;
-  document.addEventListener('touchstart',e=>{ const r=e.target.closest('.swipe'); if(!r){ x0=null; return; } row=r; item=r.querySelector('.item'); x0=e.touches[0].clientX; y0=e.touches[0].clientY; dx=0; mode=null; },{passive:true});
+  document.addEventListener('touchstart',e=>{ const r=e.target.closest('.swipe'); if(!r){ x0=null; return; } row=r; item=r.querySelector('.item,.grow-row'); x0=e.touches[0].clientX; y0=e.touches[0].clientY; dx=0; mode=null; },{passive:true});
   document.addEventListener('touchmove',e=>{ if(x0==null||!row) return; const mx=e.touches[0].clientX-x0, my=e.touches[0].clientY-y0;
     if(!mode){ if(Math.abs(mx)>8&&Math.abs(mx)>Math.abs(my)*1.3) mode='h'; else if(Math.abs(my)>8) mode='v'; }
     if(mode!=='h') return; dx=Math.min(0,mx); row.classList.add('drag'); item.style.transform='translateX('+dx+'px)'; const th=row.offsetWidth*0.5; row.style.setProperty('--p',String(Math.max(0,Math.min(1,(-dx-(th-70))/70)))); },{passive:true});
   document.addEventListener('touchend',()=>{ if(x0==null||!row) return; const r=row, it=item; r.classList.remove('drag');
     if(mode==='h'){ swipeBlock=Date.now();
-      if(-dx>=r.offsetWidth*0.5){ r.style.setProperty('--p','1'); it.style.transform='translateX(-110%)'; const id=r.dataset.sw, g=G(S.gid), x=g&&(S.exp[g.id]||[]).find(e=>e.id===id); setTimeout(()=>{ if(x) softDelete('groups/'+g.id+'/expenses/'+x.id,x,'"'+x.desc+'" deleted',x.photoId); },180); }
+      const isG=(r.dataset.sw||'').startsWith('g:'), far=-dx>=r.offsetWidth*0.5;
+      if(far&&isG){ const gid=r.dataset.sw.slice(2), g=G(gid); setTimeout(()=>confirmBox('Delete '+(g?g.name:'this group')+'?','All its expenses and payments go too. This can\'t be undone.','Delete',()=>deleteGroup(gid)),200); }
+      if(far&&!isG){ r.style.setProperty('--p','1'); it.style.transform='translateX(-110%)'; const id=r.dataset.sw, g=G(S.gid), x=g&&(S.exp[g.id]||[]).find(e=>e.id===id); setTimeout(()=>{ if(x) softDelete('groups/'+g.id+'/expenses/'+x.id,x,'"'+x.desc+'" deleted',x.photoId); },180); }
       else { it.style.transform=''; const p0=parseFloat(r.style.getPropertyValue('--p'))||0, t0=performance.now(); (function fade(t){ const q=Math.min(1,(t-t0)/380), e=1-Math.pow(1-q,2); r.style.setProperty('--p',String(p0*(1-e))); if(q<1) requestAnimationFrame(fade); })(t0); } }
     x0=null; row=null; item=null; mode=null; },{passive:true});
 })();
@@ -540,7 +543,7 @@ function renderHome(app){
     mine.forEach(g=>{
       const c=calcGroup(g), v=c.bal[myMid(g)]||0;
       const lab2=v>0?'you get back':v<0?'you owe':'all square';
-      h+='<button class="grow-row" data-a="open" data-g="'+esc(g.id)+'"><span class="n">'+esc(g.name)+'</span><span class="v '+sign(v)+'">'+(v>0?'+':v<0?'-':'')+fmt(Math.abs(v),g.currency)+'</span><span class="s">'+(dateRange(g)?esc(dateRange(g)):(g.members||[]).length+' people')+' · '+fmt(c.spent,g.currency)+' spent</span><span class="s r">'+lab2+'</span></button>';
+      h+=(canEdit()?'<div class="swipe" data-sw="g:'+esc(g.id)+'"><span class="del" aria-hidden="true">Delete</span>':'')+'<button class="grow-row" data-a="open" data-g="'+esc(g.id)+'"><span class="n">'+esc(g.name)+'</span><span class="v '+sign(v)+'">'+(v>0?'+':v<0?'-':'')+fmt(Math.abs(v),g.currency)+'</span><span class="s">'+(dateRange(g)?esc(dateRange(g)):(g.members||[]).length+' people')+' · '+fmt(c.spent,g.currency)+' spent</span><span class="s r">'+lab2+'</span></button>'+(canEdit()?'</div>':'')+'';
     });
     h+='</div>';
   }
@@ -852,6 +855,7 @@ async function convertGroup(g,cur,r,body){
 }
 async function deleteGroup(gid){
   const ex=S.exp[gid]||[], ps=S.pay[gid]||[];
+  await new Promise(r=>setTimeout(r,180)); await fadeRow('g:'+gid);
   for(const x of ex){ await write(()=>S.db.doc('groups/'+gid+'/expenses/'+x.id).delete()); if(x.photoId&&S.assets){ try{ await S.assets.delete(x.photoId); }catch(e){} } }
   for(const p of ps){ await write(()=>S.db.doc('groups/'+gid+'/payments/'+p.id).delete()); }
   const ok=await write(()=>S.db.doc('groups/'+gid).delete());

@@ -1125,11 +1125,23 @@ async function savePay(){
   if(!(v>0)){ err.textContent='Add an amount.'; return; }
   await addPayment(g,from,to,Math.round(v*100));
 }
+// fade the row out and close the gap before it's removed
+function fadeRow(id){
+  const hit=id&&document.querySelector('#app [data-sw="'+id+'"],#app [data-e="'+id+'"],#app [data-p="'+id+'"]');
+  const el=hit&&(hit.closest('.swipe')||hit.closest('.orow')||hit.closest('.item')||hit);
+  if(!el||!el.animate) return Promise.resolve();
+  const cs=getComputedStyle(el), h=el.offsetHeight; el.style.overflow='hidden'; el.style.pointerEvents='none';
+  const a=el.animate([{opacity:1,height:h+'px',paddingTop:cs.paddingTop,paddingBottom:cs.paddingBottom,marginTop:cs.marginTop,marginBottom:cs.marginBottom,borderBottomWidth:cs.borderBottomWidth},
+    {opacity:0,offset:.55},
+    {opacity:0,height:'0px',paddingTop:'0px',paddingBottom:'0px',marginTop:'0px',marginBottom:'0px',borderBottomWidth:'0px'}],{duration:280,easing:'ease-in-out',fill:'forwards'});
+  return new Promise(r=>{ a.onfinish=r; setTimeout(r,400); });
+}
 async function softDelete(path,item,msg,photoId){
   const body=Object.assign({},item); delete body.id;
   if(S.undo){ clearTimeout(S.undo.timer); S.undo.finish(); }
-  const ok=await write(()=>S.db.doc(path).delete()); if(!ok) return;
-  closeSheet();
+  const wasOpen=!!S.sheet; closeSheet(); if(wasOpen) await new Promise(r=>setTimeout(r,180));
+  await fadeRow(item.id);
+  const ok=await write(()=>S.db.doc(path).delete()); if(!ok){ render(); return; }
   const u={path,body,finish:()=>{ if(photoId&&S.assets){ S.assets.delete(photoId).catch(()=>{}); } }};
   u.timer=setTimeout(()=>{ if(S.undo===u){ S.undo=null; } u.finish(); },6000);
   S.undo=u; toast(msg,false,'Undo',6000);

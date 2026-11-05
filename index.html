@@ -751,7 +751,7 @@ function sheetGroup(){
   const hasMoney=!isNew && ((S.exp[f.id]||[]).length>0 || (S.pay[f.id]||[]).length>0);
   h+='<div class="f"><label for="g-cur">Currency</label><select class="inp" id="g-cur" data-f="currency">'+CURS.map(c=>'<option'+(c===f.currency?' selected':'')+'>'+c+'</option>').join('')+'</select></div>';
   if(hasMoney && f.currency!==f.oldCurrency){
-    h+='<div class="f"><label for="g-rate">Exchange rate: 1 '+esc(f.oldCurrency)+' = how many '+esc(f.currency)+'?</label><input autocomplete="off" class="inp" id="g-rate" data-f="convRate" inputmode="decimal" value="'+esc(f.convRate)+'" placeholder="e.g. 1.27"><div class="hint">Everything in this group switches to '+esc(f.currency)+'. Anything originally paid in '+esc(f.currency)+' goes back to its exact amount, and everything else is converted at this rate.</div></div>';
+    h+='<div class="f"><label for="g-rate">Exchange rate: 1 '+esc(f.oldCurrency)+' = how many '+esc(f.currency)+'?</label><input autocomplete="off" class="inp" id="g-rate" data-f="convRate" inputmode="decimal" value="'+esc(f.convRate)+'" placeholder="e.g. 1.27"><div class="hint" id="gRateNote">'+esc(f.gRateNote||'')+'</div><div class="hint">Everything in this group switches to '+esc(f.currency)+'. Anything originally paid in '+esc(f.currency)+' goes back to its exact amount, and everything else is converted at this rate.</div></div>';
   }
   h+='<div class="f"><span class="lbl">Trip dates (optional)</span><button class="sumrow" data-a="calOpen" aria-expanded="'+(!!f.showCal)+'"><span>'+(f.startDate?esc(dateRange({startDate:f.startDate,endDate:f.endDate||f.startDate})):'<span class="muted">Add dates</span>')+'</span><span class="go">'+(f.showCal?'Done':(f.startDate?'Change':'Add'))+'</span></button>'+(f.showCal?calHtml(f):'')+'</div>';
   h+='<div class="f"><span class="lbl">Who\'s in?</span><div>';
@@ -920,6 +920,36 @@ function newExpenseForm(gid,existing){
   }
   openSheet('expense');
 }
+// Live exchange rates: European Central Bank rates via frankfurter.dev, with open.er-api.com as a backup. Kept on the phone for 6 hours.
+const RATE_KEY='kitty-rates';
+async function liveRate(from,to){
+  if(from===to) return {rate:1};
+  let cache={}; try{ cache=JSON.parse(localStorage.getItem(RATE_KEY)||'{}'); }catch(e){}
+  const k=from+'>'+to, c=cache[k]; if(c&&Date.now()-c.at<6*3600e3) return c;
+  const get=async url=>{ const ctl=new AbortController(), tm=setTimeout(()=>ctl.abort(),5000); try{ const r=await fetch(url,{signal:ctl.signal}); return await r.json(); } finally{ clearTimeout(tm); } };
+  const tries=[
+    async()=>{ const j=await get('https://api.frankfurter.dev/v1/latest?base='+from+'&symbols='+to); const v=j&&j.rates&&j.rates[to]; if(!(v>0)) throw 0; return {rate:v,date:j.date}; },
+    async()=>{ const j=await get('https://open.er-api.com/v6/latest/'+from); const v=j&&j.rates&&j.rates[to]; if(!(v>0)) throw 0; return {rate:v,date:j.time_last_update_unix?new Date(j.time_last_update_unix*1000).toISOString().slice(0,10):''}; }];
+  for(const t of tries){ try{ const out=await t(); out.at=Date.now(); cache[k]=out; try{ localStorage.setItem(RATE_KEY,JSON.stringify(cache)); }catch(e){} return out; }catch(e){} }
+  return c||null; // no signal: the last rate we had
+}
+const roundRate=v=>String(+(+v).toPrecision(5));
+const rateDay=d=>{ if(!d) return ''; const x=pd(d); return ord(x.getDate())+' '+x.toLocaleDateString('en-GB',{month:'short'}); };
+function fillLiveRate(kind){
+  const f=S.form; if(!f) return;
+  const expense=kind==='expense', g=expense?G(f.gid):(f.id&&G(f.id)); if(!g) return;
+  const from=expense?f.currency:f.oldCurrency, to=expense?g.currency:f.currency, field=expense?'rate':'convRate', touched=expense?'rateTouched':'convTouched', noteId=expense?'rateNote':'gRateNote', inputId=expense?'e-rate':'g-rate';
+  if(from===to||f[touched]) return;
+  const setNote=t=>{ f[noteId]=t; const n=document.getElementById(noteId); if(n) n.textContent=t; };
+  setNote("Getting today's rate...");
+  liveRate(from,to).then(r=>{
+    if(S.form!==f||f[touched]||(expense?f.currency:f.oldCurrency)!==from||(expense?g.currency:f.currency)!==to) return;
+    if(!r){ setNote("Couldn't get the live rate - type it in"); return; }
+    f[field]=roundRate(r.rate); const el=document.getElementById(inputId); if(el) el.value=f[field];
+    setNote('Live rate'+(r.date?', '+rateDay(r.date):'')+' - change it if your bank gave you a different one');
+    if(expense) updatePreview();
+  });
+}
 function rateFor(g,cur){ return (g.rates&&g.rates[cur])?String(g.rates[cur]):''; }
 function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim(); }
 function findPrev(g,desc){
@@ -956,7 +986,7 @@ function sheetExpense(){
   h+='<div class="bigamt"><label class="sr" for="e-cur">Currency</label><select class="cur" id="e-cur" data-f="currency">'+CURS.map(c=>'<option value="'+c+'"'+(c===f.currency?' selected':'')+'>'+esc(sym(c))+' '+c+'</option>').join('')+'</select><label class="sr" for="e-amt">Amount</label><input id="e-amt" data-f="amountStr" inputmode="decimal" value="'+esc(f.amountStr)+'" placeholder="0.00" autocomplete="off" '+(f.id?'':'data-autofocus')+'></div><div class="hint" id="calcPrev" style="text-align:center;margin-top:-10px"></div>';
   h+='<div class="f"><label class="sr" for="e-desc">What for?</label><input autocomplete="off" class="inp" id="e-desc" data-f="desc" value="'+esc(f.desc)+'" placeholder="What for? e.g. Dinner at Ramiro" maxlength="60"></div>';
   if(f.currency!==g.currency){
-    h+='<div class="f"><label for="e-rate">1 '+esc(f.currency)+' = how many '+esc(g.currency)+'?</label><input autocomplete="off" class="inp" id="e-rate" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="e.g. 0.85"></div>';
+    h+='<div class="f"><label for="e-rate">1 '+esc(f.currency)+' = how many '+esc(g.currency)+'?</label><input autocomplete="off" class="inp" id="e-rate" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="e.g. 0.85"><div class="hint" id="rateNote">'+esc(f.rateNote||'')+'</div></div>';
   }
   h+='<div class="remhint" id="remHint" aria-live="polite"></div>';
   h+='<button class="sumrow" data-a="toggleSplit" aria-expanded="'+(!!f.showSplit)+'"><span>'+splitSummary(f,g)+'</span><span class="go" aria-hidden="true">'+(f.showSplit?'Done':'Change')+'</span></button>';
@@ -1403,7 +1433,7 @@ document.addEventListener('input',e=>{
   const t=e.target;
   if(t.dataset.search){ S.sheet.data.q=t.value; const r=document.getElementById('s-res'); if(r) r.innerHTML=searchList(t.value); return; }
   if(!S.form) return;
-  if(t.dataset.f){ S.form[t.dataset.f]=t.value; if(t.dataset.f==='currency' && S.sheet.kind==='expense'){ const g=G(S.form.gid); S.form.rate=t.value!==g.currency?rateFor(g,t.value):''; renderSheet(); return; } if(t.dataset.f==='currency'&&S.sheet.kind==='group'){ const g=S.form.id&&G(S.form.id); if(g&&t.value!==g.currency){ const r=g.rates&&g.rates[t.value]; S.form.convRate=r?String(+(1/r).toFixed(6)):''; } renderSheet(); return; } if(t.dataset.f==='desc' && S.sheet.kind==='expense'){ clearTimeout(applyPrev._t); applyPrev._t=setTimeout(applyPrev,250); } updatePreview(); }
+  if(t.dataset.f){ const was=S.form[t.dataset.f]; if(t.dataset.f==='currency'&&was===t.value) return; S.form[t.dataset.f]=t.value; if(t.dataset.f==='rate'){ S.form.rateTouched=true; S.form.rateNote=''; const n=document.getElementById('rateNote'); if(n) n.textContent=''; } if(t.dataset.f==='convRate'){ S.form.convTouched=true; S.form.gRateNote=''; const n=document.getElementById('gRateNote'); if(n) n.textContent=''; } if(t.dataset.f==='currency' && S.sheet.kind==='expense'){ const g=G(S.form.gid); S.form.rate=t.value!==g.currency?rateFor(g,t.value):''; S.form.rateTouched=false; S.form.rateNote=''; renderSheet(); fillLiveRate('expense'); return; } if(t.dataset.f==='currency'&&S.sheet.kind==='group'){ const g=S.form.id&&G(S.form.id); if(g&&t.value!==g.currency){ const r=g.rates&&g.rates[t.value]; S.form.convRate=r?String(+(1/r).toFixed(6)):''; } S.form.convTouched=false; S.form.gRateNote=''; renderSheet(); fillLiveRate('group'); return; } if(t.dataset.f==='desc' && S.sheet.kind==='expense'){ clearTimeout(applyPrev._t); applyPrev._t=setTimeout(applyPrev,250); } updatePreview(); }
   else if(t.dataset.ex){ S.form.touchedSplit=true; S.form.exact[t.dataset.ex]=t.value; updatePreview(); }
   else if(t.dataset.m!=null && t.tagName==='INPUT'){ S.form.members[Number(t.dataset.m)].name=t.value; }
   else if(t.dataset.pay!=null){ S.form.members[Number(t.dataset.pay)].pay=t.value; }

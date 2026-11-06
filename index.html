@@ -579,7 +579,7 @@ function renderGroup(app,g){
   if(!me && canEdit()) h+='<div class="banner" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span>You\'re not in this group yet.</span><button class="btn sm primary" data-a="join">Join</button></div>';
   const v=me?(c.bal[me]||0):0;
   const fc=forecast(g,c.spent);
-  h+='<div class="gtop"><h1 class="h1">'+esc(g.name)+' <span class="muted" style="font-weight:400">· '+(g.members||[]).length+' people'+(dateRange(g)?' · '+esc(dateRange(g)):'')+'</span></h1><span class="lab">Group spend</span><span class="big">'+cnt('spent-'+g.id,c.spent,g.currency)+'</span>'+(me&&c.spent?'<span class="sub"><span class="num ink">'+fmt(c.share[me]||0,g.currency)+'</span> of that is your share</span><span class="sub">You\'ve paid out <span class="num ink">'+fmt(c.paid[me]||0,g.currency)+'</span> so far</span>':'')+(fc?'<span class="sub">'+fc+'</span>':'')+'</div>';
+  h+='<div class="gtop"><h1 class="h1">'+esc(g.name)+' <span class="muted" style="font-weight:400">· '+(g.members||[]).length+' people'+(dateRange(g)?' · '+esc(dateRange(g)):'')+'</span></h1><span class="lab">Group spend</span><span class="big">'+cnt('spent-'+g.id,c.spent,g.currency)+'</span>'+(fc?'<span class="sub">'+fc+'</span>':'')+'</div>';
   h+='<div class="people">';
   (g.members||[]).forEach(m=>{ const b=c.bal[m.id]||0; const you=m.id===me, w=b>0?(you?'get back':'gets back'):b<0?(you?'owe':'owes'):(you?"you're square":'square'); h+='<div class="person"><span>'+esc(you?'You':m.name)+'</span><span class="'+sign(b)+'"><span class="pw">'+w+'</span>'+(b?' <span class="num">'+fmt(Math.abs(b),g.currency)+'</span>':'')+'</span></div>'; });
   h+='</div>';

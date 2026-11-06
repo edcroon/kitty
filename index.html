@@ -162,6 +162,7 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .bigamt input::placeholder{color:#CFC9BF}
 .sumrow{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:12px 0;font:inherit;font-size:15px;cursor:pointer}
 .sumrow b{font-weight:600}
+.daterow{position:relative}.daterow input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;-webkit-appearance:none;appearance:none}
 .sumrow .go{font-size:13px;text-decoration:underline;text-underline-offset:3px}
 .minis{display:flex;flex-wrap:wrap;gap:8px}
 .mini{height:34px;border-radius:2px;border:1px dashed var(--muted);background:transparent;font:inherit;font-size:13px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;position:relative;overflow:hidden;color:var(--ink)}
@@ -615,7 +616,7 @@ function itemMeta(g,x){
   const n=Object.keys(x.shares||{}).length, parts=[];
   parts.push(dShort(x.date));
   if(x.currency!==g.currency) parts.push(fmt(x.amount,x.currency));
-  else parts.push(n===(g.members||[]).length&&x.mode==='equal'?'split '+n+' ways':n===1?'for '+mName(g,Object.keys(x.shares)[0]):'split '+n+' ways');
+  else parts.push(n>1&&n===(g.members||[]).length&&x.mode==='equal'?'split '+n+' ways':n===1?'for '+mName(g,Object.keys(x.shares)[0]):'split '+n+' ways');
   return esc(parts.join(' · '));
 }
 function flagText(g,x){
@@ -1004,6 +1005,7 @@ function sheetExpense(){
     h+='<div class="f"><label for="e-rate">1 '+esc(f.currency)+' = how many '+esc(g.currency)+'?</label><input autocomplete="off" class="inp" id="e-rate" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="e.g. 0.85"><div class="hint" id="rateNote">'+esc(f.rateNote||'')+'</div></div>';
   }
   h+='<div class="remhint" id="remHint" aria-live="polite"></div>';
+  h+='<label class="sumrow daterow"><span>'+(f.date===today()?'Today, <b>':'<b>')+esc(dLong(f.date))+'</b></span><span class="go" aria-hidden="true">Change date</span><input type="date" id="e-date" data-f="date" value="'+esc(f.date)+'" aria-label="Date of the expense"></label>';
   h+='<button class="sumrow" data-a="toggleSplit" aria-expanded="'+(!!f.showSplit)+'"><span>'+splitSummary(f,g)+'</span><span class="go" aria-hidden="true">'+(f.showSplit?'Done':'Change')+'</span></button>';
   if(f.showSplit){
     h+='<div class="f"><span class="lbl">Who paid?</span><div class="chips">'+(g.members||[]).map(m=>'<button class="chip" aria-pressed="'+(f.paidBy===m.id)+'" data-a="payer" data-m="'+esc(m.id)+'">'+esc(m.id===myMid(g)?'You':m.name)+'</button>').join('')+'</div></div>';
@@ -1021,7 +1023,7 @@ function sheetExpense(){
   } else h+='<div class="hint" id="splitInfo" style="margin-top:-10px"></div>';
   h+='<div id="catBox">'+catChips(f)+'</div>';
   const isToday=f.date===today();
-  h+='<div class="minis"><label class="mini on">'+(isToday?'Today':esc(dLong(f.date)))+'<input type="date" id="e-date" data-f="date" value="'+esc(f.date)+'" aria-label="Date"></label>';
+  h+='<div class="minis">';
   h+='<button class="mini'+(f.showNote||f.note?' on':'')+'" data-a="toggleNote">'+(f.note?'Note added':'+ Note')+'</button>';
   if(S.assets && !f.photoId) h+='<label class="mini">'+IC.cam+(f.uploading?'Uploading...':'Photo')+'<input type="file" accept="image/*" id="e-photo" class="sr" '+(f.uploading?'disabled':'')+'></label>';
   h+='</div>';

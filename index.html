@@ -28,7 +28,9 @@ html,body{margin:0;overflow-x:hidden;overscroll-behavior:none;touch-action:pan-y
 body{background:var(--bg);color:var(--ink);font-family:'Inter Tight','Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-size:16px}
 button{font-family:inherit;color:inherit}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--pos);outline-offset:2px}
-.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num{font-family:var(--num);font-weight:600;font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.01em}
+.person .pw{font-size:14px}.person .zero .pw{color:var(--muted)}.ink{color:var(--ink)}
+.gtop .lab{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:6px}
 #app{box-sizing:border-box;max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;padding:calc(env(safe-area-inset-top) + 20px) 24px calc(env(safe-area-inset-bottom) + 112px)}
 .stack{display:flex;flex-direction:column;gap:18px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 -10px 0 0}
@@ -46,7 +48,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .rows{display:flex;flex-direction:column}
 .grow-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;align-items:baseline;padding:14px 0;border:none;border-bottom:1px dashed var(--line);background:none;text-align:left;width:100%;cursor:pointer;font:inherit;color:inherit}
 .grow-row .n{font-size:16px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.grow-row .v{font-family:var(--mono);font-size:16px;white-space:nowrap}
+.grow-row .v{font-family:var(--num);font-weight:600;font-size:16px;white-space:nowrap}
 .grow-row .s{font-size:12px;color:var(--muted)}
 .grow-row .s.r{text-align:right}
 .pos{color:var(--pos)}.neg{color:var(--neg)}.zero{color:var(--muted)}
@@ -69,7 +71,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .sbar{height:3px;background:var(--line);margin-top:5px}.sbar>div{height:3px;background:var(--ink);transition:width .5s cubic-bezier(.2,.8,.3,1)}
 .srow{padding:9px 0;border-bottom:1px solid var(--line)}
 .srow .l1{display:flex;align-items:baseline}.srow .l1 i{flex:1;border-bottom:1px dotted var(--muted);margin:0 8px 4px;min-width:12px}
-.srow .pc{font-size:12px;color:var(--muted);margin-right:10px;font-family:var(--mono)}
+.srow .pc{font-size:12px;color:var(--muted);margin-right:10px;font-family:var(--num);font-weight:600}
 .tabs button{border:none;background:none;font-size:15px;white-space:nowrap;color:var(--muted);padding:10px 0;margin-bottom:-1px;border-bottom:1.5px solid transparent;cursor:pointer}
 .tabs button[aria-selected=true]{color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
 .list{display:flex;flex-direction:column}
@@ -125,8 +127,8 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .split3 .chip{justify-content:center}
 .prow{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);min-height:52px}
 .prow .nm{flex:1;font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis}
-.prow .sh{font-family:var(--mono);font-size:15px;white-space:nowrap}
-.prow input.inp{width:110px;height:40px;font-family:var(--mono);font-size:16px;text-align:right}
+.prow .sh{font-family:var(--num);font-weight:600;font-size:15px;white-space:nowrap}
+.prow input.inp{width:110px;height:40px;font-family:var(--num);font-weight:600;font-size:16px;text-align:right}
 .tick{width:22px;height:22px;border-radius:2px;border:1.5px solid var(--ink);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
 .tick[aria-checked=true]{background:var(--ink);color:var(--bg)}
 .tick svg{width:14px;height:14px}
@@ -421,13 +423,13 @@ function initial(g,mid){ const m=mem(g,mid); return esc(((m&&m.name)||'?').trim(
 function avatar(g,mid,cls){ return '<span class="av '+(cls||'')+'" style="background:'+avColour(g,mid)+'" aria-hidden="true">'+initial(g,mid)+'</span>'; }
 function expensesOf(gid){ return (S.exp[gid]||[]).slice().sort((a,b)=> (b.date||'').localeCompare(a.date||'') || (b.createdAt||0)-(a.createdAt||0)); }
 function calcGroup(g){
-  const ex=S.exp[g.id]||[], pays=S.pay[g.id]||[], bal={};
+  const ex=S.exp[g.id]||[], pays=S.pay[g.id]||[], bal={}, share={}, paid={};
   (g.members||[]).forEach(m=>bal[m.id]=0);
   let spent=0;
-  ex.forEach(x=>{ const b=x.base||0; spent+=b; bal[x.paidBy]=(bal[x.paidBy]||0)+b; Object.keys(x.shares||{}).forEach(m=>{ bal[m]=(bal[m]||0)-x.shares[m]; }); });
+  ex.forEach(x=>{ const b=x.base||0; spent+=b; bal[x.paidBy]=(bal[x.paidBy]||0)+b; paid[x.paidBy]=(paid[x.paidBy]||0)+b; Object.keys(x.shares||{}).forEach(m=>{ bal[m]=(bal[m]||0)-x.shares[m]; share[m]=(share[m]||0)+x.shares[m]; }); });
   pays.forEach(p=>{ bal[p.from]=(bal[p.from]||0)+p.amount; bal[p.to]=(bal[p.to]||0)-p.amount; });
   Object.keys(bal).forEach(m=>{ if(Math.abs(bal[m])<=2) bal[m]=0; });
-  return {bal, spent, transfers:settle(bal)};
+  return {bal, spent, share, paid, transfers:settle(bal)};
 }
 function settle(bal){
   const cr=[],dr=[];
@@ -555,7 +557,7 @@ function renderHome(app){
     mine.forEach(g=>{
       const c=calcGroup(g), v=c.bal[myMid(g)]||0;
       const lab2=v>0?'you get back':v<0?'you owe':'all square';
-      h+=(canEdit()?'<div class="swipe" data-sw="g:'+esc(g.id)+'"><span class="del" aria-hidden="true">Delete</span>':'')+'<button class="grow-row" data-a="open" data-g="'+esc(g.id)+'"><span class="n">'+esc(g.name)+'</span><span class="v '+sign(v)+'">'+(v>0?'+':v<0?'-':'')+fmt(Math.abs(v),g.currency)+'</span><span class="s">'+(dateRange(g)?esc(dateRange(g)):(g.members||[]).length+' people')+' · '+fmt(c.spent,g.currency)+' spent</span><span class="s r">'+lab2+'</span></button>'+(canEdit()?'</div>':'')+'';
+      h+=(canEdit()?'<div class="swipe" data-sw="g:'+esc(g.id)+'"><span class="del" aria-hidden="true">Delete</span>':'')+'<button class="grow-row" data-a="open" data-g="'+esc(g.id)+'"><span class="n">'+esc(g.name)+'</span><span class="v '+sign(v)+'">'+(v?fmt(Math.abs(v),g.currency):'')+'</span><span class="s">'+(dateRange(g)?esc(dateRange(g)):(g.members||[]).length+' people')+' · '+fmt(c.spent,g.currency)+' spent</span><span class="s r">'+lab2+'</span></button>'+(canEdit()?'</div>':'')+'';
     });
     h+='</div>';
   }
@@ -577,9 +579,9 @@ function renderGroup(app,g){
   if(!me && canEdit()) h+='<div class="banner" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span>You\'re not in this group yet.</span><button class="btn sm primary" data-a="join">Join</button></div>';
   const v=me?(c.bal[me]||0):0;
   const fc=forecast(g,c.spent);
-  h+='<div class="gtop"><h1 class="h1">'+esc(g.name)+' <span class="muted" style="font-weight:400">· '+(g.members||[]).length+' people'+(dateRange(g)?' · '+esc(dateRange(g)):'')+'</span></h1><span class="big">'+cnt('spent-'+g.id,c.spent,g.currency)+'</span><span class="sub">spent'+(me?(v>0?' · you get back <span class="pos">'+cnt('me-'+g.id,v,g.currency)+'</span>':v<0?' · you owe <span class="neg">'+cnt('me-'+g.id,-v,g.currency)+'</span>':" · you're all square"):'')+'</span>'+(fc?'<span class="sub">'+fc+'</span>':'')+'</div>';
+  h+='<div class="gtop"><h1 class="h1">'+esc(g.name)+' <span class="muted" style="font-weight:400">· '+(g.members||[]).length+' people'+(dateRange(g)?' · '+esc(dateRange(g)):'')+'</span></h1><span class="lab">Group spend</span><span class="big">'+cnt('spent-'+g.id,c.spent,g.currency)+'</span>'+(me&&c.spent?'<span class="sub">Your share <span class="num ink">'+fmt(c.share[me]||0,g.currency)+'</span> · you paid <span class="num ink">'+fmt(c.paid[me]||0,g.currency)+'</span></span>':'')+(fc?'<span class="sub">'+fc+'</span>':'')+'</div>';
   h+='<div class="people">';
-  (g.members||[]).forEach(m=>{ const b=c.bal[m.id]||0; h+='<div class="person"><span>'+esc(m.id===me?'You':m.name)+'</span><span class="num '+sign(b)+'">'+(b>0?'+':b<0?'-':'')+fmt(Math.abs(b),g.currency)+'</span></div>'; });
+  (g.members||[]).forEach(m=>{ const b=c.bal[m.id]||0; const you=m.id===me, w=b>0?(you?'get back':'gets back'):b<0?(you?'owe':'owes'):(you?"you're square":'square'); h+='<div class="person"><span>'+esc(you?'You':m.name)+'</span><span class="'+sign(b)+'"><span class="pw">'+w+'</span>'+(b?' <span class="num">'+fmt(Math.abs(b),g.currency)+'</span>':'')+'</span></div>'; });
   h+='</div>';
   const tabs=[['list','Expenses'],['timeline','Timeline'],['spend','Spending'],['settle','Settle']];
   h+='<div><div class="tabs" role="tablist">'+tabs.map(t=>'<button role="tab" aria-selected="'+(S.tab===t[0])+'" data-a="tab" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';

@@ -64,7 +64,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .gtop .big{font-family:var(--num);font-size:44px;font-weight:600;letter-spacing:-.03em;line-height:1.05;font-variant-numeric:tabular-nums lining-nums}
 .gtop .sub{font-size:14px;color:var(--muted)}
 .people{display:flex;flex-direction:column}
-.person{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line);font-size:15px}
+.person{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
 .person:first-child{border-top:1px solid var(--line)}
 .person .num{font-size:15px}
 .tabs{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line)}
@@ -97,12 +97,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .tl p{margin:0;font-size:13px;color:var(--muted)}
 .xfer{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
 .xfer .t{flex:1;font-size:15px}
+.av{display:inline-grid;place-items:center;border-radius:50%;flex-shrink:0;font-family:var(--num);font-weight:600;line-height:1}
+.person .pn{display:flex;align-items:center;gap:12px}
+.item.has-av{flex-direction:row;align-items:center;gap:12px}.item .ic{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.avs{display:flex;flex-shrink:0}.avs .av+.av{margin-left:-8px;box-shadow:0 0 0 2px var(--bg)}
 .xfer .num{display:block;font-size:20px;font-weight:300;margin-top:2px}
 .linkbtn{border:none;background:none;padding:0;font:inherit;font-size:13px;color:var(--ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer;margin-top:6px}
 .top + .banner{margin-top:22px!important}
 .banner{border-top:1px solid var(--ink);border-bottom:1px solid var(--line);padding:12px 0;font-size:14px}
 .orow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);gap:10px}
-.av{display:none}
 /* sheets */
 #sheet .ov{position:fixed;inset:0;background:rgba(17,17,17,.35);z-index:20;display:flex;align-items:flex-end;justify-content:center;transition:opacity .22s}
 #sheet .pn{background:var(--bg);width:100%;max-width:480px;max-height:92vh;overflow:auto;overflow-x:hidden;overscroll-behavior:contain;border-top:1px solid var(--ink);padding:14px 24px calc(env(safe-area-inset-bottom) + 24px);display:flex;flex-direction:column;gap:18px;transition:transform .24s cubic-bezier(.4,0,.6,1)}
@@ -613,7 +616,7 @@ function renderGroup(app,g){
   const fc=forecast(g,c.spent);
   h+='<div class="gtop"><h1 class="h1">'+esc(g.name)+' <span class="muted" style="font-weight:400">· '+(g.members||[]).length+' people'+(dateRange(g)?' · '+esc(dateRange(g)):'')+'</span></h1><span class="lab">Group spend</span><span class="big">'+cnt('spent-'+g.id,c.spent,g.currency)+'</span>'+(fc?'<span class="sub">'+fc+'</span>':'')+'</div>';
   h+='<div class="people">';
-  (g.members||[]).forEach(m=>{ const b=c.bal[m.id]||0; const you=m.id===me, w=b>0?(you?'get back':'gets back'):b<0?(you?'owe':'owes'):(you?"you're square":'square'); h+='<div class="person"><span>'+esc(you?'You':m.name)+'</span><span class="'+sign(b)+'"><span class="pw">'+w+'</span>'+(b?' '+cnt('bal-'+g.id+'-'+m.id,Math.abs(b),g.currency):'')+'</span></div>'; });
+  (g.members||[]).forEach(m=>{ const b=c.bal[m.id]||0; const you=m.id===me, w=b>0?(you?'get back':'gets back'):b<0?(you?'owe':'owes'):(you?"you're square":'square'); h+='<div class="person"><span class="pn">'+av(g,m.id,30)+esc(you?'You':m.name)+'</span><span class="'+sign(b)+'"><span class="pw">'+w+'</span>'+(b?' '+cnt('bal-'+g.id+'-'+m.id,Math.abs(b),g.currency):'')+'</span></div>'; });
   h+='</div>';
   const tabs=[['list','Expenses'],['timeline','Timeline'],['spend','Spending'],['settle','Settle']];
   h+='<div><div class="tabs" role="tablist">'+tabs.map(t=>'<button role="tab" aria-selected="'+(S.tab===t[0])+'" data-a="tab" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
@@ -656,10 +659,15 @@ function flagText(g,x){
   const names=ids.map(id=>mName(g,id));
   return names.join(', ')+(ids.length===1?(names[0]==='You'?' said not yours':' says not theirs'):' say not theirs');
 }
+// each person gets a soft-tinted circle with their initial, the same colour wherever they appear
+const AV=[['#1F4FD1','#DCE3F7'],['#2F7D5B','#DCEBE3'],['#B4430F','#F3E0D6'],['#7A4FA0','#E9E0F1'],['#A66F00','#F3E7CC'],['#1F7A85','#D7EAEC'],['#B83C64','#F4DDE5'],['#4A5568','#E2E5EA']];
+function av(g,mid,sz){ const ms=g.members||[], me=myMid(g), i=ms.findIndex(m=>m.id===mid), m=ms[i]; const nm=m?(m.name||'?'):'?';
+  const k=ms.filter(x=>x.id!==me).findIndex(x=>x.id===mid), col=mid===me?['#111111','#E4E2DE']:AV[(k<0?0:k)%AV.length], z=sz||30;
+  return '<span class="av" aria-hidden="true" style="width:'+z+'px;height:'+z+'px;font-size:'+Math.round(z*.47)+'px;color:'+col[0]+';background:'+col[1]+'">'+esc((nm.trim()[0]||'?').toUpperCase())+'</span>'; }
 function expRow(g,x,cls){
   const fl=flagText(g,x);
   const who=mName(g,x.paidBy)==='You'?'You paid':esc(mName(g,x.paidBy))+' paid';
-  return '<button class="item'+(cls||'')+'" data-a="exp" data-e="'+esc(x.id)+'"><span class="l1"><b>'+esc(x.desc)+'</b><i aria-hidden="true"></i><span class="num">'+fmt(x.base,g.currency)+'</span></span><span class="l2">'+(fl?'<span class="flag">'+esc(fl)+'</span>':who+' · '+itemMeta(g,x))+'</span></button>';
+  return '<button class="item has-av'+(cls||'')+'" data-a="exp" data-e="'+esc(x.id)+'">'+av(g,x.paidBy,32)+'<span class="ic"><span class="l1"><b>'+esc(x.desc)+'</b><i aria-hidden="true"></i><span class="num">'+fmt(x.base,g.currency)+'</span></span><span class="l2">'+(fl?'<span class="flag">'+esc(fl)+'</span>':who+' · '+itemMeta(g,x))+'</span></span></button>';
 }
 function renderList(g){
   const ex=expensesOf(g.id), sw=canEdit();
@@ -729,7 +737,7 @@ function renderSettle(g,c){
     h+='<div class="list">';
     c.transfers.forEach((t,i)=>{
       const mine=t.from===me||t.to===me;
-      h+='<div class="xfer"><div class="t">'+esc(mName(g,t.from))+' '+(t.from===me?'pay':'pays')+' '+(t.to===me?'you':esc(mName(g,t.to)))+'<span class="num">'+fmt(t.amount,g.currency)+'</span>'+((mem(g,t.to)||{}).pay?'<button class="linkbtn" data-a="payInfo" data-m="'+esc(t.to)+'">'+esc(mName(g,t.to,false))+"'s bank details</button>":'')+'</div>'+(canEdit()?'<button class="btn sm'+(mine?' primary':'')+'" data-a="markPaid" data-i="'+i+'">Paid</button>':'')+'</div>';
+      h+='<div class="xfer"><span class="avs">'+av(g,t.from,30)+av(g,t.to,30)+'</span><div class="t">'+esc(mName(g,t.from))+' '+(t.from===me?'pay':'pays')+' '+(t.to===me?'you':esc(mName(g,t.to)))+'<span class="num">'+fmt(t.amount,g.currency)+'</span>'+((mem(g,t.to)||{}).pay?'<button class="linkbtn" data-a="payInfo" data-m="'+esc(t.to)+'">'+esc(mName(g,t.to,false))+"'s bank details</button>":'')+'</div>'+(canEdit()?'<button class="btn sm'+(mine?' primary':'')+'" data-a="markPaid" data-i="'+i+'">Paid</button>':'')+'</div>';
     });
     h+='</div>';
   }

@@ -1005,7 +1005,7 @@ function sheetExpense(){
     h+='<div class="f"><label for="e-rate">1 '+esc(f.currency)+' = how many '+esc(g.currency)+'?</label><input autocomplete="off" class="inp" id="e-rate" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="e.g. 0.85"><div class="hint" id="rateNote">'+esc(f.rateNote||'')+'</div></div>';
   }
   h+='<div class="remhint" id="remHint" aria-live="polite"></div>';
-  h+='<label class="sumrow daterow"><span>'+(f.date===today()?'Today, <b>':'<b>')+esc(dLong(f.date))+'</b></span><span class="go" aria-hidden="true">Change date</span><input type="date" id="e-date" data-f="date" value="'+esc(f.date)+'" aria-label="Date of the expense"></label>';
+  h+='<label class="sumrow daterow"><span>'+(f.date===today()?'Spent <b>today</b>, '+esc(dLong(f.date)):'Spent on <b>'+esc(dLong(f.date))+'</b>')+'</span><span class="go" aria-hidden="true">Change date</span><input type="date" id="e-date" data-f="date" value="'+esc(f.date)+'" aria-label="Date of the expense"></label>';
   h+='<button class="sumrow" data-a="toggleSplit" aria-expanded="'+(!!f.showSplit)+'"><span>'+splitSummary(f,g)+'</span><span class="go" aria-hidden="true">'+(f.showSplit?'Done':'Change')+'</span></button>';
   if(f.showSplit){
     h+='<div class="f"><span class="lbl">Who paid?</span><div class="chips">'+(g.members||[]).map(m=>'<button class="chip" aria-pressed="'+(f.paidBy===m.id)+'" data-a="payer" data-m="'+esc(m.id)+'">'+esc(m.id===myMid(g)?'You':m.name)+'</button>').join('')+'</div></div>';

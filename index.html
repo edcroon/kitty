@@ -273,6 +273,8 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 #expBar{display:flex;gap:10px}
 #calcPrev:empty{display:none}
 .caldone{width:100%;margin-top:12px;height:46px}
+.grpphoto{display:flex;align-items:center;gap:14px;border:2px dashed var(--ink);border-radius:10px;padding:14px 16px;margin-top:6px;cursor:pointer;background:#FBF7EE;transition:transform .12s}
+.grpphoto:active{transform:scale(.98)}.step:has(.grpphoto) .mini.ph{display:none}.grpphoto .ge{font-size:30px}.grpphoto b{display:block;font-size:16px}.grpphoto .muted{font-size:13px}
 /* slightly rounded buttons */
 .btn,.tile,.chip,.mini,.qty,.catchip{border-radius:10px}
 .tile[aria-pressed=true]{border-radius:10px}
@@ -592,7 +594,7 @@ function render(){
   const app=document.getElementById('app');
   const nav=S.nav; S.nav=null;
   if(nav){ app.classList.remove('in','back'); void app.offsetWidth; app.classList.add(nav); clearTimeout(render._t); render._t=setTimeout(()=>app.classList.remove('in','back'),320); }
-  setTimeout(()=>{ fitBig(); countUp(); landNew(); },0);
+  setTimeout(()=>{ fitBig(); countUp(); landNew(); hydratePhotos(); },0);
   if(S.loading){ setPage('var(--bg)'); app.innerHTML='<div class="top">'+brand()+'</div><p class="muted" style="margin-top:24px">'+(S.slow?"Can't reach Kitty's data yet - check your connection.":'Loading...')+'</p>'; return; }
   if(S.err){ setPage('var(--bg)'); app.innerHTML='<div class="top">'+brand()+'</div><div class="banner" style="margin-top:24px">'+(S.err==='nodb'?'Kitty needs you to be signed in to Claude to load your groups.':'Kitty can\'t load right now. Try reopening the page.')+'</div>'; return; }
   if(S.view==='group' && S.gid && G(S.gid)) renderGroup(app,G(S.gid)); else renderHome(app);
@@ -715,7 +717,7 @@ function renderTimeline(g){
     const tot=days[d].reduce((a,x)=>a+(x.base||0),0);
     h+='<div class="day"><span>'+esc(dLong(d))+'</span><span class="num">'+fmt(tot,g.currency)+'</span></div>';
     days[d].forEach(x=>{
-      h+='<button class="tl" data-a="exp" data-e="'+esc(x.id)+'">'+(x.photoId?'<img src="/_blob/'+esc(x.photoId)+'" alt="Photo for '+esc(x.desc)+'" loading="lazy">':'')+'<span class="item" style="padding:0;border:none"><span class="l1"><b>'+esc(x.desc)+'</b><i aria-hidden="true"></i><span class="num">'+fmt(x.base,g.currency)+'</span></span><span class="l2">'+esc(mName(g,x.paidBy))+' paid · '+esc(catLabel(x))+'</span></span>'+(x.note?'<p style="color:var(--ink)">'+esc(x.note)+'</p>':'')+'</button>';
+      h+='<button class="tl" data-a="exp" data-e="'+esc(x.id)+'">'+photoImg(x.photoId,'Photo for '+x.desc)+'<span class="item" style="padding:0;border:none"><span class="l1"><b>'+esc(x.desc)+'</b><i aria-hidden="true"></i><span class="num">'+fmt(x.base,g.currency)+'</span></span><span class="l2">'+esc(mName(g,x.paidBy))+' paid · '+esc(catLabel(x))+'</span></span>'+(x.note?'<p style="color:var(--ink)">'+esc(x.note)+'</p>':'')+'</button>';
     });
   });
   return '<div class="list">'+h+'</div>';
@@ -940,7 +942,7 @@ async function convertGroup(g,cur,r,body){
 async function deleteGroup(gid){
   const ex=S.exp[gid]||[], ps=S.pay[gid]||[];
   await new Promise(r=>setTimeout(r,180)); await fadeRow('g:'+gid);
-  for(const x of ex){ await write(()=>S.db.doc('groups/'+gid+'/expenses/'+x.id).delete()); if(x.photoId&&S.assets){ try{ await S.assets.delete(x.photoId); }catch(e){} } }
+  for(const x of ex){ await write(()=>S.db.doc('groups/'+gid+'/expenses/'+x.id).delete()); if(x.photoId) dropPhoto(x.photoId); }
   for(const p of ps){ await write(()=>S.db.doc('groups/'+gid+'/payments/'+p.id).delete()); }
   const ok=await write(()=>S.db.doc('groups/'+gid).delete());
   if(ok){ closeSheet(); go(null); toast('Group deleted'); }
@@ -1087,7 +1089,9 @@ function expBar(f){
   if(f.step===3) return '<button class="btn primary grow" data-a="saveExp" '+(f.uploading?'disabled':'')+'>'+save+'</button>';
   return '<button class="btn grow" data-a="saveExp" '+(f.uploading?'disabled':'')+'>'+save+'</button><button class="btn primary grow" data-a="goStep" data-s="'+(f.step+1)+'">Next</button>';
 }
-function refreshSentence(){ const f=S.form; if(!f||!S.sheet||S.sheet.kind!=='expense') return; const er=document.getElementById('e-err'); if(er&&er.textContent&&performance.now()-(f.errAt||0)>900) er.textContent=''; const g=G(f.gid); const el=document.getElementById('sent'); if(el) el.innerHTML=sentenceHtml(f,g); const b=document.getElementById('expBar'); if(b) b.innerHTML=expBar(f); document.querySelectorAll('#sheet .dots i').forEach((d,k)=>d.classList.toggle('on',k+1===f.step)); }
+const needPhoto=f=>!f.id && !f.photoId && effCat(f).cat==='drinks' && (f.cat!=='auto'||(f.desc||'').trim()) && !window.KITTY_SKIP_PHOTO;
+function photoAsk(f){ if(!needPhoto(f)) return ''; return '<label class="grpphoto"><span class="ge" aria-hidden="true">📸</span><span><b>'+(f.uploading?'Adding the photo...':'Group photo, please')+'</b><span class="muted">Drinks don\'t count without one</span></span><input type="file" accept="image/*" id="e-photo" class="sr" '+(f.uploading?'disabled':'')+'></label>'; }
+function refreshSentence(){ const f=S.form; if(!f||!S.sheet||S.sheet.kind!=='expense') return; const pa=document.getElementById('photoAsk'); if(pa&&pa.innerHTML!==photoAsk(f)) pa.innerHTML=photoAsk(f); const er=document.getElementById('e-err'); if(er&&er.textContent&&performance.now()-(f.errAt||0)>900) er.textContent=''; const g=G(f.gid); const el=document.getElementById('sent'); if(el) el.innerHTML=sentenceHtml(f,g); const b=document.getElementById('expBar'); if(b) b.innerHTML=expBar(f); document.querySelectorAll('#sheet .dots i').forEach((d,k)=>d.classList.toggle('on',k+1===f.step)); }
 function goStep(n,instant){ const f=S.form; if(!f) return; f.step=Math.max(1,Math.min(3,n)); const t=document.querySelector('#sheet .steps'); if(t){ if(instant) t.style.scrollBehavior='auto'; t.scrollLeft=(f.step-1)*t.clientWidth; if(instant) t.style.scrollBehavior=''; } refreshSentence(); }
 function sheetExpense(){
   const f=S.form, g=G(f.gid), me=myMid(g); if(!f.step) f.step=1;
@@ -1101,10 +1105,11 @@ function sheetExpense(){
   h+='<section class="step"><div class="q">What for?</div><div id="catBox">'+catChips(f)+'</div>';
   h+='<div class="f" style="margin-top:14px"><label class="sr" for="e-desc">What for?</label><input autocomplete="off" class="inp" id="e-desc" data-f="desc" value="'+esc(f.desc)+'" placeholder="Name it, e.g. Dinner at Ramiro" maxlength="60"></div><div class="remhint" id="remHint" aria-live="polite"></div>';
   h+='<div class="minis"><button class="mini'+(f.showNote||f.note?' on':'')+'" data-a="toggleNote">'+(f.note?'Note added':'+ Note')+'</button>';
-  if(S.assets && !f.photoId) h+='<label class="mini">'+IC.cam+(f.uploading?'Uploading...':'Photo')+'<input type="file" accept="image/*" id="e-photo" class="sr" '+(f.uploading?'disabled':'')+'></label>';
+  if(canPhoto() && !f.photoId) h+='<label class="mini ph">'+IC.cam+(f.uploading?'Uploading...':'Photo')+'<input type="file" accept="image/*" id="e-photo-m" class="sr" '+(f.uploading?'disabled':'')+'></label>';
   h+='</div>';
   if(f.showNote||f.note) h+='<div class="f"><label class="sr" for="e-note">Note</label><textarea class="inp" id="e-note" data-f="note" maxlength="400" placeholder="Anything worth remembering">'+esc(f.note)+'</textarea></div>';
-  if(f.photoId) h+='<div class="f"><img class="photo" src="/_blob/'+esc(f.photoId)+'" alt="Attached photo"><button class="btn sm" data-a="rmPhoto">Remove photo</button></div>';
+  if(f.photoId) h+='<div class="f">'+photoImg(f.photoId,'Attached photo','photo')+'<button class="btn sm" data-a="rmPhoto">Remove photo</button></div>';
+  h+='<div id="photoAsk">'+photoAsk(f)+'</div>';
   h+='</section>';
   // 3. who paid, who's in
   h+='<section class="step"><div class="q">Who paid?</div><div class="faces">'+(g.members||[]).map(m=>'<button class="face" aria-pressed="'+(f.paidBy===m.id)+'" data-a="payer" data-m="'+esc(m.id)+'">'+av(g,m.id,50)+'<span>'+esc(m.id===me?'You':m.name)+'</span></button>').join('')+'</div>';
@@ -1171,6 +1176,7 @@ async function saveExpense(){
   const f=S.form, g=G(f.gid), err=document.getElementById('e-err');
   let desc=(f.desc||'').trim(); desc=desc.charAt(0).toUpperCase()+desc.slice(1); const r=computeShares(f,g);
   if(!desc && f.cat!=='auto') desc=CATS[effCat(f).cat]||'';
+  if(desc && needPhoto(f)){ goStep(2); f.errAt=performance.now(); err.textContent='Drinks need a group photo 📸 - tap the camera above.'; const pa=document.querySelector('.grpphoto'); if(pa) pa.animate([{transform:'translateX(0)'},{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(-4px)'},{transform:'none'}],{duration:360}); return; }
   if(!desc){ goStep(2); f.errAt=performance.now(); err.textContent='Say what it was - pick a picture or name it.'; return; }
   if(!(r.total>0)){ goStep(1); f.errAt=performance.now(); err.textContent='Add an amount.'; return; }
   if(r.foreign && !(r.rate>0)){ goStep(1); f.errAt=performance.now(); err.textContent='Add the exchange rate.'; return; }
@@ -1189,18 +1195,29 @@ async function saveExpense(){
   const upd={touchedAt:Date.now()}; if(r.foreign) upd.rates={[f.currency]:r.rate};
   write(()=>S.db.doc('groups/'+g.id).update(upd));
 }
+// Photos: in the shared version they go to Claude's file store; on the phone version they're kept on the phone (IndexedDB), shrunk to keep it light
+const LP={db:null,urls:{}};
+function lpOpen(){ return LP.db||(LP.db=new Promise((res,rej)=>{ const r=indexedDB.open('kitty-photos',1); r.onupgradeneeded=()=>r.result.createObjectStore('p'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); })); }
+async function lpPut(id,blob){ const db=await lpOpen(); return new Promise((res,rej)=>{ const t=db.transaction('p','readwrite'); t.objectStore('p').put(blob,id); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
+async function lpGet(id){ const db=await lpOpen(); return new Promise(res=>{ const q=db.transaction('p').objectStore('p').get(id); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); }); }
+async function lpDel(id){ try{ const db=await lpOpen(); db.transaction('p','readwrite').objectStore('p').delete(id); }catch(e){} }
+const canPhoto=()=>!!(S.assets||window.indexedDB);
+function photoImg(id,alt,cls){ if(!id) return ''; if(String(id).startsWith('local:')) return '<img class="'+(cls||'')+'" data-lp="'+esc(id)+'" alt="'+esc(alt)+'">'; return '<img class="'+(cls||'')+'" src="/_blob/'+esc(id)+'" alt="'+esc(alt)+'" loading="lazy">'; }
+function hydratePhotos(){ document.querySelectorAll('img[data-lp]:not([src])').forEach(async im=>{ const id=im.dataset.lp; if(!LP.urls[id]){ const b=await lpGet(id); if(!b) return; LP.urls[id]=URL.createObjectURL(b); } im.src=LP.urls[id]; }); }
+function dropPhoto(id){ if(!id) return; if(String(id).startsWith('local:')){ lpDel(id); return; } if(S.assets) S.assets.delete(id).catch(()=>{}); }
 async function uploadPhoto(file){
-  const f=S.form; if(!f||!S.assets||!file) return;
+  const f=S.form; if(!f||!canPhoto()||!file) return;
   f.uploading=true; renderSheet();
   let blob=file;
   try{
     const bmp=await createImageBitmap(file);
-    const sc=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+    const sc=Math.min(1,(S.assets?1600:1280)/Math.max(bmp.width,bmp.height));
     const c=document.createElement('canvas'); c.width=Math.round(bmp.width*sc); c.height=Math.round(bmp.height*sc);
     c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
-    blob=await new Promise(res=>c.toBlob(b=>res(b||file),'image/jpeg',0.82));
+    blob=await new Promise(res=>c.toBlob(b=>res(b||file),'image/jpeg',S.assets?0.82:0.72));
   }catch(e){ blob=file; }
-  try{ const a=await S.assets.upload(blob); if(S.form===f){ f.photoId=a.id; } }
+  try{ if(S.assets){ const a=await S.assets.upload(blob); if(S.form===f){ f.photoId=a.id; } }
+       else { const id='local:'+rid('p'); await lpPut(id,blob); if(S.form===f){ f.photoId=id; } } }
   catch(e){ toast(e&&e.code==='quota_exceeded'?'No room for more photos':"Couldn't upload that photo"); }
   if(S.form===f){ f.uploading=false; renderSheet(); }
 }
@@ -1213,7 +1230,7 @@ function sheetDetail(){
   let h=head(x.desc);
   h+='<div class="gtop"><span class="sub">'+esc(mName(g,x.paidBy))+' paid · '+esc(dLong(x.date))+' · '+esc(catLabel(x))+'</span><span class="big">'+fmt(x.base,g.currency)+'</span></div>';
   if(x.currency!==g.currency) h+='<div class="hint">'+fmt(x.amount,x.currency)+' at 1 '+esc(x.currency)+' = '+esc(String(x.rate))+' '+esc(g.currency)+'</div>';
-  if(x.photoId) h+='<img class="photo" src="/_blob/'+esc(x.photoId)+'" alt="Photo for '+esc(x.desc)+'">';
+  if(x.photoId) h+=photoImg(x.photoId,'Photo for '+x.desc,'photo');
   if(x.note) h+='<p style="margin:0;font-size:16px;font-weight:500">'+esc(x.note)+'</p>';
   h+='<div>'+Object.keys(x.shares||{}).map(mid=>'<div class="prow">'+avatar(g,mid)+'<span class="nm">'+esc(mName(g,mid))+(x.notMine&&x.notMine[mid]?' <span class="flag" style="font-size:12px">says not theirs</span>':'')+'</span><span class="sh">'+fmt(x.shares[mid],g.currency)+'</span></div>').join('')+'</div>';
   const flagged=Object.keys(x.notMine||{}).filter(k=>x.notMine[k]);
@@ -1285,7 +1302,7 @@ async function softDelete(path,item,msg,photoId){
   const wasOpen=!!S.sheet; closeSheet(); if(wasOpen) await new Promise(r=>setTimeout(r,180));
   await fadeRow(item.id);
   const ok=await write(()=>S.db.doc(path).delete()); if(!ok){ render(); return; }
-  const u={path,body,finish:()=>{ if(photoId&&S.assets){ S.assets.delete(photoId).catch(()=>{}); } }};
+  const u={path,body,finish:()=>{ if(photoId) dropPhoto(photoId); }};
   u.timer=setTimeout(()=>{ if(S.undo===u){ S.undo=null; } u.finish(); },6000);
   S.undo=u; toast(msg,false,'Undo',6000);
 }
@@ -1298,7 +1315,7 @@ function popCat(text,kind,g){
 }
 
 
-{ const _rs=renderSheet; renderSheet=function(){ _rs.apply(this,arguments); const f=S.form, t=document.querySelector('#sheet .steps'); if(t&&f){ goStep(f.step||1,true); t.addEventListener('scroll',()=>{ const n=Math.round(t.scrollLeft/Math.max(1,t.clientWidth))+1; if(S.form===f&&n!==f.step){ f.step=n; refreshSentence(); } },{passive:true}); } window.dispatchEvent(new Event('kitty-sheet')); }; }
+{ const _rs=renderSheet; renderSheet=function(){ _rs.apply(this,arguments); const f=S.form, t=document.querySelector('#sheet .steps'); if(t&&f){ goStep(f.step||1,true); t.addEventListener('scroll',()=>{ const n=Math.round(t.scrollLeft/Math.max(1,t.clientWidth))+1; if(S.form===f&&n!==f.step){ f.step=n; refreshSentence(); } },{passive:true}); } hydratePhotos(); window.dispatchEvent(new Event('kitty-sheet')); }; }
 // A strip above the keyboard while you type an expense: date, who paid, photo and note, like Splitwise.
 (()=>{
   const bar=document.createElement('div'); bar.id='kbar'; document.body.appendChild(bar);
@@ -1308,7 +1325,7 @@ function popCat(text,kind,g){
     const who=f.paidBy===myMid(g)?'You paid':(mName(g,f.paidBy)||'Someone')+' paid';
     let h='<div class="in"><label class="kb">'+IC.cal+'<span>'+(f.date===today()?'Today':esc(dLong(f.date)))+'</span><input type="date" id="kb-date" value="'+esc(f.date)+'" aria-label="Date"></label>';
     h+='<button class="kb" data-a="kbPaid">'+IC.ppl+'<span>'+esc(who)+'</span></button><span class="sp"></span>';
-    if(S.assets && !f.photoId) h+='<label class="kb" aria-label="Add a photo">'+IC.cam+'<input type="file" accept="image/*" id="kb-photo"></label>';
+    if(canPhoto() && !f.photoId) h+='<label class="kb" aria-label="Add a photo">'+IC.cam+'<input type="file" accept="image/*" id="kb-photo"></label>';
     h+='<button class="kb'+(f.note?' on':'')+'" data-a="kbNote" aria-label="Note">'+IC.note+'</button></div>';
     bar.innerHTML=h; };
   const pos=()=>{ if(!bar.classList.contains('on')) return;
@@ -1535,7 +1552,7 @@ document.addEventListener('click',e=>{
     case 'partyClose': endParty(); break;
     case 'calOpen': S.form.showCal=!S.form.showCal; if(S.form.showCal) S.form.calMonth=(S.form.startDate||today()).slice(0,7); renderSheet(); break;
     case 'calNav': { const [y,mo]=S.form.calMonth.split('-').map(Number); const d=new Date(y,mo-1+Number(t.dataset.d),1); S.form.calMonth=isoOf(d).slice(0,7); renderSheet(); break; }
-    case 'calDay': { const f=S.form, d=t.dataset.d; if(!f.startDate||f.endDate){ f.startDate=d; f.endDate=''; } else if(d<f.startDate){ f.startDate=d; } else { f.endDate=d; } renderSheet(); if(f.endDate&&f.startDate){ clearTimeout(f._calT); f._calT=setTimeout(()=>{ if(S.form===f&&f.showCal&&f.endDate){ f.showCal=false; renderSheet(); } },650); } break; }
+    case 'calDay': { const f=S.form, d=t.dataset.d; if(!f.startDate||f.endDate){ f.startDate=d; f.endDate=''; } else if(d<f.startDate){ f.startDate=d; } else { f.endDate=d; } renderSheet(); break; }
     case 'calClear': S.form.startDate=''; S.form.endDate=''; renderSheet(); break;
     case 'pet': { if(t._skip){ t._skip=false; break; } t.classList.remove('pet'); void t.offsetWidth; t.classList.add('pet'); clearTimeout(t._p); t._p=setTimeout(()=>t.classList.remove('pet'),900); break; }
     case 'working': S.showWorking=!S.showWorking; render(); break;
@@ -1554,7 +1571,7 @@ document.addEventListener('input',e=>{
   else if(t.dataset.m!=null && t.tagName==='INPUT'){ S.form.members[Number(t.dataset.m)].name=t.value; }
   else if(t.dataset.pay!=null){ S.form.members[Number(t.dataset.pay)].pay=t.value; }
 });
-document.addEventListener('change',e=>{ const t=e.target; if(t.id==='e-photo' && t.files && t.files[0]) uploadPhoto(t.files[0]); if(t.tagName==='SELECT' && t.dataset.f && S.form){ S.form[t.dataset.f]=t.value; } if(t.id==='e-date' && S.form){ S.form.date=t.value||today(); renderSheet(); } });
+document.addEventListener('change',e=>{ const t=e.target; if((t.id==='e-photo'||t.id==='e-photo-m') && t.files && t.files[0]) uploadPhoto(t.files[0]); if(t.tagName==='SELECT' && t.dataset.f && S.form){ S.form[t.dataset.f]=t.value; } if(t.id==='e-date' && S.form){ S.form.date=t.value||today(); renderSheet(); } });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && S.sheet) closeSheet(); });
 document.addEventListener('keydown',e=>{ const t=e.target; if((e.key==='Enter'||e.key===' ')&&t.matches&&t.matches('span[role=button][data-a]')){ e.preventDefault(); t.click(); } });
 

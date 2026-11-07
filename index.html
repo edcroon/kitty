@@ -155,7 +155,7 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .link{font-family:var(--mono);font-size:13px;word-break:break-all;border-bottom:1px solid var(--line);padding:10px 0;user-select:all}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .mem{display:flex;gap:8px;align-items:center}
-.addrow{display:flex;gap:10px;align-items:center}.addrow .inp{flex:1;min-width:0}.addrow .btn{height:40px;min-width:72px}
+.addrow{display:flex;flex-direction:column;align-items:flex-start;gap:10px}.addrow .inp{width:100%}.addrow .btn{height:44px;min-width:110px}
 .gninp{display:block;width:100%;border:none;border-bottom:1px solid var(--ink);border-radius:0;background:transparent;font:600 28px var(--num);letter-spacing:-.01em;padding:10px 0 8px;color:var(--ink);outline:none}.gninp::placeholder{color:#C4BEB4}
 .pills{display:flex;gap:8px;flex-wrap:wrap}.mini.pill,.mini.pill.on{border:1px solid var(--line);font-size:14px;height:36px}.mini.pill svg{width:16px;height:16px}
 .inp:focus-visible,.gninp:focus-visible,textarea.inp:focus-visible{outline:none;border-bottom-color:var(--pos)}.pill select{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;-webkit-appearance:none;appearance:none}
@@ -322,8 +322,9 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 @keyframes kFall{to{transform:translateY(110vh) rotate(540deg)}}
 #sheet.anim .ov{animation:kFade .22s ease}
 #sheet.anim .pn{animation:kUp .32s cubic-bezier(.2,.9,.25,1)}
-#sheet.closing .ov{opacity:0}
-#sheet.closing .pn{transform:translateY(100%)}
+#sheet .ov{transition:background-color .3s ease}
+#sheet.closing .ov{background:rgba(17,17,17,0)}
+#sheet.closing .pn{transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.7,.2)}
 #sheet.dragging .pn{transition:none}
 #app.in{animation:kIn .26s cubic-bezier(.2,.8,.3,1)}
 #app.back{animation:kBack .26s cubic-bezier(.2,.8,.3,1)}
@@ -577,6 +578,17 @@ function go(gid){
 }
 window.addEventListener('hashchange',()=>{ route(); render(); });
 
+// swipe sideways between the add-expense steps (right = back a step)
+(function(){
+  let x0=null,y0=0,mode=null,t=null,base=0,lx=0,lt=0,vx=0;
+  document.addEventListener('touchstart',e=>{ x0=null; const tr=e.target.closest&&e.target.closest('#sheet .steps'); if(!tr||!S.form||e.touches.length>1||e.target.closest('input,textarea,select')) return; t=tr; x0=lx=e.touches[0].clientX; y0=e.touches[0].clientY; lt=performance.now(); vx=0; mode=null; base=t.scrollLeft; },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(x0==null) return; const x=e.touches[0].clientX, mx=x-x0, my=e.touches[0].clientY-y0;
+    if(!mode){ if(Math.abs(mx)>10&&Math.abs(mx)>Math.abs(my)*1.2) mode='h'; else if(Math.abs(my)>10){ x0=null; return; } else return; }
+    const now=performance.now(); vx=vx*.5+.5*(x-lx)/Math.max(1,now-lt); lx=x; lt=now;
+    const w=t.clientWidth, st=S.form.step||1, lo=(st-2)*w, hi=st*w; t.style.scrollBehavior='auto'; t.scrollLeft=Math.max(Math.max(0,lo),Math.min(Math.min(2*w,hi),base-mx)); },{passive:true});
+  document.addEventListener('touchend',e=>{ if(x0==null||mode!=='h'){ x0=null; return; } const mx=(e.changedTouches[0]||{clientX:x0}).clientX-x0, st=S.form.step||1; x0=null; t.style.scrollBehavior='';
+    if((mx>60||vx>.45)&&st>1) goStep(st-1); else if((mx<-60||vx<-.45)&&st<3) goStep(st+1); else goStep(st); },{passive:true});
+})();
 // iPhone-style back: swipe in from the left edge of a group to go back to your groups
 (function(){
   let x0=null, y0=0, t0=0, dx=0, on=false; const app=()=>document.getElementById('app');
@@ -786,7 +798,8 @@ function renderSettle(g,c){
   if(!c.transfers.length) h+='<div class="empty">'+cat(64,'bob',true)+'<div class="t">All square</div><div class="d">Nobody owes anybody.</div></div>';
   else {
     h+='<div class="list">';
-    c.transfers.forEach((t,i)=>{
+    const rank=t=>t.from===me?0:t.to===me?1:2;
+    c.transfers.map((t,i)=>[t,i]).sort((a,b)=>rank(a[0])-rank(b[0])||b[0].amount-a[0].amount).forEach(([t,i])=>{
       const mine=t.from===me||t.to===me;
       h+='<div class="xfer"><span class="avs">'+av(g,t.from,30)+av(g,t.to,30)+'</span><div class="t">'+esc(mName(g,t.from))+' '+(t.from===me?'pay':'pays')+' '+(t.to===me?'you':esc(mName(g,t.to)))+'<span class="num">'+fmt(t.amount,g.currency)+'</span>'+((mem(g,t.to)||{}).pay?'<button class="linkbtn" data-a="payInfo" data-m="'+esc(t.to)+'">'+esc(mName(g,t.to,false))+"'s bank details</button>":'')+'</div>'+(canEdit()?'<button class="btn sm'+(mine?' primary':'')+'" data-a="markPaid" data-i="'+i+'">Paid</button>':'')+'</div>';
     });
@@ -817,7 +830,7 @@ function closeSheet(){
   if(!el.querySelector('.pn')){ el.innerHTML=''; return; }
   const pn=el.querySelector('.pn'); if(pn) pn.style.transform='';
   el.classList.remove('anim','dragging'); el.classList.add('closing');
-  clearTimeout(closeSheet._t); closeSheet._t=setTimeout(()=>{ if(!S.sheet) el.innerHTML=''; el.classList.remove('closing'); },240);
+  clearTimeout(closeSheet._t); closeSheet._t=setTimeout(()=>{ if(!S.sheet) el.innerHTML=''; el.classList.remove('closing'); },320);
 }
 (function(){
   let y0=null, dy=0, pn=null;
@@ -891,7 +904,7 @@ function gFaces(f,fg,isNew){
   });
   h+='</div>';
   const ed=f.editIdx!=null;
-  h+='<div class="addrow"><label class="sr" for="m-new">'+(ed?'Rename':'Add a friend')+'</label><input autocomplete="off" autocorrect="off" spellcheck="false" name="kf'+Date.now()%1000+'" class="inp" id="m-new" data-mnew="1" enterkeyhint="'+(ed?'done':'next')+'" value="'+esc(f.newName||'')+'" placeholder="'+(ed?'Rename':'Add a friend, e.g. Sam')+'" maxlength="30"><button class="btn sm primary caps" data-a="mAdd">'+(ed?'DONE':'ADD')+'</button></div>';
+  h+='<div class="addrow"><label class="sr" for="m-new">'+(ed?'Rename':'Add a friend')+'</label><input autocomplete="off" autocorrect="off" spellcheck="false" name="kf'+Date.now()%1000+'" class="inp" id="m-new" data-mnew="1" enterkeyhint="'+(ed?'done':'next')+'" value="'+esc(f.newName||'')+'" placeholder="'+(ed?'Rename':'Add a friend, e.g. Sam')+'" maxlength="30"><button class="btn sm caps" data-a="mAdd">'+(ed?'DONE':'ADD')+'</button></div>';
   return h;
 }
 function sheetNewGroup(f,fg){

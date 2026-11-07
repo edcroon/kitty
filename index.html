@@ -489,8 +489,9 @@ function settle(bal){
   while(i<dr.length&&j<cr.length){ const a=Math.min(dr[i][1],cr[j][1]); if(a>0) out.push({from:dr[i][0],to:cr[j][0],amount:a}); dr[i][1]-=a; cr[j][1]-=a; if(dr[i][1]===0)i++; if(cr[j][1]===0)j++; }
   return out;
 }
-function myGroups(){ return Object.values(S.groups).filter(g=>myMid(g)).sort((a,b)=>(b.touchedAt||b.createdAt||0)-(a.touchedAt||a.createdAt||0)); }
-function otherGroups(){ return Object.values(S.groups).filter(g=>!myMid(g)).sort((a,b)=>(a.name||'').localeCompare(b.name||'')); }
+S.gone={};
+function myGroups(){ return Object.values(S.groups).filter(g=>myMid(g)&&!S.gone[g.id]).sort((a,b)=>(b.touchedAt||b.createdAt||0)-(a.touchedAt||a.createdAt||0)); }
+function otherGroups(){ return Object.values(S.groups).filter(g=>!myMid(g)&&!S.gone[g.id]).sort((a,b)=>(a.name||'').localeCompare(b.name||'')); }
 function canEdit(){ return S.canWrite!==false; }
 
 /* ---------- data ---------- */
@@ -948,10 +949,12 @@ async function convertGroup(g,cur,r,body){
 async function deleteGroup(gid){
   const ex=S.exp[gid]||[], ps=S.pay[gid]||[];
   await new Promise(r=>setTimeout(r,180)); await fadeRow('g:'+gid);
+  S.gone[gid]=true; // keep it hidden while its expenses are removed, so the list doesn't redraw it
   for(const x of ex){ await write(()=>S.db.doc('groups/'+gid+'/expenses/'+x.id).delete()); if(x.photoId) dropPhoto(x.photoId); }
   for(const p of ps){ await write(()=>S.db.doc('groups/'+gid+'/payments/'+p.id).delete()); }
   const ok=await write(()=>S.db.doc('groups/'+gid).delete());
-  if(ok){ closeSheet(); go(null); toast('Group deleted'); }
+  if(ok){ closeSheet(); if(S.view==='home'&&!S.gid) render(); else go(null); toast('Group deleted'); }
+  else { delete S.gone[gid]; render(); }
 }
 
 /* join */

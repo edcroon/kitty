@@ -129,7 +129,7 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .tick svg{width:14px;height:14px}
 .x{width:44px;height:44px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
 .qty{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:transparent;cursor:pointer;font-size:16px;padding:0}
-.cal{border-bottom:1px solid var(--line);padding:4px 0 12px}
+.cal{padding:4px 0 4px}
 .calhd{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:500;margin:0 -12px}
 .calg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:2px}
 .cw{font-size:11px;letter-spacing:.06em;color:var(--muted);text-align:center;padding:4px 0 6px}
@@ -147,6 +147,7 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .link{font-family:var(--mono);font-size:13px;word-break:break-all;border-bottom:1px solid var(--line);padding:10px 0;user-select:all}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .mem{display:flex;gap:8px;align-items:center}
+.addrow{display:flex;gap:10px;align-items:center}.addrow .inp{flex:1;min-width:0}.addrow .btn{height:40px;min-width:72px}
 .gninp{display:block;width:100%;border:none;border-bottom:1px solid var(--ink);border-radius:0;background:transparent;font:600 28px var(--num);letter-spacing:-.01em;padding:10px 0 8px;color:var(--ink);outline:none}.gninp::placeholder{color:#C4BEB4}
 .pills{display:flex;gap:8px;flex-wrap:wrap}.mini.pill,.mini.pill.on{border:1px solid var(--line);font-size:14px;height:36px}.mini.pill svg{width:16px;height:16px}
 .inp:focus-visible,.gninp:focus-visible,textarea.inp:focus-visible{outline:none;border-bottom-color:var(--pos)}.pill select{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;-webkit-appearance:none;appearance:none}
@@ -261,6 +262,7 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .step{flex:0 0 100%;min-width:0;box-sizing:border-box;padding:2px;display:flex;flex-direction:column;gap:10px}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);margin-top:6px}
 .pad button{height:clamp(46px,7vh,58px);border:none;border-bottom:1px solid var(--line);background:none;font:600 26px var(--num);font-family:'Kitty Num',sans-serif;color:var(--ink);cursor:pointer;transition:background-color .1s}
+.pad .pdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;vertical-align:middle}
 .pad button:active{background:#ECE8E0;border-radius:var(--r)}
 .q{font:600 22px 'Kitty Num',sans-serif;margin-top:4px}
 .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -853,6 +855,7 @@ function sheetGroup(){
     }
   }
   h+='<div class="hint bad" id="g-err"></div>';
+  if(f.showCal) return h;
   h+='<button class="btn primary caps" data-a="saveGroup">'+(isNew?'START':'SAVE')+'</button>';
   if(!isNew) h+='<button class="btn" data-a="delGroup"><span class="danger">Delete this group</span></button>';
   return h;
@@ -870,8 +873,9 @@ function gFaces(f,fg,isNew){
     const isMe=(m.uid&&m.uid===S.uid)||(!S.uid&&i===0&&isNew), used=!isNew && memberUsed(f.id,m.id);
     h+='<span class="fwrap"><button class="face'+(f.editIdx===i?' editing':'')+'" data-a="mEdit" data-i="'+i+'" aria-label="Rename '+esc(isMe?'yourself':m.name||'person')+'">'+av(fg,m.id,52)+'<span>'+esc(isMe?'You':m.name||'?')+'</span></button>'+(isMe||used?'':'<button class="fdel" data-a="mDel" data-i="'+i+'" aria-label="Remove '+esc(m.name||'person')+'">'+IC.x+'</button>')+'</span>';
   });
-  h+='<button class="face" data-a="mAdd" aria-label="Add someone"><span class="av addc" style="width:52px;height:52px">'+IC.plus+'</span><span class="muted">Add</span></button></div>';
-  if(f.adding||f.editIdx!=null) h+='<div class="mem"><label class="sr" for="m-new">'+(f.editIdx!=null?'New name':'Their name')+'</label><input autocomplete="off" class="inp" id="m-new" data-mnew="1" enterkeyhint="'+(f.editIdx!=null?'done':'next')+'" value="'+esc(f.newName||'')+'" placeholder="'+(f.editIdx!=null?'New name':'Their name, then return')+'" maxlength="30"></div>';
+  h+='</div>';
+  const ed=f.editIdx!=null;
+  h+='<div class="addrow"><label class="sr" for="m-new">'+(ed?'Rename':'Add a friend')+'</label><input autocomplete="off" autocorrect="off" spellcheck="false" name="kf'+Date.now()%1000+'" class="inp" id="m-new" data-mnew="1" enterkeyhint="'+(ed?'done':'next')+'" value="'+esc(f.newName||'')+'" placeholder="'+(ed?'Rename':'Add a friend, e.g. Sam')+'" maxlength="30"><button class="btn sm primary caps" data-a="mAdd">'+(ed?'DONE':'ADD')+'</button></div>';
   return h;
 }
 function sheetNewGroup(f,fg){
@@ -883,6 +887,7 @@ function sheetNewGroup(f,fg){
     h+=gPills(f);
   } else h+=gFaces(f,fg,true);
   h+='</div><div class="hint bad" id="g-err"></div>';
+  if(f.showCal&&!two) return h;
   h+='<div class="dots" aria-hidden="true"><i'+(two?'':' class="on"')+'></i><i'+(two?' class="on"':'')+'></i></div>';
   h+=two?'<button class="btn primary caps" data-a="saveGroup">START</button>':'<button class="btn primary caps" data-a="gNext">NEXT</button>';
   f.stepAnim='';
@@ -1165,7 +1170,7 @@ function sheetExpense(){
   // 1. how much
   h+='<section class="step"><div class="bigamt"><label class="sr" for="e-cur">Currency</label><select class="cur" id="e-cur" data-f="currency">'+CURS.map(c=>'<option value="'+c+'"'+(c===f.currency?' selected':'')+'>'+esc(sym(c))+' '+c+'</option>').join('')+'</select><label class="sr" for="e-amt">Amount</label><input id="e-amt" data-f="amountStr" inputmode="none" value="'+esc(f.amountStr)+'" placeholder="0.00" autocomplete="off"></div><div class="hint" id="calcPrev" style="text-align:center"></div>';
   if(f.currency!==g.currency) h+='<div class="f"><label for="e-rate">1 '+esc(f.currency)+' = how many '+esc(g.currency)+'?</label><input autocomplete="off" class="inp" id="e-rate" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="e.g. 0.85"><div class="hint" id="rateNote">'+esc(f.rateNote||'')+'</div></div>';
-  h+='<div class="pad" role="group" aria-label="Number pad">'+['1','2','3','4','5','6','7','8','9','.','0','del'].map(k=>'<button data-a="key" data-k="'+k+'" aria-label="'+(k==='del'?'Delete':k)+'">'+(k==='del'?'⌫':k)+'</button>').join('')+'</div></section>';
+  h+='<div class="pad" role="group" aria-label="Number pad">'+['1','2','3','4','5','6','7','8','9','.','0','del'].map(k=>'<button data-a="key" data-k="'+k+'" aria-label="'+(k==='del'?'Delete':k==='.'?'Decimal point':k)+'">'+(k==='del'?'⌫':k==='.'?'<span class="pdot"></span>':k)+'</button>').join('')+'</div></section>';
   // 2. what for
   h+='<section class="step"><div class="q">What for?</div><div id="catBox">'+catChips(f)+'</div>';
   h+='<div class="f" style="margin-top:14px"><label class="sr" for="e-desc">What for?</label><input autocomplete="off" class="inp" id="e-desc" data-f="desc" value="'+esc(f.desc)+'" placeholder="Name it, e.g. Dinner at Ramiro" maxlength="60"></div><div class="remhint" id="remHint" aria-live="polite"></div>';

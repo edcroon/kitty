@@ -147,6 +147,17 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .link{font-family:var(--mono);font-size:13px;word-break:break-all;border-bottom:1px solid var(--line);padding:10px 0;user-select:all}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .mem{display:flex;gap:8px;align-items:center}
+.gninp{display:block;width:100%;border:none;border-bottom:1px solid var(--ink);border-radius:0;background:transparent;font:600 28px var(--num);letter-spacing:-.01em;padding:10px 0 8px;color:var(--ink);outline:none}.gninp::placeholder{color:#C4BEB4}
+.pills{display:flex;gap:8px;flex-wrap:wrap}.mini.pill,.mini.pill.on{border:1px solid var(--line);font-size:14px;height:36px}.mini.pill svg{width:16px;height:16px}
+.inp:focus-visible,.gninp:focus-visible,textarea.inp:focus-visible{outline:none;border-bottom-color:var(--pos)}.pill select{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;-webkit-appearance:none;appearance:none}
+.fwrap{position:relative;display:inline-flex}.fdel{position:absolute;top:-6px;right:-4px;width:24px;height:24px;border-radius:50%;border:none;background:var(--bg);box-shadow:0 0 0 1px var(--line);display:grid;place-items:center;padding:0;cursor:pointer;color:var(--muted)}.fdel svg{width:12px;height:12px}
+.av.addc{border:1.5px dashed #A9A39A;color:var(--muted);background:none}.av.addc svg{width:20px;height:20px}
+.face.editing .av{box-shadow:0 0 0 2.5px var(--pos)}
+.btn.caps{text-transform:uppercase;letter-spacing:.08em}
+#sheet .hd h2.gq{font:600 24px var(--num);letter-spacing:-.01em;line-height:1.3}
+.sentlink{border:none;background:none;padding:0;font:inherit;color:var(--pos);text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1.5px;cursor:pointer}
+.gstep{display:flex;flex-direction:column;gap:14px;min-height:250px}.gstep.fwd{animation:kStepF .28s cubic-bezier(.2,.8,.3,1)}.gstep.back{animation:kStepB .28s cubic-bezier(.2,.8,.3,1)}
+@keyframes kStepF{from{opacity:0;transform:translateX(28px)}}@keyframes kStepB{from{opacity:0;transform:translateX(-28px)}}
 .mem .inp{flex:1}
 .danger{color:#B42318}
 .photo-row{display:flex;flex-direction:column;gap:10px}
@@ -823,30 +834,73 @@ function confirmBox(title,text,yes,fn){ S.confirm={title,text,yes,fn}; openSheet
 
 /* group create / edit */
 function sheetGroup(){
-  const f=S.form, isNew=!f.id;
-  let h=head(isNew?'New group':'Group settings');
-  h+='<div class="f"><label for="g-title">Group</label><input autocomplete="off" class="inp" id="g-title" data-f="name" value="'+esc(f.name)+'" placeholder="e.g. Lisbon weekend" maxlength="60" '+(isNew?'data-autofocus':'')+'></div>';
+  const f=S.form, isNew=!f.id, fg={members:f.members};
+  if(isNew) return sheetNewGroup(f,fg);
+  let h=head('Group settings');
+  h+='<label class="sr" for="g-title">Group name</label><input autocomplete="off" class="gninp" id="g-title" data-f="name" value="'+esc(f.name)+'" placeholder="Name it, e.g. Lisbon" maxlength="60" '+(isNew?'data-autofocus':'')+'>';
   const hasMoney=!isNew && ((S.exp[f.id]||[]).length>0 || (S.pay[f.id]||[]).length>0);
-  h+='<div class="f"><label for="g-cur">Currency</label><select class="inp" id="g-cur" data-f="currency">'+CURS.map(c=>'<option'+(c===f.currency?' selected':'')+'>'+c+'</option>').join('')+'</select></div>';
+  h+=gPills(f);
   if(hasMoney && f.currency!==f.oldCurrency){
     h+='<div class="f"><label for="g-rate">Exchange rate: 1 '+esc(f.oldCurrency)+' = how many '+esc(f.currency)+'?</label><input autocomplete="off" class="inp" id="g-rate" data-f="convRate" inputmode="decimal" value="'+esc(f.convRate)+'" placeholder="e.g. 1.27"><div class="hint" id="gRateNote">'+esc(f.gRateNote||'')+'</div><div class="hint">Everything in this group switches to '+esc(f.currency)+'. Anything originally paid in '+esc(f.currency)+' goes back to its exact amount, and everything else is converted at this rate.</div></div>';
   }
-  h+='<div class="f"><span class="lbl">Trip dates (optional)</span><button class="sumrow" data-a="calOpen" aria-expanded="'+(!!f.showCal)+'"><span>'+(f.startDate?esc(dateRange({startDate:f.startDate,endDate:f.endDate||f.startDate})):'<span class="muted">Add dates</span>')+'</span><span class="go">'+(f.showCal?'Done':(f.startDate?'Change':'Add'))+'</span></button>'+(f.showCal?calHtml(f):'')+'</div>';
-  h+='<div class="f"><span class="lbl">Who\'s in?</span><div>';
-  f.members.forEach((m,i)=>{
-    const isMe=m.uid&&m.uid===S.uid, used=!isNew && memberUsed(f.id,m.id);
-    h+='<div class="mem"><label class="sr" for="m-'+i+'">Friend</label><input autocomplete="off" class="inp" id="m-'+i+'" data-m="'+i+'" value="'+esc(m.name)+'" placeholder="e.g. Sam" maxlength="30">'+(isMe?'<span class="muted" style="font-size:13px;width:44px;text-align:center">you</span>':used?'<span style="width:44px"></span>':'<button class="x" data-a="mDel" data-i="'+i+'" aria-label="Remove '+esc(m.name||'person')+'">'+IC.x+'</button>')+'</div>';
-  });
-  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button class="btn sm" data-a="mAdd">'+IC.plus+'Add someone</button>'+(isNew?'':'<button class="btn sm" data-a="invite">'+IC.qr+'Invite with QR code</button>')+'</div></div><div class="hint">Add anyone - friends without Claude can still be in it, you just add their spending for them.</div></div>';
+  h+='<div class="q" style="margin-top:14px">Who\'s in?</div>'+gFaces(f,fg,false);
   if(!isNew){
+    h+='<button class="mini pill" style="align-self:flex-start" data-a="invite">'+IC.qr+'Invite with QR code</button>';
     const me=f.members.find(m=>m.uid===S.uid);
-    if(me){ const i=f.members.indexOf(me); h+='<div class="f"><label for="g-pay">Your bank details or payment link</label><textarea class="inp" id="g-pay" data-pay="'+i+'" placeholder="e.g. Sort code and account number, or a Monzo/Revolut link" maxlength="300">'+esc(me.pay||'')+'</textarea><div class="hint">Shown to people who owe you when they settle up.</div></div>'; }
+    if(me){ const i=f.members.indexOf(me);
+      if(f.showPay||me.pay) h+='<div class="f"><label for="g-pay">Your bank details or payment link</label><textarea class="inp" id="g-pay" data-pay="'+i+'" placeholder="e.g. Sort code and account number, or a Monzo/Revolut link" maxlength="300">'+esc(me.pay||'')+'</textarea></div>';
+      else h+='<button class="linkbtn" style="align-self:flex-start;font-size:14px" data-a="showPay">Add your bank details</button>';
+    }
   }
   h+='<div class="hint bad" id="g-err"></div>';
-  h+='<button class="btn primary" data-a="saveGroup">'+(isNew?'Start the group':'Save')+'</button>';
+  h+='<button class="btn primary caps" data-a="saveGroup">'+(isNew?'START':'SAVE')+'</button>';
   if(!isNew) h+='<button class="btn" data-a="delGroup"><span class="danger">Delete this group</span></button>';
   return h;
 }
+function gPills(f){
+  const sym=(fmt(0,f.currency).replace(/[\d.,\s]/g,'')||'');
+  let h='<div class="pills"><label class="mini on pill"><span>'+esc(sym&&sym!==f.currency?sym+' '+f.currency:f.currency)+'</span><select id="g-cur" data-f="currency" aria-label="Currency">'+CURS.map(c=>'<option'+(c===f.currency?' selected':'')+'>'+c+'</option>').join('')+'</select></label>';
+  h+='<button class="mini pill'+(f.startDate||f.showCal?' on':'')+'" data-a="calOpen" aria-expanded="'+(!!f.showCal)+'">'+(f.startDate?esc(dateRange({startDate:f.startDate,endDate:f.endDate||f.startDate})):'Add dates')+'</button></div>';
+  if(f.showCal) h+=calHtml(f);
+  return h;
+}
+function gFaces(f,fg,isNew){
+  let h='<div class="faces">';
+  f.members.forEach((m,i)=>{
+    const isMe=(m.uid&&m.uid===S.uid)||(!S.uid&&i===0&&isNew), used=!isNew && memberUsed(f.id,m.id);
+    h+='<span class="fwrap"><button class="face'+(f.editIdx===i?' editing':'')+'" data-a="mEdit" data-i="'+i+'" aria-label="Rename '+esc(isMe?'yourself':m.name||'person')+'">'+av(fg,m.id,52)+'<span>'+esc(isMe?'You':m.name||'?')+'</span></button>'+(isMe||used?'':'<button class="fdel" data-a="mDel" data-i="'+i+'" aria-label="Remove '+esc(m.name||'person')+'">'+IC.x+'</button>')+'</span>';
+  });
+  h+='<button class="face" data-a="mAdd" aria-label="Add someone"><span class="av addc" style="width:52px;height:52px">'+IC.plus+'</span><span class="muted">Add</span></button></div>';
+  if(f.adding||f.editIdx!=null) h+='<div class="mem"><label class="sr" for="m-new">'+(f.editIdx!=null?'New name':'Their name')+'</label><input autocomplete="off" class="inp" id="m-new" data-mnew="1" enterkeyhint="'+(f.editIdx!=null?'done':'next')+'" value="'+esc(f.newName||'')+'" placeholder="'+(f.editIdx!=null?'New name':'Their name, then return')+'" maxlength="30"></div>';
+  return h;
+}
+function sheetNewGroup(f,fg){
+  const two=f.step===2;
+  let h='<div class="hd"><h2 id="sh-t" class="gq">'+(two?'Who\'s going to <button class="sentlink" data-a="gBack">'+esc(f.name.trim())+'</button>?':'Name your group')+'</h2><button class="x" data-a="close" aria-label="Close">'+IC.x+'</button></div>';
+  h+='<div class="gstep'+(f.stepAnim?' '+f.stepAnim:'')+'">';
+  if(!two){
+    h+='<label class="sr" for="g-title">Group name</label><input autocomplete="off" class="gninp" id="g-title" data-f="name" enterkeyhint="next" value="'+esc(f.name)+'" placeholder="e.g. Lisbon" maxlength="60" data-autofocus>';
+    h+=gPills(f);
+  } else h+=gFaces(f,fg,true);
+  h+='</div><div class="hint bad" id="g-err"></div>';
+  h+='<div class="dots" aria-hidden="true"><i'+(two?'':' class="on"')+'></i><i'+(two?' class="on"':'')+'></i></div>';
+  h+=two?'<button class="btn primary caps" data-a="saveGroup">START</button>':'<button class="btn primary caps" data-a="gNext">NEXT</button>';
+  f.stepAnim='';
+  return h;
+}
+function gNext(){
+  const f=S.form; if(!f) return;
+  if(!(f.name||'').trim()){ const e=document.getElementById('g-err'); if(e) e.textContent='Give it a name.'; const i=document.getElementById('g-title'); if(i) i.focus(); return; }
+  f.step=2; f.showCal=false; f.adding=true; f.stepAnim='fwd'; renderSheet(); focusNew();
+}
+function memCommit(open){
+  const f=S.form; if(!f) return;
+  const v=(f.newName||'').trim();
+  if(f.editIdx!=null){ if(v) f.members[f.editIdx].name=v; f.editIdx=null; f.newName=''; f.adding=!!open; }
+  else if(v){ f.members.push({id:rid('m'),name:v,uid:null}); f.newName=''; f.adding=true; }
+  else f.adding=!!open;
+}
+function focusNew(){ const i=document.getElementById('m-new'); if(i){ try{ i.focus({preventScroll:true}); }catch(e){} } }
 function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function calHtml(f){
   const base=f.calMonth||(f.startDate||today()).slice(0,7);
@@ -867,14 +921,16 @@ function memberUsed(gid,mid){
   return (S.exp[gid]||[]).some(x=>x.paidBy===mid||(x.shares&&x.shares[mid]!=null)) || (S.pay[gid]||[]).some(p=>p.from===mid||p.to===mid);
 }
 function newGroupForm(){
-  S.form={id:null,name:'',colour:COLOURS[Object.keys(S.groups).length%COLOURS.length],currency:'GBP',budget:'',startDate:'',endDate:'',members:[{id:rid('m'),name:S.profileName?S.profileName.split(' ')[0]:'',uid:S.uid||null},{id:rid('m'),name:'',uid:null}]};
+  S.form={id:null,name:'',colour:COLOURS[Object.keys(S.groups).length%COLOURS.length],currency:'GBP',budget:'',startDate:'',endDate:'',members:[{id:rid('m'),name:S.profileName?S.profileName.split(' ')[0]:'',uid:S.uid||null}],adding:true,newName:'',step:1};
   openSheet('group');
 }
 function editGroupForm(g){
-  S.form={id:g.id,name:g.name,colour:g.colour||COLOURS[0],currency:g.currency,oldCurrency:g.currency,convRate:'',budget:g.budget?String(g.budget/100):'',startDate:g.startDate||'',endDate:g.endDate||'',members:(g.members||[]).map(m=>Object.assign({},m))};
+  S.form={id:g.id,name:g.name,colour:g.colour||COLOURS[0],currency:g.currency,oldCurrency:g.currency,convRate:'',budget:g.budget?String(g.budget/100):'',startDate:g.startDate||'',endDate:g.endDate||'',members:(g.members||[]).map(m=>Object.assign({},m)),newName:''};
   openSheet('group');
 }
 async function saveGroup(){
+  if(S.form&&!S.form.id&&S.form.step!==2){ gNext(); return; }
+  memCommit(false);
   const f=S.form, err=document.getElementById('g-err');
   const name=(f.name||'').trim();
   if(!name){ err.textContent='Give it a name.'; return; }
@@ -1526,8 +1582,12 @@ document.addEventListener('click',e=>{
     case 'pickG': newExpenseForm(t.dataset.g); break;
     case 'addExp': if(g){ if(!myMid(g)){ openSheet('join'); } else newExpenseForm(g.id); } break;
     case 'gColour': S.form.colour=t.dataset.c; renderSheet(); break;
-    case 'mAdd': S.form.members.push({id:rid('m'),name:'',uid:null}); renderSheet(); { const ins=document.querySelectorAll('[data-m]'); const last=ins[ins.length-1]; if(last&&last.tagName==='INPUT') last.focus(); } break;
-    case 'mDel': S.form.members.splice(Number(t.dataset.i),1); renderSheet(); break;
+    case 'gNext': gNext(); break;
+    case 'gBack': memCommit(false); S.form.step=1; S.form.adding=false; S.form.stepAnim='back'; S.sheet.focused=false; renderSheet(); break;
+    case 'mAdd': memCommit(true); renderSheet(); focusNew(); break;
+    case 'mEdit': { memCommit(false); const i=Number(t.dataset.i); S.form.editIdx=i; S.form.newName=S.form.members[i].name==='Me'?'':S.form.members[i].name||''; renderSheet(); focusNew(); const n=document.getElementById('m-new'); if(n) n.select(); break; }
+    case 'mDel': { const i=Number(t.dataset.i); S.form.members.splice(i,1); if(S.form.editIdx===i) { S.form.editIdx=null; S.form.newName=''; } else if(S.form.editIdx>i) S.form.editIdx--; renderSheet(); break; }
+    case 'showPay': S.form.showPay=true; renderSheet(); { const x=document.getElementById('g-pay'); if(x) x.focus(); } break;
     case 'saveGroup': saveGroup(); break;
     case 'delGroup': { const gid=S.form.id; confirmBox('Delete this group?','All its expenses and payments go too. This can\'t be undone.','Delete',()=>deleteGroup(gid)); break; }
     case 'payer': S.form.touchedSplit=true; S.form.paidBy=t.dataset.m; renderSheet(); break;
@@ -1578,12 +1638,13 @@ document.addEventListener('input',e=>{
   if(!S.form) return;
   if(t.dataset.f){ const was=S.form[t.dataset.f]; if(t.dataset.f==='currency'&&was===t.value) return; S.form[t.dataset.f]=t.value; if(t.dataset.f==='rate'){ S.form.rateTouched=true; S.form.rateNote=''; const n=document.getElementById('rateNote'); if(n) n.textContent=''; } if(t.dataset.f==='convRate'){ S.form.convTouched=true; S.form.gRateNote=''; const n=document.getElementById('gRateNote'); if(n) n.textContent=''; } if(t.dataset.f==='currency' && S.sheet.kind==='expense'){ const g=G(S.form.gid); S.form.rate=t.value!==g.currency?rateFor(g,t.value):''; S.form.rateTouched=false; S.form.rateNote=''; renderSheet(); fillLiveRate('expense'); return; } if(t.dataset.f==='currency'&&S.sheet.kind==='group'){ const g=S.form.id&&G(S.form.id); if(g&&t.value!==g.currency){ const r=g.rates&&g.rates[t.value]; S.form.convRate=r?String(+(1/r).toFixed(6)):''; } S.form.convTouched=false; S.form.gRateNote=''; renderSheet(); fillLiveRate('group'); return; } if(t.dataset.f==='desc' && S.sheet.kind==='expense'){ clearTimeout(applyPrev._t); applyPrev._t=setTimeout(applyPrev,250); } updatePreview(); }
   else if(t.dataset.ex){ S.form.touchedSplit=true; S.form.exact[t.dataset.ex]=t.value; updatePreview(); }
-  else if(t.dataset.m!=null && t.tagName==='INPUT'){ S.form.members[Number(t.dataset.m)].name=t.value; }
+  else if(t.dataset.mnew!=null){ S.form.newName=t.value; }
   else if(t.dataset.pay!=null){ S.form.members[Number(t.dataset.pay)].pay=t.value; }
 });
 document.addEventListener('change',e=>{ const t=e.target; if((t.id==='e-photo'||t.id==='e-photo-m') && t.files && t.files[0]) uploadPhoto(t.files[0]); if(t.tagName==='SELECT' && t.dataset.f && S.form){ S.form[t.dataset.f]=t.value; } if(t.id==='e-date' && S.form){ S.form.date=t.value||today(); renderSheet(); } });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && S.sheet) closeSheet(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='my-name'){ e.preventDefault(); saveName(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='m-new'){ e.preventDefault(); const ed=S.form.editIdx!=null; memCommit(!ed); renderSheet(); if(!ed) focusNew(); } if(e.key==='Enter'&&e.target.id==='g-title'&&S.form&&!S.form.id){ e.preventDefault(); gNext(); } });
 document.addEventListener('keydown',e=>{ const t=e.target; if((e.key==='Enter'||e.key===' ')&&t.matches&&t.matches('span[role=button][data-a]')){ e.preventDefault(); t.click(); } });
 
 boot();

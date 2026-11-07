@@ -130,6 +130,12 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .x{width:44px;height:44px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
 .qty{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:transparent;cursor:pointer;font-size:16px;padding:0}
 .cal{padding:4px 0 4px}
+.calov{position:fixed;inset:0;z-index:30;background:rgba(17,17,17,.22);display:flex;align-items:flex-end;justify-content:center}
+.calpanel{background:var(--bg);width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:14px 24px calc(env(safe-area-inset-bottom) + 20px);box-shadow:0 -10px 30px rgba(17,17,17,.1);display:flex;flex-direction:column;gap:8px}
+.calpanel .grab{width:36px;height:4px;background:var(--line);margin:0 auto 6px}.calpanel .hd h2{margin:0;font-size:20px;font-weight:600}
+.calov.in{animation:kCalFade .22s ease-out}.calov.in .calpanel{animation:kCalUp .34s cubic-bezier(.2,.85,.3,1)}
+.calov.out{opacity:0;transition:opacity .22s ease-in}.calov.out .calpanel{transform:translateY(100%);transition:transform .22s cubic-bezier(.5,0,.75,0)}
+@keyframes kCalFade{from{background:rgba(17,17,17,0)}}@keyframes kCalUp{from{transform:translateY(100%)}}
 .calhd{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:500;margin:0 -12px}
 .calg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:2px}
 .cw{font-size:11px;letter-spacing:.06em;color:var(--muted);text-align:center;padding:4px 0 6px}
@@ -826,7 +832,7 @@ function renderSheet(){
   else if(k==='settle'||k==='spend'){ const g=G(S.gid); if(!g){ S.sheet=null; el.innerHTML=''; return; } const c=calcGroup(g); if(k==='settle') b=head('Settle up')+'<div>'+renderSettle(g,c)+'</div>'; else { const fc=forecast(g,c.spent); b=head('Spending')+'<div class="spendhd"><span class="num">'+fmt(c.spent,g.currency)+'</span>'+(fc?'<span class="muted">'+fc+'</span>':'')+'</div><div>'+renderSpending(g,c)+'</div>'; } }
   else if(k==='name') b=sheetName();
   else if(k==='confirm') b=head(S.confirm.title)+'<p style="margin:0;font-size:16px;font-weight:500">'+esc(S.confirm.text)+'</p><div style="display:flex;gap:10px"><button class="btn grow" data-a="close">Cancel</button><button class="btn grow dark" data-a="confirmYes">'+esc(S.confirm.yes)+'</button></div>';
-  el.innerHTML='<div class="ov" data-a="ovClose"><div class="pn" role="dialog" aria-modal="true" aria-labelledby="sh-t"><div class="grab" aria-hidden="true"></div>'+b+'</div></div>';
+  el.innerHTML='<div class="ov" data-a="ovClose"><div class="pn" role="dialog" aria-modal="true" aria-labelledby="sh-t"><div class="grab" aria-hidden="true"></div>'+b+'</div>'+calPanel(k)+'</div>';
   if(keepScroll){ const pn=el.querySelector('.pn'); if(pn) pn.scrollTop=keepScroll; }
   if(k==='invite') drawQR();
   if(k==='expense') updatePreview();
@@ -855,7 +861,6 @@ function sheetGroup(){
     }
   }
   h+='<div class="hint bad" id="g-err"></div>';
-  if(f.showCal) return h;
   h+='<button class="btn primary caps" data-a="saveGroup">'+(isNew?'START':'SAVE')+'</button>';
   if(!isNew) h+='<button class="btn" data-a="delGroup"><span class="danger">Delete this group</span></button>';
   return h;
@@ -864,7 +869,6 @@ function gPills(f){
   const sym=(fmt(0,f.currency).replace(/[\d.,\s]/g,'')||'');
   let h='<div class="pills"><label class="mini on pill"><span>'+esc(sym&&sym!==f.currency?sym+' '+f.currency:f.currency)+'</span><select id="g-cur" data-f="currency" aria-label="Currency">'+CURS.map(c=>'<option'+(c===f.currency?' selected':'')+'>'+c+'</option>').join('')+'</select></label>';
   h+='<button class="mini pill'+(f.startDate||f.showCal?' on':'')+'" data-a="calOpen" aria-expanded="'+(!!f.showCal)+'">'+(f.startDate?esc(dateRange({startDate:f.startDate,endDate:f.endDate||f.startDate})):'Add dates')+'</button></div>';
-  if(f.showCal) h+=calHtml(f);
   return h;
 }
 function gFaces(f,fg,isNew){
@@ -887,7 +891,6 @@ function sheetNewGroup(f,fg){
     h+=gPills(f);
   } else h+=gFaces(f,fg,true);
   h+='</div><div class="hint bad" id="g-err"></div>';
-  if(f.showCal&&!two) return h;
   h+='<div class="dots" aria-hidden="true"><i'+(two?'':' class="on"')+'></i><i'+(two?' class="on"':'')+'></i></div>';
   h+=two?'<button class="btn primary caps" data-a="saveGroup">START</button>':'<button class="btn primary caps" data-a="gNext">NEXT</button>';
   f.stepAnim='';
@@ -906,6 +909,15 @@ function memCommit(open){
   else f.adding=!!open;
 }
 function focusNew(){ const i=document.getElementById('m-new'); if(i){ try{ i.focus({preventScroll:true}); }catch(e){} } }
+function calPanel(k){
+  const f=S.form; if(k!=='group'||!f||!f.showCal) return '';
+  const cls=f.calIn?' in':''; f.calIn=false;
+  return '<div class="calov'+cls+'" data-a="calBack"><div class="calpanel" role="dialog" aria-label="Trip dates"><div class="grab" aria-hidden="true"></div><div class="hd"><h2>Trip dates</h2></div>'+calHtml(f)+'</div></div>';
+}
+function calClose(){
+  const o=document.querySelector('#sheet .calov'); if(!o||o.classList.contains('out')) return;
+  o.classList.add('out'); setTimeout(()=>{ if(S.form){ S.form.showCal=false; renderSheet(); } },230);
+}
 function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function calHtml(f){
   const base=f.calMonth||(f.startDate||today()).slice(0,7);
@@ -1570,6 +1582,7 @@ document.addEventListener('click',e=>{
   const a=t.dataset.a;
   if(a==='exp' && Date.now()-swipeBlock<400) return;
   if(a==='ovClose'){ if(e.target===t) closeSheet(); return; }
+  if(a==='calBack'){ if(e.target===t) calClose(); return; }
   const g=S.gid?G(S.gid):null;
   switch(a){
     case 'close': closeSheet(); break;
@@ -1625,7 +1638,7 @@ document.addEventListener('click',e=>{
     case 'search': openSheet('search',{q:''}); break;
     case 'srOpen': { closeSheet(); go(t.dataset.g); setTimeout(()=>openSheet('detail',{id:t.dataset.e}),330); break; }
     case 'partyClose': endParty(); break;
-    case 'calOpen': S.form.showCal=!S.form.showCal; if(S.form.showCal) S.form.calMonth=(S.form.startDate||today()).slice(0,7); renderSheet(); break;
+    case 'calOpen': if(S.form.showCal) calClose(); else { S.form.showCal=true; S.form.calIn=true; S.form.calMonth=(S.form.startDate||today()).slice(0,7); renderSheet(); } break;
     case 'calNav': { const [y,mo]=S.form.calMonth.split('-').map(Number); const d=new Date(y,mo-1+Number(t.dataset.d),1); S.form.calMonth=isoOf(d).slice(0,7); renderSheet(); break; }
     case 'calDay': { const f=S.form, d=t.dataset.d; if(!f.startDate||f.endDate){ f.startDate=d; f.endDate=''; } else if(d<f.startDate){ f.startDate=d; } else { f.endDate=d; } renderSheet(); break; }
     case 'calClear': S.form.startDate=''; S.form.endDate=''; renderSheet(); break;

@@ -230,11 +230,11 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 @keyframes kCoin{0%{transform:none}22%{transform:translateY(-16px) rotate(-30deg)}55%{transform:translateY(30px) rotate(180deg);opacity:1}56%{opacity:0;transform:translateY(30px)}70%{opacity:0;transform:translateY(-12px)}100%{opacity:1;transform:none}}
 @keyframes kBlink{0%,100%{transform:none}50%{transform:scaleY(.12)}}
 #popcat{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 64px);z-index:9;pointer-events:none;display:flex;justify-content:center}
-#popcat .in{display:flex;flex-direction:row-reverse;align-items:center;gap:10px;padding-left:70px;animation:kPeek 2.2s cubic-bezier(.3,.7,.4,1.2) forwards}
+#popcat .in{display:flex;flex-direction:row-reverse;align-items:center;gap:10px;padding-left:70px;animation:kPeek 3.2s cubic-bezier(.3,.7,.4,1.2) forwards}
 #popcat .lbl2{font-size:13px;font-weight:500;background:var(--ink);color:var(--bg);padding:4px 10px;border-radius:2px;opacity:0;animation:kFade .2s .35s forwards}
 #popcat .k-coin{animation:kCoin .85s .35s cubic-bezier(.45,0,.6,1) both}
 #popcat .k-body{animation:kSquish .55s .62s cubic-bezier(.3,.7,.4,1.5) both}
-@keyframes kPeek{0%{transform:translateY(110px)}18%{transform:translateY(-6px)}26%{transform:translateY(0)}82%{transform:translateY(0)}100%{transform:translateY(120px)}}
+@keyframes kPeek{0%{transform:translateY(110px)}12%{transform:translateY(-6px)}18%{transform:translateY(0)}88%{transform:translateY(0)}100%{transform:translateY(120px)}}
 /* toast */
 #toast .gone{opacity:0!important}
 #toast{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 12px);z-index:40;pointer-events:none}
@@ -415,8 +415,10 @@ function guessCat(desc){
   document.addEventListener('touchend',()=>{ if(x0==null||!row) return; const r=row, it=item; r.classList.remove('drag');
     if(mode==='h'){ swipeBlock=Date.now();
       const isG=(r.dataset.sw||'').startsWith('g:'), far=-dx>=r.offsetWidth*0.5;
-      if(far&&isG){ const gid=r.dataset.sw.slice(2), g=G(gid); setTimeout(()=>confirmBox('Delete '+(g?g.name:'this group')+'?','All its expenses and payments go too. This can\'t be undone.','Delete',()=>deleteGroup(gid)),200); }
-      if(far&&!isG){ r.style.setProperty('--p','1'); it.style.transform='translateX(-110%)'; const id=r.dataset.sw, g=G(S.gid), x=g&&(S.exp[g.id]||[]).find(e=>e.id===id); setTimeout(()=>{ if(x) softDelete('groups/'+g.id+'/expenses/'+x.id,x,'"'+x.desc+'" deleted',x.photoId); },180); }
+      if(far&&isG){ const gid=r.dataset.sw.slice(2), g=G(gid); r.style.setProperty('--p','1'); it.style.transform='translateX(-100%)';
+        const back=()=>{ it.style.transform=''; const t0=performance.now(); (function fade(t){ const q=Math.min(1,(t-t0)/380); r.style.setProperty('--p',String(1-q*q)); if(q<1) requestAnimationFrame(fade); })(t0); };
+        setTimeout(()=>{ confirmBox('Delete '+(g?g.name:'this group')+'?','All its expenses and payments go too. This can\'t be undone.','Delete',()=>deleteGroup(gid)); S.confirm.onNo=back; },200); }
+      else if(far&&!isG){ r.style.setProperty('--p','1'); it.style.transform='translateX(-110%)'; const id=r.dataset.sw, g=G(S.gid), x=g&&(S.exp[g.id]||[]).find(e=>e.id===id); setTimeout(()=>{ if(x) softDelete('groups/'+g.id+'/expenses/'+x.id,x,'"'+x.desc+'" deleted',x.photoId); },180); }
       else { it.style.transform=''; const p0=parseFloat(r.style.getPropertyValue('--p'))||0, t0=performance.now(); (function fade(t){ const q=Math.min(1,(t-t0)/380), e=1-Math.pow(1-q,2); r.style.setProperty('--p',String(p0*(1-e))); if(q<1) requestAnimationFrame(fade); })(t0); } }
     x0=null; row=null; item=null; mode=null; },{passive:true});
 })();
@@ -785,6 +787,7 @@ function openSheet(kind,data){
   if(fresh){ el.classList.add('anim'); clearTimeout(openSheet._t); openSheet._t=setTimeout(()=>el.classList.remove('anim'),400); }
 }
 function closeSheet(){
+  if(S.confirm&&S.confirm.onNo&&!S.confirm.done){ const f=S.confirm.onNo; S.confirm.onNo=null; f(); }
   const el=document.getElementById('sheet'); S.sheet=null; S.form=null;
   if(!el.querySelector('.pn')){ el.innerHTML=''; return; }
   const pn=el.querySelector('.pn'); if(pn) pn.style.transform='';
@@ -1286,7 +1289,7 @@ function popCat(text,kind,g){
   if(!document.querySelector('.dock')){ toast(text,true); return; }
   el=document.createElement('div'); el.id='popcat'; el.setAttribute('role','status');
   el.innerHTML='<div class="in"><span class="lbl2">'+esc(text)+'</span>'+cat(88,kind?'r-'+kind:'')+'</div>';
-  document.body.appendChild(el); clearTimeout(popCat._t); popCat._t=setTimeout(()=>{ el.remove(); },2300);
+  document.body.appendChild(el); clearTimeout(popCat._t); popCat._t=setTimeout(()=>{ el.remove(); },3300);
 }
 
 
@@ -1534,7 +1537,7 @@ document.addEventListener('click',e=>{
     case 'payInfo': openSheet('payInfo',{mid:t.dataset.m}); break;
     case 'copyPay': { const m=mem(g,S.sheet.data.mid); if(m) copyText(m.pay||''); break; }
     case 'copyLink': copyText(inviteLink(g)); break;
-    case 'confirmYes': { const fn=S.confirm&&S.confirm.fn; closeSheet(); if(fn) fn(); break; }
+    case 'confirmYes': { const fn=S.confirm&&S.confirm.fn; if(S.confirm) S.confirm.done=true; closeSheet(); if(fn) fn(); break; }
   }
 });
 document.addEventListener('input',e=>{

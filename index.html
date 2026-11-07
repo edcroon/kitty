@@ -1082,7 +1082,7 @@ function sentenceHtml(f,g){
   return u(3,esc(cap(nm(f.paidBy))))+' paid '+u(1,esc(amt))+' for '+u(2,what?esc(what)+' '+(CAT_EMO[e.cat]||''):'...')+', split with '+u(3,esc(split))+' <label class="u dt">'+(f.date===today()?'today':esc(dLong(f.date)))+'<input type="date" id="e-date" data-f="date" value="'+esc(f.date)+'" aria-label="Date of the expense"></label>';
 }
 function expBar(f){
-  const save=f.id?'Save':'Add it';
+  const save=f.id?'Save':'Add';
   if(f.step===3) return '<button class="btn primary grow" data-a="saveExp" '+(f.uploading?'disabled':'')+'>'+save+'</button>';
   return '<button class="btn grow" data-a="saveExp" '+(f.uploading?'disabled':'')+'>'+save+'</button><button class="btn primary grow" data-a="goStep" data-s="'+(f.step+1)+'">Next</button>';
 }

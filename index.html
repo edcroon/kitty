@@ -589,6 +589,19 @@ window.addEventListener('hashchange',()=>{ route(); render(); });
   document.addEventListener('touchend',e=>{ if(x0==null||mode!=='h'){ x0=null; return; } const mx=(e.changedTouches[0]||{clientX:x0}).clientX-x0, st=S.form.step||1; x0=null; t.style.scrollBehavior='';
     if((mx>60||vx>.45)&&st>1) goStep(st-1); else if((mx<-60||vx<-.45)&&st<3) goStep(st+1); else goStep(st); },{passive:true});
 })();
+// swipe sideways between the two new-group steps (right = back to the name)
+(function(){
+  let x0=null,y0=0,mode=null,el=null,vx=0,lx=0,lt=0;
+  document.addEventListener('touchstart',e=>{ x0=null; if(!S.sheet||S.sheet.kind!=='group'||!S.form||S.form.id||S.form.showCal||e.touches.length>1) return; if(!e.target.closest('#sheet .pn')||e.target.closest('select,.fdel,.pills')) return; el=document.querySelector('#sheet .gstep'); if(!el) return; x0=lx=e.touches[0].clientX; y0=e.touches[0].clientY; lt=performance.now(); vx=0; mode=null; },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(x0==null) return; const x=e.touches[0].clientX, mx=x-x0, my=e.touches[0].clientY-y0;
+    if(!mode){ if(Math.abs(mx)>10&&Math.abs(mx)>Math.abs(my)*1.2) mode='h'; else if(Math.abs(my)>10){ x0=null; return; } else return; }
+    const now=performance.now(); vx=vx*.5+.5*(x-lx)/Math.max(1,now-lt); lx=x; lt=now;
+    const two=S.form.step===2, ok=two?mx>0:mx<0; el.style.transition='none'; el.style.transform='translateX('+(ok?mx*.6:mx*.15)+'px)'; el.style.opacity=String(1-Math.min(.5,Math.abs(mx)/600)); },{passive:true});
+  document.addEventListener('touchend',e=>{ if(x0==null||mode!=='h'){ x0=null; return; } const mx=(e.changedTouches[0]||{clientX:x0}).clientX-x0, two=S.form.step===2; x0=null; swipeBlock=Date.now();
+    if(two&&(mx>70||vx>.45)){ memCommit(false); S.form.step=1; S.form.adding=false; S.form.stepAnim='back'; S.sheet.focused=true; renderSheet(); }
+    else if(!two&&(mx<-70||vx<-.45)){ gNext(); if(S.form.step!==2){ el.style.transition='transform .3s cubic-bezier(.2,.9,.3,1.2),opacity .3s'; el.style.transform=''; el.style.opacity=''; } }
+    else { el.style.transition='transform .3s cubic-bezier(.2,.9,.3,1.2),opacity .3s'; el.style.transform=''; el.style.opacity=''; } },{passive:true});
+})();
 // iPhone-style back: swipe in from the left edge of a group to go back to your groups
 (function(){
   let x0=null, y0=0, t0=0, dx=0, on=false; const app=()=>document.getElementById('app');

@@ -12,7 +12,8 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
-<script src="shim.js"></script>
+<script>window.KITTY_FB={"apiKey": "AIzaSyCehhm2KN9nvSXIbWAAJPdOHCWd2vV_bOc", "authDomain": "kitty-6ac2d.firebaseapp.com", "projectId": "kitty-6ac2d", "storageBucket": "kitty-6ac2d.firebasestorage.app", "messagingSenderId": "900248128997", "appId": "1:900248128997:web:21168f11312eebb86ff30c"};</script>
+<script src="fb.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -670,7 +671,6 @@ function renderHome(app){
   let h='<div class="stack" style="gap:0">';
   h+='<div class="top">'+brand()+'<div class="r">'+(mine.length?'<button class="round" data-a="search" aria-label="Search expenses">'+IC.search+'</button>':'')+(canEdit()?'<button class="round" data-a="newGroup" aria-label="New group">'+IC.plus+'</button>':'')+'</div></div>';
   if(S.canWrite===false) h+='<div class="banner" style="margin-top:12px">You can see Kitty but can\'t add anything yet. Ask whoever shared it to invite you as an Editor.</div>';
-  h+='<div class="banner">Test version - everything is saved on this phone only.</div>';
   h+='<div class="hero"><span class="lab">'+lab+'</span><span class="big'+bigCls+'">'+bigHtml+'</span><span class="sub">'+sub+'</span></div>';
   if(!mine.length){
     h+='<div class="empty">'+cat(72,'bob',true)+'<div class="t">No groups yet</div><div class="d">Start one for a trip, the flat or a night out, then add your friends.</div>'+(canEdit()?'<button class="btn primary" data-a="newGroup" style="margin-top:8px">'+IC.plus+'Start a group</button>':'')+'</div>';

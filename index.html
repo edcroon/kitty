@@ -141,7 +141,7 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .calhd{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:500;margin:0 -12px}
 .calg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:2px}
 .cw{font-size:11px;letter-spacing:.06em;color:var(--muted);text-align:center;padding:4px 0 6px}
-.cd{height:40px;border:none;background:none;font-family:var(--mono);font-size:14px;cursor:pointer;padding:0;color:var(--ink)}
+.cd{height:40px;border:none;background:none;font-family:var(--num);font-weight:600;font-size:14px;cursor:pointer;padding:0;color:var(--ink)}
 .cd.tdy{text-decoration:underline;text-underline-offset:4px}
 .cd.inr{background:#E9E4DA}
 .cd.st{background:linear-gradient(90deg,transparent 50%,#E9E4DA 50%)}
@@ -272,6 +272,7 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 #sheet .dots{display:flex;gap:6px;justify-content:center;margin:12px 0 0}#sheet .dots i{width:7px;height:7px;border-radius:50%;background:#D5D0C7;transition:background-color .2s}#sheet .dots i.on{background:var(--ink)}
 #expBar{display:flex;gap:10px}
 #calcPrev:empty{display:none}
+.caldone{width:100%;margin-top:12px;height:46px}
 /* slightly rounded buttons */
 .btn,.tile,.chip,.mini,.qty,.catchip{border-radius:10px}
 .tile[aria-pressed=true]{border-radius:10px}
@@ -868,7 +869,7 @@ function calHtml(f){
     const sel=iso===a||iso===b, inr=a&&b&&iso>a&&iso<b;
     h+='<button class="cd'+(sel?' sel':'')+(inr?' inr':'')+(iso===t?' tdy':'')+(iso===a&&b&&b!==a?' st':'')+(iso===b&&a!==b?' en':'')+'" data-a="calDay" data-d="'+iso+'" aria-pressed="'+sel+'" aria-label="'+esc(dLong(iso))+'">'+d+'</button>';
   }
-  h+='</div><div class="calft"><span class="muted">'+(!a?'Tap the first day':(!b?'Now tap the last day':esc(dateRange({startDate:a,endDate:b}))+' · '+(dDiff(a,b)+1)+' days'))+'</span>'+(a?'<button class="linkbtn" style="margin:0" data-a="calClear">Clear</button>':'')+'</div></div>';
+  h+='</div><div class="calft"><span class="muted">'+(!a?'Tap the first day':(!b?'Now tap the last day':esc(dateRange({startDate:a,endDate:b}))+' · '+(dDiff(a,b)+1)+' days'))+'</span>'+(a?'<button class="linkbtn" style="margin:0" data-a="calClear">Clear</button>':'')+'</div><button class="btn primary caldone" data-a="calOpen">Done</button></div>';
   return h;
 }
 function memberUsed(gid,mid){
@@ -1534,7 +1535,7 @@ document.addEventListener('click',e=>{
     case 'partyClose': endParty(); break;
     case 'calOpen': S.form.showCal=!S.form.showCal; if(S.form.showCal) S.form.calMonth=(S.form.startDate||today()).slice(0,7); renderSheet(); break;
     case 'calNav': { const [y,mo]=S.form.calMonth.split('-').map(Number); const d=new Date(y,mo-1+Number(t.dataset.d),1); S.form.calMonth=isoOf(d).slice(0,7); renderSheet(); break; }
-    case 'calDay': { const f=S.form, d=t.dataset.d; if(!f.startDate||f.endDate){ f.startDate=d; f.endDate=''; } else if(d<f.startDate){ f.startDate=d; } else { f.endDate=d; } renderSheet(); break; }
+    case 'calDay': { const f=S.form, d=t.dataset.d; if(!f.startDate||f.endDate){ f.startDate=d; f.endDate=''; } else if(d<f.startDate){ f.startDate=d; } else { f.endDate=d; } renderSheet(); if(f.endDate&&f.startDate){ clearTimeout(f._calT); f._calT=setTimeout(()=>{ if(S.form===f&&f.showCal&&f.endDate){ f.showCal=false; renderSheet(); } },650); } break; }
     case 'calClear': S.form.startDate=''; S.form.endDate=''; renderSheet(); break;
     case 'pet': { if(t._skip){ t._skip=false; break; } t.classList.remove('pet'); void t.offsetWidth; t.classList.add('pet'); clearTimeout(t._p); t._p=setTimeout(()=>t.classList.remove('pet'),900); break; }
     case 'working': S.showWorking=!S.showWorking; render(); break;

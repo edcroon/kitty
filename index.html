@@ -80,10 +80,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .item .l2{font-size:13px;color:var(--muted)}
 .flag{color:var(--warn)!important}
 .swipe{position:relative;overflow:hidden}
-.swipe .del{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding:0 18px;background:rgba(180,35,24,var(--p,0));color:rgba(255,255,255,var(--p,0));font-size:15px;font-weight:500}
-.swipe .item{position:relative;background:var(--bg);transition:transform .34s cubic-bezier(.2,.9,.3,1.06)}
+.swipe .del{position:absolute;top:6px;bottom:6px;right:0;width:max(0px,calc(var(--w,0px) - 12px));overflow:hidden;white-space:nowrap;border:none;border-radius:var(--r);background:#D93A2B;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:inherit;font-size:13px;font-weight:500;cursor:pointer;padding:0;opacity:var(--p,0)}.swipe .del svg,.swipe .del span{flex-shrink:0;transform:scale(calc(.6 + .4*var(--p,0)))}.swipe.going .del svg,.swipe.going .del span{transform:none}
+.swipe .del:active{background:#B92E21}
+.swipe .item,.swipe .grow-row{overflow:hidden}.swipe .item .l2,.swipe .grow-row .s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.swipe .item .l1{flex-wrap:nowrap}.swipe .item .l1 .num{flex-shrink:0}
+.swipe .item{position:relative;background:var(--bg);width:calc(100% - var(--w,0px));min-width:0}
 .swipe.drag .item{transition:none;will-change:transform}
-.swipe .grow-row{position:relative;background:var(--bg);transition:transform .34s cubic-bezier(.2,.9,.3,1.06)}.swipe.drag .grow-row{transition:none}
+.swipe .grow-row{position:relative;background:var(--bg);width:calc(100% - var(--w,0px));min-width:0}
 .empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:36px 12px}
 .empty .t{font-size:18px;font-weight:600}.empty .catart{margin-bottom:8px}
 .empty .d{font-size:14px;color:var(--muted);max-width:280px}
@@ -423,23 +425,33 @@ function guessCat(desc){
   return {cat:'other',meal:null};
 }
 (function(){
-  let x0=null,y0=null,dx=0,mode=null,row=null,item=null,raf=0,vx=0,lx=0,lt=0;
-  const paint=()=>{ raf=0; if(!row||!item) return; const w=row.offsetWidth; item.style.transform='translate3d('+dx+'px,0,0)'; row.style.setProperty('--p',String(Math.max(0,Math.min(1,(-dx-w*.15)/(w*.35))))); };
-  document.addEventListener('touchstart',e=>{ const r=e.target.closest('.swipe'); if(!r){ x0=null; return; } row=r; item=r.querySelector('.item,.grow-row'); x0=lx=e.touches[0].clientX; y0=e.touches[0].clientY; lt=performance.now(); vx=0; dx=0; mode=null; },{passive:true});
+  // swipe left to reveal a Delete button (iPhone Mail style); a long fast swipe deletes straight away
+  const REVEAL=96;
+  let x0=null,y0=null,dx=0,base=0,mode=null,row=null,item=null,raf=0,vx=0,lx=0,lt=0;
+  const setW=(r,w)=>{ w=Math.max(0,w); r.style.setProperty('--w',w+'px'); r.style.setProperty('--p',String(Math.min(1,w/REVEAL))); r._w=w; };
+  const paint=()=>{ raf=0; if(row) setW(row,-dx); };
+  function tween(r,to,ms,ez,done){ const w0=r._w||0, t0=performance.now(); cancelAnimationFrame(r._tw);
+    const f=t=>{ const q=Math.min(1,(t-t0)/ms), e=ez(q); setW(r,w0+(to-w0)*e); if(q<1) r._tw=requestAnimationFrame(f); else if(done) done(); }; r._tw=requestAnimationFrame(f); }
+  const out=q=>1-Math.pow(1-q,3), back=q=>{ const c=1.4; return 1+(c+1)*Math.pow(q-1,3)+c*Math.pow(q-1,2); }, inq=q=>q*q;
+  function settle(r,to){ tween(r,to,to?380:300,to?back:out); r.classList.toggle('open',!!to); if(to) S.swOpen=r; else if(S.swOpen===r) S.swOpen=null; }
+  window.swClose=()=>{ const r=S.swOpen; if(r&&r.isConnected) settle(r,0); S.swOpen=null; };
+  window.swDelete=r=>{ const id=r.dataset.sw||''; S.swOpen=null; r.classList.remove('open');
+    if(id.startsWith('g:')){ const gid=id.slice(2), g=G(gid); confirmBox('Delete '+(g?g.name:'this group')+'?','All its expenses and payments go too. This can\'t be undone.','Delete',()=>deleteGroup(gid)); S.confirm.onNo=()=>settle(r,0); r.classList.add('open'); S.swOpen=r; return; }
+    const g=G(S.gid), x=g&&(S.exp[g.id]||[]).find(e=>e.id===id); if(!x) return;
+    r.classList.add('going'); tween(r,r.offsetWidth+12,220,inq,()=>softDelete('groups/'+g.id+'/expenses/'+x.id,x,'"'+x.desc+'" deleted',x.photoId)); };
+  // any touch outside the open row's button puts it back, and doesn't count as a tap
+  document.addEventListener('touchstart',e=>{ const o=S.swOpen; if(o&&o.isConnected&&!(e.target.closest('.del')&&o.contains(e.target))){ if(!o.contains(e.target)||!e.target.closest('.swipe')){ swClose(); swipeBlock=Date.now(); } } },{capture:true,passive:true});
+  document.addEventListener('touchstart',e=>{ const r=e.target.closest('.swipe'); if(!r||e.target.closest('.del')){ x0=null; return; } row=r; item=r.querySelector('.item,.grow-row'); x0=lx=e.touches[0].clientX; y0=e.touches[0].clientY; lt=performance.now(); vx=0; base=r.classList.contains('open')?-REVEAL:0; dx=base; mode=null; },{passive:true});
   document.addEventListener('touchmove',e=>{ if(x0==null||!row) return; const mx=e.touches[0].clientX-x0, my=e.touches[0].clientY-y0;
     if(!mode){ if(Math.abs(mx)>8&&Math.abs(mx)>Math.abs(my)*1.3) mode='h'; else if(Math.abs(my)>8) mode='v'; }
     if(mode!=='h') return; const now=performance.now(), x=e.touches[0].clientX; vx=vx*.5+.5*(x-lx)/Math.max(1,now-lt); lx=x; lt=now;
-    dx=Math.min(0,mx); if(dx>0) dx=0; row.classList.add('drag'); if(!raf) raf=requestAnimationFrame(paint); },{passive:true});
-  document.addEventListener('touchend',()=>{ if(x0==null||!row) return; const r=row, it=item; r.classList.remove('drag');
-    if(mode==='h'){ swipeBlock=Date.now();
-      const isG=(r.dataset.sw||'').startsWith('g:'), far=-dx>=r.offsetWidth*0.5;
-      if(far&&isG){ const gid=r.dataset.sw.slice(2), g=G(gid); r.style.setProperty('--p','1'); it.style.transform='translateX(-100%)';
-        const back=()=>{ it.style.transform=''; const t0=performance.now(); (function fade(t){ const q=Math.min(1,(t-t0)/380); r.style.setProperty('--p',String(1-q*q)); if(q<1) requestAnimationFrame(fade); })(t0); };
-        setTimeout(()=>{ confirmBox('Delete '+(g?g.name:'this group')+'?','All its expenses and payments go too. This can\'t be undone.','Delete',()=>deleteGroup(gid)); S.confirm.onNo=back; },200); }
-      else if(far&&!isG){ cancelAnimationFrame(raf); raf=0; r.style.setProperty('--p','1'); const w=r.offsetWidth, left=w+dx, ms=Math.round(Math.max(150,Math.min(300,left/Math.max(.9,-vx))));
-        it.style.transition='transform '+ms+'ms cubic-bezier(.3,.6,.4,1)'; it.style.transform='translate3d(-105%,0,0)';
-        const id=r.dataset.sw, g=G(S.gid), x=g&&(S.exp[g.id]||[]).find(e=>e.id===id); setTimeout(()=>{ if(x) softDelete('groups/'+g.id+'/expenses/'+x.id,x,'"'+x.desc+'" deleted',x.photoId); },ms); }
-      else { cancelAnimationFrame(raf); raf=0; it.style.transform=''; const p0=parseFloat(r.style.getPropertyValue('--p'))||0, t0=performance.now(); (function fade(t){ const q=Math.min(1,(t-t0)/380), e=1-Math.pow(1-q,2); r.style.setProperty('--p',String(p0*(1-e))); if(q<1) requestAnimationFrame(fade); })(t0); } }
+    let d=base+mx; if(d>0) d=0; dx=d; cancelAnimationFrame(row._tw); row.classList.add('drag'); if(!raf) raf=requestAnimationFrame(paint); },{passive:true});
+  document.addEventListener('touchend',()=>{ if(x0==null||!row) return; const r=row; r.classList.remove('drag'); cancelAnimationFrame(raf); raf=0;
+    if(mode==='h'){ swipeBlock=Date.now(); const w=r.offsetWidth;
+      if(-dx>=w*.6 || (vx<-1.4 && -dx>REVEAL)){ if(S.swOpen&&S.swOpen!==r) swClose(); swDelete(r); }
+      else if(-dx>=REVEAL*.5 || (vx<-.35 && -dx>16)){ if(S.swOpen&&S.swOpen!==r) swClose(); settle(r,REVEAL); }
+      else settle(r,0); }
+    else if(mode===null && r.classList.contains('open')){ swipeBlock=Date.now(); settle(r,0); }
     x0=null; row=null; item=null; mode=null; },{passive:true});
 })();
 let swipeBlock=0;
@@ -641,7 +653,7 @@ function renderHome(app){
     mine.forEach(g=>{
       const c=calcGroup(g), v=c.bal[myMid(g)]||0;
       const lab2=v>0?'you get back':v<0?'you owe':'all square';
-      h+=(canEdit()?'<div class="swipe" data-sw="g:'+esc(g.id)+'"><span class="del" aria-hidden="true">Delete</span>':'')+'<button class="grow-row" data-a="open" data-g="'+esc(g.id)+'"><span class="n">'+esc(g.name)+'</span><span class="v '+sign(v)+'">'+(v?fmt(Math.abs(v),g.currency):'')+'</span><span class="s">'+(dateRange(g)?esc(dateRange(g)):(g.members||[]).length+' people')+' · '+fmt(c.spent,g.currency)+' spent</span><span class="s r">'+lab2+'</span></button>'+(canEdit()?'</div>':'')+'';
+      h+=(canEdit()?'<div class="swipe" data-sw="g:'+esc(g.id)+'"><button class="del" data-a="swDel" tabindex="-1"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg><span>Delete</span></button>':'')+'<button class="grow-row" data-a="open" data-g="'+esc(g.id)+'"><span class="n">'+esc(g.name)+'</span><span class="v '+sign(v)+'">'+(v?fmt(Math.abs(v),g.currency):'')+'</span><span class="s">'+(dateRange(g)?esc(dateRange(g)):(g.members||[]).length+' people')+' · '+fmt(c.spent,g.currency)+' spent</span><span class="s r">'+lab2+'</span></button>'+(canEdit()?'</div>':'')+'';
     });
     h+='</div>';
   }
@@ -724,7 +736,7 @@ function renderList(g){
   ex.forEach(x=>{
     if(x.date!==last){ last=x.date; h+='<div class="dayhd">'+esc(dayLabel(x.date))+'</div>'; }
     if(seen&&!seen.has(x.id)) S.newAt[x.id]=performance.now();
-    const r=expRow(g,x,''); h+=sw?'<div class="swipe" data-sw="'+esc(x.id)+'"><span class="del" aria-hidden="true">Delete</span>'+r+'</div>':r;
+    const r=expRow(g,x,''); h+=sw?'<div class="swipe" data-sw="'+esc(x.id)+'"><button class="del" data-a="swDel" tabindex="-1"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg><span>Delete</span></button>'+r+'</div>':r;
   });
   return h+'</div>';
 }
@@ -1580,12 +1592,13 @@ async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast('
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-a]'); if(!t) return;
   const a=t.dataset.a;
-  if(a==='exp' && Date.now()-swipeBlock<400) return;
+  if((a==='exp'||a==='open') && Date.now()-swipeBlock<400) return;
   if(a==='ovClose'){ if(e.target===t) closeSheet(); return; }
   if(a==='calBack'){ if(e.target===t) calClose(); return; }
   const g=S.gid?G(S.gid):null;
   switch(a){
     case 'close': closeSheet(); break;
+    case 'swDel': swDelete(t.closest('.swipe')); break;
     case 'home': go(null); break;
     case 'open': go(t.dataset.g); break;
     case 'settleSheet': case 'settleTab': openSheet('settle'); break;

@@ -954,7 +954,7 @@ function sheetJoin(){
   const free=(g.members||[]).filter(m=>!m.uid);
   let h=head('Join '+g.name);
   h+='<p style="margin:0;font-weight:500">Which one are you? That way Kitty shows what you owe and what you\'re owed.</p>';
-  if(free.length){ h+='<div class="list">'+free.map(m=>'<button class="item" data-a="joinAs" data-m="'+esc(m.id)+'">'+avatar(g,m.id,'lg')+'<span class="t"><b>'+esc(m.name)+'</b></span></button>').join('')+'</div>'; }
+  if(free.length){ h+='<div class="list">'+free.map(m=>'<button class="item" data-a="joinAs" data-m="'+esc(m.id)+'">'+av(g,m.id,30)+'<span class="t"><b>'+esc(m.name)+'</b></span></button>').join('')+'</div>'; }
   h+='<div class="f"><label for="j-name">'+(free.length?"I'm not on the list - add me as":'Your name')+'</label><input class="inp" id="j-name" value="'+esc(S.profileName?S.profileName.split(' ')[0]:'')+'" maxlength="30"></div><button class="btn primary" data-a="joinNew">Join</button>';
   return h;
 }
@@ -1232,7 +1232,7 @@ function sheetDetail(){
   if(x.currency!==g.currency) h+='<div class="hint">'+fmt(x.amount,x.currency)+' at 1 '+esc(x.currency)+' = '+esc(String(x.rate))+' '+esc(g.currency)+'</div>';
   if(x.photoId) h+=photoImg(x.photoId,'Photo for '+x.desc,'photo');
   if(x.note) h+='<p style="margin:0;font-size:16px;font-weight:500">'+esc(x.note)+'</p>';
-  h+='<div>'+Object.keys(x.shares||{}).map(mid=>'<div class="prow">'+avatar(g,mid)+'<span class="nm">'+esc(mName(g,mid))+(x.notMine&&x.notMine[mid]?' <span class="flag" style="font-size:12px">says not theirs</span>':'')+'</span><span class="sh">'+fmt(x.shares[mid],g.currency)+'</span></div>').join('')+'</div>';
+  h+='<div>'+Object.keys(x.shares||{}).map(mid=>'<div class="prow">'+av(g,mid,28)+'<span class="nm">'+esc(mName(g,mid))+(x.notMine&&x.notMine[mid]?' <span class="flag" style="font-size:12px">says not theirs</span>':'')+'</span><span class="sh">'+fmt(x.shares[mid],g.currency)+'</span></div>').join('')+'</div>';
   const flagged=Object.keys(x.notMine||{}).filter(k=>x.notMine[k]);
   if(canEdit()){
     if(flagged.length && (x.paidBy===me || !me)){

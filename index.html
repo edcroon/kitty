@@ -1086,7 +1086,7 @@ function expBar(f){
   if(f.step===3) return '<button class="btn primary grow" data-a="saveExp" '+(f.uploading?'disabled':'')+'>'+save+'</button>';
   return '<button class="btn grow" data-a="saveExp" '+(f.uploading?'disabled':'')+'>'+save+'</button><button class="btn primary grow" data-a="goStep" data-s="'+(f.step+1)+'">Next</button>';
 }
-function refreshSentence(){ const f=S.form; if(!f||!S.sheet||S.sheet.kind!=='expense') return; const g=G(f.gid); const el=document.getElementById('sent'); if(el) el.innerHTML=sentenceHtml(f,g); const b=document.getElementById('expBar'); if(b) b.innerHTML=expBar(f); document.querySelectorAll('#sheet .dots i').forEach((d,k)=>d.classList.toggle('on',k+1===f.step)); }
+function refreshSentence(){ const f=S.form; if(!f||!S.sheet||S.sheet.kind!=='expense') return; const er=document.getElementById('e-err'); if(er&&er.textContent&&performance.now()-(f.errAt||0)>900) er.textContent=''; const g=G(f.gid); const el=document.getElementById('sent'); if(el) el.innerHTML=sentenceHtml(f,g); const b=document.getElementById('expBar'); if(b) b.innerHTML=expBar(f); document.querySelectorAll('#sheet .dots i').forEach((d,k)=>d.classList.toggle('on',k+1===f.step)); }
 function goStep(n,instant){ const f=S.form; if(!f) return; f.step=Math.max(1,Math.min(3,n)); const t=document.querySelector('#sheet .steps'); if(t){ if(instant) t.style.scrollBehavior='auto'; t.scrollLeft=(f.step-1)*t.clientWidth; if(instant) t.style.scrollBehavior=''; } refreshSentence(); }
 function sheetExpense(){
   const f=S.form, g=G(f.gid), me=myMid(g); if(!f.step) f.step=1;
@@ -1170,10 +1170,10 @@ async function saveExpense(){
   const f=S.form, g=G(f.gid), err=document.getElementById('e-err');
   let desc=(f.desc||'').trim(); desc=desc.charAt(0).toUpperCase()+desc.slice(1); const r=computeShares(f,g);
   if(!desc && f.cat!=='auto') desc=CATS[effCat(f).cat]||'';
-  if(!desc){ err.textContent='Say what it was - pick a picture or name it.'; goStep(2); return; }
-  if(!(r.total>0)){ err.textContent='Add an amount.'; goStep(1); return; }
-  if(r.foreign && !(r.rate>0)){ err.textContent='Add the exchange rate.'; goStep(1); return; }
-  if(!r.ids.length){ err.textContent='Pick at least one person to split with.'; goStep(3); return; }
+  if(!desc){ goStep(2); f.errAt=performance.now(); err.textContent='Say what it was - pick a picture or name it.'; return; }
+  if(!(r.total>0)){ goStep(1); f.errAt=performance.now(); err.textContent='Add an amount.'; return; }
+  if(r.foreign && !(r.rate>0)){ goStep(1); f.errAt=performance.now(); err.textContent='Add the exchange rate.'; return; }
+  if(!r.ids.length){ goStep(3); f.errAt=performance.now(); err.textContent='Pick at least one person to split with.'; return; }
   if(f.mode==='exact' && r.sum!==r.total){ err.textContent="The amounts don't add up to the total."; return; }
   if(f.mode==='shares' && r.parts.every(p=>p===0)){ err.textContent='Give someone at least one share.'; return; }
   const shares={}, exact={}, weights={};

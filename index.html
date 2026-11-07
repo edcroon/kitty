@@ -272,6 +272,10 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 #sheet .dots{display:flex;gap:6px;justify-content:center;margin:12px 0 0}#sheet .dots i{width:7px;height:7px;border-radius:50%;background:#D5D0C7;transition:background-color .2s}#sheet .dots i.on{background:var(--ink)}
 #expBar{display:flex;gap:10px}
 #calcPrev:empty{display:none}
+/* slightly rounded buttons */
+.btn,.tile,.chip,.mini,.qty,.catchip{border-radius:10px}
+.tile[aria-pressed=true]{border-radius:10px}
+#expBar .btn{text-transform:uppercase;letter-spacing:.08em;font-size:15px}
 #party{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(247,246,243,.96);animation:kFade .2s ease}
 #party .big{font-size:34px;font-weight:600;letter-spacing:-.02em;animation:kPopIn .5s .15s cubic-bezier(.2,.9,.3,1.3) both}
 #party .sub{font-size:15px;color:var(--muted);animation:kFade .4s .35s both}

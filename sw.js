@@ -1,5 +1,5 @@
 // Keeps a copy of Kitty on the phone so it opens instantly, even without signal.
-const V='kitty-1794083748', EXT='kitty-ext';
+const V='kitty-1794084082', EXT='kitty-ext';
 const CORE=['./','./index.html','./shim.js','./manifest.webmanifest','./icon-180.png','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{ e.waitUntil(caches.open(V).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())); });
 self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V&&k!==EXT).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });

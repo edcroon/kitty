@@ -1536,7 +1536,7 @@ function popCat(text,kind,g){
     b.vx=b.vx*.4+.6*(e.clientX-b.lx)/dt; b.vy=b.vy*.4+.6*(e.clientY-b.ly)/dt; b.lx=e.clientX; b.ly=e.clientY; b.lt=now;
     if(now-t0<450 && Math.hypot(e.clientX-b.px,e.clientY-b.py)>26) fling(b); });
 
-  const fling=b=>{ c=null; cancelAnimationFrame(raf); b.classList.remove('charging'); b.flinging=1; skip(b); taps=0;
+  const fling=b=>{ c=null; cancelAnimationFrame(raf); b.classList.remove('charging'); b.flinging=1; clearTimeout(b._fl); b._fl=setTimeout(()=>{ if(b.flinging){ b.flinging=0; if(b.P&&b.P.coin) b.P.coin.style.opacity=''; document.querySelectorAll('.kfl').forEach(v=>v.remove()); } },4500); skip(b); taps=0;
     const P=b.P, o=b.o; [P.body,P.eyes].forEach(x=>{ const f=x.style.transform||'none'; x.style.transform=''; x.style.transition=''; x.animate([{transform:f},{transform:'none'}],{duration:200}); });
     o.txt.textContent='';
     P.eyes.animate([{transform:'scale(1.35)'},{transform:'scale(1.35)',offset:.8},{transform:'none'}],{duration:2600});

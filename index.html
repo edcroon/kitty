@@ -324,14 +324,15 @@ const APP_URL = location.origin+location.pathname;
 const COLOURS = ['#FFD6C2','#CFE3FF','#C9F2DC','#E4D9FF','#FFF0A8','#FFD3E8'];
 const AVC = ['#1A1A1A','#2563EB','#9A3412','#047857','#7C3AED','#BE185D','#0E7490','#A16207','#4338CA','#B91C1C'];
 const CURS = ['GBP','EUR','USD','CAD','AUD','NZD','CHF','SEK','NOK','DKK','ISK','PLN','CZK','HUF','TRY','AED','MAD','ZAR','THB','JPY','SGD','HKD','MXN'];
-const CATS = {meal:'Meal',drinks:'Drinks',groceries:'Groceries',transport:'Transport',stay:'Stay',tickets:'Tickets',other:'Other'};
+const CATS = {meal:'Meal',drinks:'Drinks',groceries:'Groceries',transport:'Transport',stay:'Stay',tickets:'Tickets',bills:'Bills',other:'Other'};
 const MEALS = {breakfast:'Breakfast',lunch:'Lunch',dinner:'Dinner',other:'Other meal'};
 function catLabel(x){ if(x.cat==='meal'||x.cat==='food') return MEALS[x.meal]||'Meal'; return CATS[x.cat]||'Other'; }
 const CAT_WORDS = {
+  bills:['bill','bills','rent','electric','electricity','energy','water','wifi','internet','broadband','council','utilities','phone','insurance','subscription','netflix','spotify'],
   drinks:['bar','pub','beer','beers','wine','drinks','drink','cocktail','cocktails','round','pint','pints','prosecco'],
   meal:['dinner','lunch','breakfast','brunch','restaurant','food','pizza','taco','tacos','bbq','cafe','coffee','meal','burger','sushi','takeaway','curry','chips','snacks','bakery','sardines','supper','tea'],
   transport:['taxi','uber','lyft','train','tram','bus','fuel','petrol','gas','parking','flight','flights','car','metro','tube','toll','ferry','rental','hire'],
-  stay:['hotel','airbnb','apartment','hostel','room','rent','accommodation','villa','cabin','motel'],
+  stay:['hotel','airbnb','apartment','hostel','room','accommodation','villa','cabin','motel'],
   groceries:['shop','shopping','supermarket','groceries','tesco','sainsburys','waitrose','aldi','lidl','market','walmart','target','costco'],
   tickets:['ticket','tickets','museum','gig','show','entry','tour','concert','cinema','tickets','gallery','match']
 };
@@ -1060,7 +1061,7 @@ function splitSummary(f,g){
   else how=on.length===ids.length?'equally':(on.length===1?'all for '+(on[0]===myMid(g)?'you':(mem(g,on[0])||{}).name):'equally between '+on.length);
   return 'Paid by <b>'+esc(payer)+'</b>, split <b>'+esc(how)+'</b>';
 }
-const CAT_EMO={meal:'🍽️',drinks:'🍺',groceries:'🛒',transport:'🚕',stay:'🛏️',tickets:'🎟️',other:'🧾'};
+const CAT_EMO={meal:'🍽️',drinks:'🍺',groceries:'🛒',transport:'🚕',stay:'🛏️',tickets:'🎟️',bills:'🧾',other:'🏷️'};
 // the sentence at the top builds as you go; tap any underlined part to jump to it
 function sentenceHtml(f,g){
   const me=myMid(g), r=computeShares(f,g), ids=(g.members||[]).map(m=>m.id), on=ids.filter(id=>f.inc[id]);

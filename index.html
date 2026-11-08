@@ -1097,8 +1097,11 @@ async function saveGroup(){
     const id=rid('k');
     body.createdAt=Date.now(); body.createdBy=S.uid||null; body.rates={};
     if(!clean.some(m=>m.uid===S.uid) && S.uid){ clean[0].uid=S.uid; }
+    // go straight in - the save carries on in the background, and only brings you back if it fails
+    S.groups[id]=Object.assign({id},JSON.parse(JSON.stringify(body)));
+    closeSheet(); go(id); toast('Group started',true);
     const ok=await write(()=>S.db.doc('groups/'+id).set(body));
-    if(ok){ closeSheet(); go(id); toast('Group started',true); }
+    if(!ok){ delete S.groups[id]; if(S.gid===id) go(null); }
   } else {
     const g=G(f.id), hasMoney=(S.exp[f.id]||[]).length>0||(S.pay[f.id]||[]).length>0;
     if(g && f.currency!==g.currency && hasMoney){

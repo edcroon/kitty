@@ -645,7 +645,14 @@ function countUp(){
 }
 function safeInsets(){ if(safeInsets.v) return safeInsets.v; const d=document.createElement('div'); d.style.cssText='position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)'; document.body.appendChild(d); const cs=getComputedStyle(d); safeInsets.v={t:parseFloat(cs.paddingTop)||0,b:parseFloat(cs.paddingBottom)||0}; d.remove(); return safeInsets.v; }
 function setPage(c){ document.body.style.background=c; document.documentElement.style.setProperty('--page',c); const tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content=c.indexOf('var(')===0?'#F7F6F3':c; }
+// Redraws keep the same header cat, so a hold, flick, lion or sulk carries on through live updates.
 function render(){
+  const app=document.getElementById('app'), v=S.view+':'+(S.gid||''), old=render._v===v?app.querySelector('.top .catbtn'):null;
+  renderInner();
+  render._v=v;
+  if(old){ const nc=app.querySelector('.top .catbtn'); if(nc&&nc!==old&&nc.className.replace(/\b(lion|sulk|asleep|charging|pet|blink)\b/g,'').trim()===old.className.replace(/\b(lion|sulk|asleep|charging|pet|blink)\b/g,'').trim()){ if(old.classList.contains('asleep')!==nc.classList.contains('asleep')) old.classList.toggle('asleep',nc.classList.contains('asleep')); nc.replaceWith(old); } }
+}
+function renderInner(){
   const app=document.getElementById('app');
   const nav=S.nav; S.nav=null;
   if(nav){ app.classList.remove('in','back'); void app.offsetWidth; app.classList.add(nav); clearTimeout(render._t); render._t=setTimeout(()=>app.classList.remove('in','back'),320); }

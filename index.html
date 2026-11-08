@@ -101,6 +101,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .linkbtn{border:none;background:none;padding:0;font:inherit;font-size:13px;color:var(--ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer;margin-top:6px}
 .top + .banner{margin-top:22px!important}
 .banner{border-top:1px solid var(--ink);border-bottom:1px solid var(--line);padding:12px 0;font-size:14px}
+.orow.fresh{animation:kRowIn .35s cubic-bezier(.3,.7,.3,1)}@keyframes kRowIn{from{opacity:0;transform:translateY(-6px)}}
 .orow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);gap:10px}
 /* sheets */
 #sheet .ov{position:fixed;inset:0;background:rgba(17,17,17,.35);z-index:20;display:flex;align-items:flex-end;justify-content:center;transition:opacity .22s}
@@ -836,7 +837,7 @@ function renderSettle(g,c){
   const pays=(S.pay[g.id]||[]).slice().sort((a,b)=>(b.at||0)-(a.at||0));
   if(pays.length){
     h+='<div class="sec" style="margin-top:22px">Payments made</div><div class="list">';
-    pays.forEach(p=>{ h+='<div class="orow"><span style="font-size:15px">'+esc(mName(g,p.from))+' paid '+esc(mName(g,p.to))+'<br><span class="muted" style="font-size:13px">'+esc(dLong(p.date))+'</span></span><span style="display:flex;align-items:center;gap:4px"><span class="num">'+fmt(p.amount,g.currency)+'</span>'+(canEdit()?'<button class="x" data-a="delPay" data-p="'+esc(p.id)+'" aria-label="Remove this payment">'+IC.x+'</button>':'')+'</span></div>'; });
+    pays.forEach(p=>{ h+='<div class="orow'+(p.id===S.freshPay?' fresh':'')+'"><span style="font-size:15px">'+esc(mName(g,p.from))+' paid '+esc(mName(g,p.to))+'<br><span class="muted" style="font-size:13px">'+esc(dLong(p.date))+'</span></span><span style="display:flex;align-items:center;gap:4px"><span class="num">'+fmt(p.amount,g.currency)+'</span>'+(canEdit()?'<button class="x" data-a="delPay" data-p="'+esc(p.id)+'" aria-label="Remove this payment">'+IC.x+'</button>':'')+'</span></div>'; });
     h+='</div>';
   }
   return h;
@@ -865,10 +866,32 @@ function closeSheet(){
   document.addEventListener('touchend',()=>{ if(y0==null||!pn) return; const el=document.getElementById('sheet'); el.classList.remove('dragging'); if(dy>110) closeSheet(); else pn.style.transform=''; y0=null; pn=null; dy=0; },{passive:true});
 })();
 function head(title){ return '<div class="hd"><h2 id="sh-t">'+esc(title)+'</h2><button class="x" data-a="close" aria-label="Close">'+IC.x+'</button></div>'; }
+/* redraw a sheet in place and ease it to its new height, so nothing jumps */
+function smoothSwap(pn,html){
+  const h0=pn.getBoundingClientRect().height, st=pn.scrollTop;
+  pn.style.transition='none'; pn.style.height='auto';
+  pn.innerHTML=html; pn.scrollTop=st;
+  const fresh=pn.querySelector('.fresh'); 
+  const h1=pn.getBoundingClientRect().height;
+  if(Math.abs(h1-h0)<1||matchMedia('(prefers-reduced-motion: reduce)').matches){ pn.style.height=''; pn.style.transition=''; return; }
+  pn.style.height=h0+'px'; pn.offsetHeight;
+  pn.style.transition='height .32s cubic-bezier(.3,.7,.3,1)'; pn.style.height=h1+'px';
+  clearTimeout(pn._sw); pn._sw=setTimeout(()=>{ pn.style.height=''; pn.style.transition=''; },360);
+}
+/* fold a row away: fade, then close the gap it leaves */
+function foldAway(row,cb){
+  if(!row){ cb(); return; }
+  const pn=row.closest('.pn'); if(pn){ clearTimeout(pn._sw); pn.style.transition='none'; pn.style.height=pn.getBoundingClientRect().height+'px'; }
+  const h=row.getBoundingClientRect().height;
+  row.style.height=h+'px'; row.style.overflow='hidden'; row.offsetHeight;
+  row.style.transition='opacity .18s,transform .18s,height .26s cubic-bezier(.3,.7,.3,1) .1s,padding .26s cubic-bezier(.3,.7,.3,1) .1s,border-color .26s .1s';
+  row.style.opacity='0'; row.style.transform='translateX(16px)'; row.style.height='0px'; row.style.paddingTop='0px'; row.style.paddingBottom='0px'; row.style.borderBottomColor='transparent';
+  setTimeout(cb,360);
+}
 function renderSheet(){
   const el=document.getElementById('sheet');
   if(!S.sheet){ el.innerHTML=''; return; }
-  const oldPn=el.querySelector('.pn'), keepScroll=oldPn&&el.dataset.kind===S.sheet.kind?oldPn.scrollTop:0;
+  const oldPn=el.querySelector('.pn'), same=oldPn&&el.dataset.kind===S.sheet.kind, keepScroll=same?oldPn.scrollTop:0;
   el.dataset.kind=S.sheet.kind;
   const k=S.sheet.kind; let b='';
   if(k==='group') b=sheetGroup();
@@ -883,6 +906,7 @@ function renderSheet(){
   else if(k==='settle'||k==='spend'){ const g=G(S.gid); if(!g){ S.sheet=null; el.innerHTML=''; return; } const c=calcGroup(g); if(k==='settle') b=head('Settle up')+'<div>'+renderSettle(g,c)+'</div>'; else { const fc=forecast(g,c.spent); b=head('Spending')+'<div class="spendhd"><span class="num">'+fmt(c.spent,g.currency)+'</span>'+(fc?'<span class="muted">'+fc+'</span>':'')+'</div><div>'+renderSpending(g,c)+'</div>'; } }
   else if(k==='name') b=sheetName();
   else if(k==='confirm') b=head(S.confirm.title)+'<p style="margin:0;font-size:16px;font-weight:500">'+esc(S.confirm.text)+'</p><div style="display:flex;gap:10px"><button class="btn grow" data-a="close">Cancel</button><button class="btn grow dark" data-a="confirmYes">'+esc(S.confirm.yes)+'</button></div>';
+  if(same&&(k==='settle'||k==='spend')&&!el.classList.contains('closing')){ smoothSwap(oldPn,'<div class="grab" aria-hidden="true"></div>'+b); return; }
   el.innerHTML='<div class="ov" data-a="ovClose"><div class="pn" role="dialog" aria-modal="true" aria-labelledby="sh-t"><div class="grab" aria-hidden="true"></div>'+b+'</div>'+calPanel(k)+'</div>';
   if(keepScroll){ const pn=el.querySelector('.pn'); if(pn) pn.scrollTop=keepScroll; }
   if(k==='invite') drawQR();
@@ -1669,9 +1693,10 @@ function endParty(){ const el=document.getElementById('party'); if(el) el.remove
 async function addPayment(g,from,to,amount,stay){
   const c=calcGroup(g), bal=Object.assign({},c.bal); bal[from]=(bal[from]||0)+amount; bal[to]=(bal[to]||0)-amount;
   const square=Object.values(bal).every(v=>Math.abs(v)<=2) && (S.exp[g.id]||[]).length>0;
-  const ok=await write(()=>S.db.doc('groups/'+g.id+'/payments/'+rid('p')).set({from,to,amount,date:today(),at:Date.now(),by:S.uid||null}));
+  const pid=rid('p'); S.freshPay=pid; clearTimeout(addPayment._t); addPayment._t=setTimeout(()=>{ S.freshPay=null; },700);
+  const ok=await write(()=>S.db.doc('groups/'+g.id+'/payments/'+pid).set({from,to,amount,date:today(),at:Date.now(),by:S.uid||null}));
   if(ok){ if(stay&&!square){ toast(mName(g,from)+' paid '+mName(g,to)+' '+fmt(amount,g.currency),true); if(S.sheet&&S.sheet.kind==='settle') renderSheet(); } else { closeSheet(); if(square) setTimeout(()=>party(g),250); else toast('Settled',true); } write(()=>S.db.doc('groups/'+g.id).update({touchedAt:Date.now()})); }
-  else { const r=document.querySelector('#sheet .xfer.going'); if(r) r.classList.remove('going'); }
+  else if(S.sheet&&S.sheet.kind==='settle') renderSheet();
 }
 function searchResults(q){
   const n=norm(q); if(!n) return [];
@@ -1753,11 +1778,11 @@ document.addEventListener('click',e=>{
     case 'nmRemove': { const x=(S.exp[g.id]||[]).find(e=>e.id===S.sheet.data.id); if(x) removeFromExpense(x,t.dataset.m); break; }
     case 'markPaid': { const c=calcGroup(g), tr=c.transfers[Number(t.dataset.i)]; if(tr){ S.settleAsk=tr.from+'>'+tr.to; renderSheet(); } break; }
     case 'payNo': S.settleAsk=null; renderSheet(); break;
-    case 'payYes': { const c=calcGroup(g), tr=c.transfers[Number(t.dataset.i)]; if(!tr) break; S.settleAsk=null; const row=t.closest('.xfer'); if(row){ row.classList.add('going'); }
-      setTimeout(()=>addPayment(g,tr.from,tr.to,tr.amount,true),row?220:0); break; }
+    case 'payYes': { const c=calcGroup(g), tr=c.transfers[Number(t.dataset.i)]; if(!tr) break; S.settleAsk=null; const row=t.closest('.xfer'); if(row) row.classList.add('going');
+      foldAway(row,()=>addPayment(g,tr.from,tr.to,tr.amount,true)); break; }
     case 'recordPay': openSheet('pay',{}); break;
     case 'savePay': savePay(); break;
-    case 'delPay': { const p=(S.pay[g.id]||[]).find(x=>x.id===t.dataset.p); if(!p) break; const row=t.closest('.orow'); if(row){ row.style.transition='opacity .2s,transform .2s'; row.style.opacity='0'; row.style.transform='translateX(16px)'; } setTimeout(()=>softDelete('groups/'+g.id+'/payments/'+p.id,p,'Payment removed',null,true),row?200:0); break; }
+    case 'delPay': { const p=(S.pay[g.id]||[]).find(x=>x.id===t.dataset.p); if(!p) break; const row=t.closest('.orow'); foldAway(row,()=>softDelete('groups/'+g.id+'/payments/'+p.id,p,'Payment removed',null,true)); break; }
     case 'undo': { const u=S.undo; S.undo=null; document.getElementById('toast').innerHTML=''; if(u){ clearTimeout(u.timer); write(()=>S.db.doc(u.path).set(u.body)).then(ok=>{ if(ok) toast('Back again',true); }); } break; }
     case 'search': openSheet('search',{q:''}); break;
     case 'srOpen': { closeSheet(); go(t.dataset.g); setTimeout(()=>openSheet('detail',{id:t.dataset.e}),330); break; }

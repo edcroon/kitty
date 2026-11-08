@@ -1,0 +1,7 @@
+{
+  "appId": "com.edcox.kitty",
+  "appName": "Kitty",
+  "webDir": "www",
+  "backgroundColor": "#F7F6F3",
+  "ios": { "contentInset": "never", "backgroundColor": "#F7F6F3" }
+}

@@ -1,5 +1,7 @@
 import UIKit
 import Capacitor
+import VisionKit
+import Vision
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -46,4 +48,85 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+}
+
+// MARK: - Kitty additions
+
+
+/// Kitty's own screen: the standard Capacitor one, plus the receipt scanner.
+class KittyViewController: CAPBridgeViewController {
+    override open func capacitorDidLoad() {
+        bridge?.registerPluginInstance(ReceiptScanPlugin())
+    }
+}
+
+/// Opens Apple's document camera, then reads the text on the receipt on the phone itself.
+/// Returns each line of text with where it sits on the page (0-1, from the top left), so Kitty can find the total.
+@objc(ReceiptScanPlugin)
+public class ReceiptScanPlugin: CAPPlugin, CAPBridgedPlugin, VNDocumentCameraViewControllerDelegate {
+    public let identifier = "ReceiptScanPlugin"
+    public let jsName = "ReceiptScan"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "scan", returnType: CAPPluginReturnPromise)
+    ]
+    private var pending: CAPPluginCall?
+
+    @objc func scan(_ call: CAPPluginCall) {
+        guard VNDocumentCameraViewController.isSupported else {
+            call.reject("Scanning isn't available on this device")
+            return
+        }
+        pending = call
+        DispatchQueue.main.async {
+            let camera = VNDocumentCameraViewController()
+            camera.delegate = self
+            self.bridge?.viewController?.present(camera, animated: true)
+        }
+    }
+
+    public func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFinishWith scan: VNDocumentCameraScan) {
+        let image = scan.pageCount > 0 ? scan.imageOfPage(at: 0) : nil
+        controller.dismiss(animated: true)
+        guard let cg = image?.cgImage else {
+            pending?.reject("No picture")
+            pending = nil
+            return
+        }
+        let request = VNRecognizeTextRequest { [weak self] req, _ in
+            let found = (req.results as? [VNRecognizedTextObservation]) ?? []
+            let lines: [[String: Any]] = found.compactMap { o in
+                guard let best = o.topCandidates(1).first else { return nil }
+                let b = o.boundingBox
+                return ["text": best.string, "x": b.minX, "y": 1 - b.maxY, "w": b.width, "h": b.height]
+            }
+            DispatchQueue.main.async {
+                self?.pending?.resolve(["lines": lines])
+                self?.pending = nil
+            }
+        }
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try VNImageRequestHandler(cgImage: cg, options: [:]).perform([request])
+            } catch {
+                DispatchQueue.main.async {
+                    self.pending?.reject("Couldn't read the receipt")
+                    self.pending = nil
+                }
+            }
+        }
+    }
+
+    public func documentCameraViewControllerDidCancel(_ controller: VNDocumentCameraViewController) {
+        controller.dismiss(animated: true)
+        pending?.reject("cancelled")
+        pending = nil
+    }
+
+    public func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFailWithError error: Error) {
+        controller.dismiss(animated: true)
+        pending?.reject(error.localizedDescription)
+        pending = nil
+    }
 }

@@ -97,6 +97,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .item.has-av{flex-direction:row;align-items:center;gap:12px}.item .ic{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .avs{display:flex;flex-shrink:0}.avs .av+.av{margin-left:-8px;box-shadow:0 0 0 2px var(--bg)}
 .xfer .num{display:block;font-size:18px;margin-top:2px}
+.xfer{transition:opacity .2s,transform .2s}.xfer.going{opacity:0;transform:translateX(16px)}.xfer.ask .t{font-size:15px}.askbtns{display:flex;gap:8px;margin-top:10px}.askbtns .btn{height:38px;padding:0 14px}
 .linkbtn{border:none;background:none;padding:0;font:inherit;font-size:13px;color:var(--ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer;margin-top:6px}
 .top + .banner{margin-top:22px!important}
 .banner{border-top:1px solid var(--ink);border-bottom:1px solid var(--line);padding:12px 0;font-size:14px}
@@ -226,7 +227,7 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 @keyframes kZ{0%{opacity:0;transform:translate(0,5px)}30%{opacity:1}100%{opacity:0;transform:translate(7px,-12px)}}
 @keyframes kBreathe{50%{transform:scale(1.03,.96)}}
 .sulk .k-eyes,.sulk .k-mouth,.sulk .k-coin{display:none}.sulk .k-hmph{display:inline}
-.k-mane{display:none}.lion .k-mane{display:inline}.lion .k-body>path:nth-child(2){fill:#F3C66E}
+.k-mane{display:none}.lion .k-mane{display:inline}.lion .k-coin{transform:translateY(-6px)}.catbtn svg{overflow:visible}.lion .k-body>path:nth-child(2){fill:#F3C66E}
 .kfl{position:fixed;left:0;top:0;z-index:200;pointer-events:none;overflow:visible}.kfl text{font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace;font-weight:500}
 .k-eyes,.k-coin{transform-box:fill-box}
 .k-body{transform-box:view-box;transform-origin:50px 91.5px}
@@ -271,6 +272,8 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .step{flex:0 0 100%;min-width:0;box-sizing:border-box;padding:2px;display:flex;flex-direction:column;gap:10px}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);margin-top:6px}
 .pad button{height:clamp(46px,7vh,58px);border:none;border-bottom:1px solid var(--line);background:none;font:600 26px var(--num);font-family:'Kitty Num',sans-serif;color:var(--ink);cursor:pointer;transition:background-color .1s}
+.scanrow{display:flex;justify-content:center;margin:2px 0 8px}.scanbtn{height:40px;padding:0 16px;gap:8px;font-size:15px}.scanbtn svg{width:18px;height:18px}
+.pad [data-k=del] svg{display:inline-block;vertical-align:middle}
 .pad .pdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;vertical-align:middle}
 .pad button:active{background:#ECE8E0;border-radius:var(--r)}
 .q{font:600 22px 'Kitty Num',sans-serif;margin-top:4px}
@@ -650,7 +653,7 @@ function render(){
   const app=document.getElementById('app'), v=S.view+':'+(S.gid||''), old=render._v===v?app.querySelector('.top .catbtn'):null;
   renderInner();
   render._v=v;
-  if(old){ const nc=app.querySelector('.top .catbtn'); if(nc&&nc!==old&&nc.className.replace(/\b(lion|sulk|asleep|charging|pet|blink)\b/g,'').trim()===old.className.replace(/\b(lion|sulk|asleep|charging|pet|blink)\b/g,'').trim()){ if(old.classList.contains('asleep')!==nc.classList.contains('asleep')) old.classList.toggle('asleep',nc.classList.contains('asleep')); nc.replaceWith(old); } }
+  if(old){ const nc=app.querySelector('.top .catbtn'); if(nc&&nc!==old&&nc.parentNode){ if(old.classList.contains('asleep')!==nc.classList.contains('asleep')) old.classList.toggle('asleep',nc.classList.contains('asleep')); nc.replaceWith(old); } }
 }
 function renderInner(){
   const app=document.getElementById('app');
@@ -822,7 +825,9 @@ function renderSettle(g,c){
     const rank=t=>t.from===me?0:t.to===me?1:2;
     c.transfers.map((t,i)=>[t,i]).sort((a,b)=>rank(a[0])-rank(b[0])||b[0].amount-a[0].amount).forEach(([t,i])=>{
       const mine=t.from===me||t.to===me;
-      h+='<div class="xfer"><span class="avs">'+av(g,t.from,30)+av(g,t.to,30)+'</span><div class="t">'+esc(mName(g,t.from))+' '+(t.from===me?'pay':'pays')+' '+(t.to===me?'you':esc(mName(g,t.to)))+'<span class="num">'+fmt(t.amount,g.currency)+'</span>'+((mem(g,t.to)||{}).pay?'<button class="linkbtn" data-a="payInfo" data-m="'+esc(t.to)+'">'+esc(mName(g,t.to,false))+"'s bank details</button>":'')+'</div>'+(canEdit()?'<button class="btn sm'+(mine?' primary':'')+'" data-a="markPaid" data-i="'+i+'">Paid</button>':'')+'</div>';
+      const key=t.from+'>'+t.to;
+      if(S.settleAsk===key){ h+='<div class="xfer ask" data-k="'+esc(key)+'"><span class="avs">'+av(g,t.from,30)+av(g,t.to,30)+'</span><div class="t">Mark '+fmt(t.amount,g.currency)+' from '+(t.from===me?'you':esc(mName(g,t.from)))+' to '+(t.to===me?'you':esc(mName(g,t.to)))+' as paid?<div class="askbtns"><button class="btn sm primary" data-a="payYes" data-i="'+i+'">Yes, paid</button><button class="btn sm" data-a="payNo">Not yet</button></div></div></div>'; return; }
+      h+='<div class="xfer" data-k="'+esc(key)+'"><span class="avs">'+av(g,t.from,30)+av(g,t.to,30)+'</span><div class="t">'+esc(mName(g,t.from))+' '+(t.from===me?'pay':'pays')+' '+(t.to===me?'you':esc(mName(g,t.to)))+'<span class="num">'+fmt(t.amount,g.currency)+'</span>'+((mem(g,t.to)||{}).pay?'<button class="linkbtn" data-a="payInfo" data-m="'+esc(t.to)+'">'+esc(mName(g,t.to,false))+"'s bank details</button>":'')+'</div>'+(canEdit()?'<button class="btn sm'+(mine?' primary':'')+'" data-a="markPaid" data-i="'+i+'">Paid</button>':'')+'</div>';
     });
     h+='</div>';
   }
@@ -1219,6 +1224,57 @@ function expBar(f){
 }
 const needPhoto=f=>!f.id && !f.photoId && effCat(f).cat==='drinks' && (f.cat!=='auto'||(f.desc||'').trim());
 function photoAsk(f){ if(!needPhoto(f)) return ''; return '<label class="grpphoto"><span class="ge" aria-hidden="true">📸</span><span><b>'+(f.uploading?'Adding the photo...':'Group photo?')+'</b><span class="muted">Drinks are better with one</span></span><input type="file" accept="image/*" id="e-photo" class="sr" '+(f.uploading?'disabled':'')+'></label>'; }
+/* ---------- receipt scanning (iPhone app only: reads the receipt on the phone with Apple's text recognition) ---------- */
+function scanPlugin(){ const C=window.Capacitor; if(!C||!C.isNativePlatform||!C.isNativePlatform()) return null; try{ return (C.Plugins&&C.Plugins.ReceiptScan)||(C.registerPlugin&&C.registerPlugin('ReceiptScan'))||null; }catch(e){ return null; } }
+function scanAvail(){ return !!scanPlugin(); }
+const MONEY_RE=/(?:([£$€¥])\s?)?(-?\d{1,3}(?:[,\s]\d{3})*(?:[.,]\d{2})|-?\d+[.,]\d{2})(?!\d)/g;
+function moneyIn(t){ const out=[]; let m; MONEY_RE.lastIndex=0; while((m=MONEY_RE.exec(t))){ let n=m[2].replace(/\s/g,''); if(/,\d{2}$/.test(n)&&!/\.\d{2}$/.test(n)) n=n.replace(/\./g,'').replace(',','.'); else n=n.replace(/,/g,''); const v=parseFloat(n); if(isFinite(v)&&v>0&&v<100000) out.push({v,sym:m[1]||''}); } return out; }
+function parseReceipt(lines){
+  const L=(lines||[]).map(l=>typeof l==='string'?{text:l,x:0,y:0,h:0}:l).filter(l=>l.text&&l.text.trim());
+  // put lines in reading order, and join pieces that sit on the same row (e.g. "TOTAL" on the left, "£42.50" on the right)
+  L.sort((a,b)=>(a.y-b.y)||(a.x-b.x));
+  const rows=[]; L.forEach(l=>{ const r=rows.find(r=>Math.abs(r.y-l.y)<Math.max(.008,(l.h||0)*.6)&&l.y); if(r){ r.parts.push(l); } else rows.push({y:l.y,parts:[l]}); });
+  rows.forEach(r=>{ r.parts.sort((a,b)=>a.x-b.x); r.text=r.parts.map(p=>p.text).join(' '); });
+  const text=rows.map(r=>r.text);
+  const bad=/sub\s*-?\s*total|savings|discount|vat|tax\b|tip\b|service\s*charge|change|cash|tender|points|items?\b|qty/i;
+  const strong=/grand\s*total|total\s*(to\s*pay|due|amount|payable|inc|incl)|amount\s*(due|payable|to\s*pay)|balance\s*(due|to\s*pay)|to\s*pay|you\s*paid|card\s*payment/i;
+  let total=null, sym='';
+  const pick=(re,skip)=>{ for(let i=text.length-1;i>=0;i--){ const t=text[i]; if(!re.test(t)||(skip&&skip.test(t))) continue; let ms=moneyIn(t); if(!ms.length&&text[i+1]&&!re.test(text[i+1])) ms=moneyIn(text[i+1]); if(ms.length){ const m=ms[ms.length-1]; return m; } } return null; };
+  let m=pick(strong,/sub\s*-?\s*total/i)||pick(/\btotal\b/i,bad);
+  if(!m){ const all=[]; text.forEach(t=>{ if(!/change|cash|tender/i.test(t)) moneyIn(t).forEach(x=>all.push(x)); }); all.sort((a,b)=>b.v-a.v); m=all[0]||null; }
+  if(m){ total=m.v; sym=m.sym; }
+  if(!sym){ const s2=(text.join(' ').match(/[£$€]/g)||[]); if(s2.length) sym=s2.sort((a,b)=>s2.filter(x=>x===b).length-s2.filter(x=>x===a).length)[0]; }
+  // the place: the first proper words at the top that aren't an address, phone number, date or receipt jargon
+  let place='';
+  for(const t of text.slice(0,6)){ const w=t.trim(); if(w.length<3||w.length>32) continue; if(/\d{3,}|www\.|\.com|\.co\.uk|@|tel|phone|vat|receipt|invoice|table|order|welcome|street|road|\bst\b|\brd\b|ave/i.test(w)) continue; if(!/[a-z]{3}/i.test(w)) continue; if(moneyIn(w).length) continue; place=w; break; }
+  if(place && place===place.toUpperCase()) place=place.toLowerCase().replace(/(^|[\s'&-])([a-z])/g,(a,b,c)=>b+c.toUpperCase());
+  // the date
+  let date=''; const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  const pad=n=>String(n).padStart(2,'0'), mk=(y,mo,d)=>{ if(y<100) y+=2000; if(mo<1||mo>12||d<1||d>31) return ''; return y+'-'+pad(mo)+'-'+pad(d); };
+  for(const t of text){ let d;
+    if((d=t.match(/\b(20\d\d)[-\/.](\d{1,2})[-\/.](\d{1,2})\b/))){ date=mk(+d[1],+d[2],+d[3]); }
+    else if((d=t.match(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})\b/))){ let a=+d[1],b=+d[2]; const us=sym==='$'&&a<=12; date=us?mk(+d[3],a,b):mk(+d[3],b,a); if(!date) date=mk(+d[3],a,b); }
+    else if((d=t.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?,?\s+(\d{2,4})\b/i))){ date=mk(+d[3],MON[d[2].toLowerCase()],+d[1]); }
+    else if((d=t.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2}),?\s+(\d{2,4})\b/i))){ date=mk(+d[3],MON[d[1].toLowerCase()],+d[2]); }
+    if(date) break; }
+  const cur={'£':'GBP','$':'USD','€':'EUR','¥':'JPY'}[sym]||'';
+  return {total,place,date,currency:cur};
+}
+async function scanReceipt(){
+  const f=S.form, pl=scanPlugin(); if(!f||!pl||f.scanning) return;
+  f.scanning=true; renderSheet();
+  let res=null; try{ res=await pl.scan(); }catch(e){ f.scanning=false; renderSheet(); if(!/cancel/i.test(String(e&&e.message||e))) toast("Couldn't read that receipt - type it in instead"); return; }
+  f.scanning=false; if(S.form!==f){ return; }
+  const r=parseReceipt(res&&res.lines);
+  if(!r.total){ renderSheet(); toast("Couldn't find a total - type it in instead"); return; }
+  const g=G(f.gid);
+  if(r.currency && CURS.includes(r.currency) && r.currency!==f.currency){ f.currency=r.currency; f.rate=r.currency!==g.currency?rateFor(g,r.currency):''; f.rateTouched=false; f.rateNote=''; }
+  f.amountStr=String(r.total.toFixed(2)).replace(/\.00$/,'.00');
+  if(r.place && !(f.desc||'').trim()) f.desc=r.place;
+  if(r.date){ const td=today(); if(r.date<=td && dDiff(r.date,td)<=90) f.date=r.date; }
+  renderSheet(); goStep(1,true); updatePreview(); refreshSentence(); if(f.currency!==g.currency) fillLiveRate('expense');
+  toast('Read from your receipt - check it looks right');
+}
 function refreshSentence(){ const f=S.form; if(!f||!S.sheet||S.sheet.kind!=='expense') return; const pa=document.getElementById('photoAsk'); if(pa&&pa.innerHTML!==photoAsk(f)) pa.innerHTML=photoAsk(f); const er=document.getElementById('e-err'); if(er&&er.textContent&&performance.now()-(f.errAt||0)>900) er.textContent=''; const g=G(f.gid); const el=document.getElementById('sent'); if(el) el.innerHTML=sentenceHtml(f,g); const b=document.getElementById('expBar'); if(b) b.innerHTML=expBar(f); document.querySelectorAll('#sheet .dots i').forEach((d,k)=>d.classList.toggle('on',k+1===f.step)); }
 function goStep(n,instant){ const f=S.form; if(!f) return; f.step=Math.max(1,Math.min(3,n)); const t=document.querySelector('#sheet .steps'); if(t){ if(instant) t.style.scrollBehavior='auto'; t.scrollLeft=(f.step-1)*t.clientWidth; if(instant) t.style.scrollBehavior=''; } refreshSentence(); }
 function sheetExpense(){
@@ -1228,7 +1284,8 @@ function sheetExpense(){
   // 1. how much
   h+='<section class="step"><div class="bigamt"><label class="sr" for="e-cur">Currency</label><select class="cur" id="e-cur" data-f="currency">'+CURS.map(c=>'<option value="'+c+'"'+(c===f.currency?' selected':'')+'>'+esc(sym(c))+' '+c+'</option>').join('')+'</select><label class="sr" for="e-amt">Amount</label><input id="e-amt" data-f="amountStr" inputmode="none" value="'+esc(f.amountStr)+'" placeholder="0.00" autocomplete="off"></div><div class="hint" id="calcPrev" style="text-align:center"></div>';
   if(f.currency!==g.currency) h+='<div class="f"><label for="e-rate">1 '+esc(f.currency)+' = how many '+esc(g.currency)+'?</label><input autocomplete="off" class="inp" id="e-rate" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="e.g. 0.85"><div class="hint" id="rateNote">'+esc(f.rateNote||'')+'</div></div>';
-  h+='<div class="pad" role="group" aria-label="Number pad">'+['1','2','3','4','5','6','7','8','9','.','0','del'].map(k=>'<button data-a="key" data-k="'+k+'" aria-label="'+(k==='del'?'Delete':k==='.'?'Decimal point':k)+'">'+(k==='del'?'⌫':k==='.'?'<span class="pdot"></span>':k)+'</button>').join('')+'</div></section>';
+  if(scanAvail()) h+='<div class="scanrow"><button class="mini pill scanbtn" data-a="scanReceipt"'+(f.scanning?' disabled':'')+'><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>'+(f.scanning?'Reading receipt...':'Scan a receipt')+'</button></div>';
+  h+='<div class="pad" role="group" aria-label="Number pad">'+['1','2','3','4','5','6','7','8','9','.','0','del'].map(k=>'<button data-a="key" data-k="'+k+'" aria-label="'+(k==='del'?'Delete':k==='.'?'Decimal point':k)+'">'+(k==='del'?'<svg aria-hidden="true" width="42" height="32" viewBox="0 0 34 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M11 2h19a2 2 0 0 1 2 2v18a2 2 0 0 1-2 2H11L2 13z"/><path d="M16 8.5l9 9M25 8.5l-9 9"/></svg>':k==='.'?'<span class="pdot"></span>':k)+'</button>').join('')+'</div></section>';
   // 2. what for
   h+='<section class="step"><div class="q">What for?</div><div id="catBox">'+catChips(f)+'</div>';
   h+='<div class="f" style="margin-top:14px"><label class="sr" for="e-desc">What for?</label><input autocomplete="off" class="inp" id="e-desc" data-f="desc" value="'+esc(f.desc)+'" placeholder="Name it, e.g. Dinner at Ramiro" maxlength="60"></div><div class="remhint" id="remHint" aria-live="polite"></div>';
@@ -1423,11 +1480,10 @@ function fadeRow(id){
     {opacity:0,height:'0px',paddingTop:'0px',paddingBottom:'0px',marginTop:'0px',marginBottom:'0px',borderBottomWidth:'0px'}],{duration:280,easing:'ease-in-out',fill:'forwards'});
   return new Promise(r=>{ a.onfinish=r; setTimeout(r,400); });
 }
-async function softDelete(path,item,msg,photoId){
+async function softDelete(path,item,msg,photoId,keepSheet){
   const body=Object.assign({},item); delete body.id;
   if(S.undo){ clearTimeout(S.undo.timer); S.undo.finish(); }
-  const wasOpen=!!S.sheet; closeSheet(); if(wasOpen) await new Promise(r=>setTimeout(r,180));
-  await fadeRow(item.id);
+  if(!keepSheet){ const wasOpen=!!S.sheet; closeSheet(); if(wasOpen) await new Promise(r=>setTimeout(r,180)); await fadeRow(item.id); }
   const ok=await write(()=>S.db.doc(path).delete()); if(!ok){ render(); return; }
   const u={path,body,finish:()=>{ if(photoId) dropPhoto(photoId); }};
   u.timer=setTimeout(()=>{ if(S.undo===u){ S.undo=null; } u.finish(); },6000);
@@ -1519,7 +1575,7 @@ function popCat(text,kind,g){
 
   const wake=b=>{ catWoke=true; document.querySelectorAll('.catbtn.asleep').forEach(x=>x.classList.remove('asleep')); skip(b);
     b.animate([{transform:'none'},{transform:'translateY(-14px) scale(1.1)',offset:.3,easing:'ease-in'},{transform:'translateY(0) scale(1.06,.92)',offset:.6},{transform:'none'}],{duration:480,easing:'ease-out'});
-    b.querySelector('.k-eyes').animate([{transform:'scale(1.6)'},{transform:'scale(1.6)',offset:.6},{transform:'none'}],{duration:900}); };
+    b.querySelector('.k-eyes').animate([{transform:'scaleY(.15)'},{transform:'none',offset:.25},{transform:'none',offset:.45},{transform:'scaleY(.1)',offset:.55},{transform:'none',offset:.7},{transform:'none'}],{duration:900}); };
 
   const sulk=b=>{ taps=0; b.sulking=1; turn(b,()=>b.classList.add('sulk'));
     clearTimeout(b._sk); b._sk=setTimeout(()=>turn(b,()=>{ b.classList.remove('sulk'); b.sulking=0; b.classList.add('blink'); setTimeout(()=>b.classList.remove('blink'),260); }),4000); };
@@ -1541,32 +1597,42 @@ function popCat(text,kind,g){
   // flick: a quick swipe off the cat throws the coin
   document.addEventListener('pointermove',e=>{ if(!c) return; const b=c, now=performance.now(), dt=Math.max(1,now-b.lt);
     b.vx=b.vx*.4+.6*(e.clientX-b.lx)/dt; b.vy=b.vy*.4+.6*(e.clientY-b.ly)/dt; b.lx=e.clientX; b.ly=e.clientY; b.lt=now;
-    if(now-t0<450 && Math.hypot(e.clientX-b.px,e.clientY-b.py)>26) fling(b); });
+    if(!b.dragging && Math.hypot(e.clientX-b.px,e.clientY-b.py)>18) startDrag(b);
+    if(b.dragging){ b.gx=e.clientX; b.gy=e.clientY; } });
+  const startDrag=b=>{ b.dragging=1; cancelAnimationFrame(raf); b.classList.remove('charging'); skip(b); taps=0; const P=b.P, o=b.o; o.txt.textContent='';
+    [P.body,P.eyes].forEach(x=>{ const f=x.style.transform||'none'; x.style.transform=''; x.style.transition=''; x.animate([{transform:f},{transform:'none'}],{duration:200}); });
+    const R=Math.max(b.r0*1.8,15), s0=performance.now(), r0=b.r0*b.S, x0=b.fx==null?b.cx:b.fx, y0=b.fy==null?b.y:b.fy; b.gx=b.lx; b.gy=b.ly;
+    const er=P.eyes.getBoundingClientRect(), ex=er.left+er.width/2, ey=er.top+er.height/2, eu=P.svg.getBoundingClientRect().width/100;
+    const loop=()=>{ if(!b.dragging) return; const k=Math.min(1,(performance.now()-s0)/160), e=1-Math.pow(1-k,3), r=r0+(R-r0)*e, sa=safeInsets(), x=Math.max(r,Math.min(innerWidth-r,x0+(b.gx-x0)*e)), y=Math.max(sa.t+r+4,Math.min(innerHeight-sa.b-r-10,y0+(b.gy-y0)*e)); b.dpos={x,y,r}; place(o,x,y,r);
+      const dx=x-ex, dy=y-ey, d=Math.hypot(dx,dy)||1, m=Math.min(3.2,d/(14*eu)); P.eyes.style.transform='translate('+(dx/d*m).toFixed(2)+'px,'+(dy/d*m).toFixed(2)+'px)';
+      b._dr=requestAnimationFrame(loop); };
+    loop(); };
 
-  const fling=b=>{ c=null; cancelAnimationFrame(raf); b.classList.remove('charging'); b.flinging=1; clearTimeout(b._fl); b._fl=setTimeout(()=>{ if(b.flinging){ b.flinging=0; if(b.P&&b.P.coin) b.P.coin.style.opacity=''; document.querySelectorAll('.kfl').forEach(v=>v.remove()); } },4500); skip(b); taps=0;
+  const fling=(b,from)=>{ c=null; cancelAnimationFrame(raf); cancelAnimationFrame(b._dr); b.dragging=0; b.classList.remove('charging'); b.flinging=1; clearTimeout(b._fl); b._fl=setTimeout(()=>{ if(b.flinging){ b.flinging=0; if(b.P&&b.P.coin) b.P.coin.style.opacity=''; document.querySelectorAll('.kfl').forEach(v=>v.remove()); } },4500); skip(b); taps=0;
     const P=b.P, o=b.o; [P.body,P.eyes].forEach(x=>{ const f=x.style.transform||'none'; x.style.transform=''; x.style.transition=''; x.animate([{transform:f},{transform:'none'}],{duration:200}); });
     o.txt.textContent='';
-    P.eyes.animate([{transform:'scale(1.35)'},{transform:'scale(1.35)',offset:.8},{transform:'none'}],{duration:2600});
-    const sa=safeInsets(); let x=b.cx, y=b.y, r0f=b.r0*b.S, rT=Math.max(r0f,9), r=r0f, vx=b.vx*1.15, vy=b.vy*1.15; const sp=Math.hypot(vx,vy), mx=2.6; if(sp>mx){ vx*=mx/sp; vy*=mx/sp; }
+    const er=P.eyes.getBoundingClientRect(), ex=er.left+er.width/2, ey=er.top+er.height/2, eu=P.svg.getBoundingClientRect().width/100;
+    const look=(x,y)=>{ const dx=x-ex, dy=y-ey, d=Math.hypot(dx,dy)||1, m=Math.min(3.2,d/(14*eu)); P.eyes.style.transform='translate('+(dx/d*m).toFixed(2)+'px,'+(dy/d*m).toFixed(2)+'px)'; };
+    const sa=safeInsets(); let x=from?from.x:b.cx, y=from?from.y:b.y, r0f=from?from.r:b.r0*b.S, rT=from?from.r:Math.max(r0f,9), r=r0f, vx=b.vx*1.15, vy=b.vy*1.15; const sp=Math.hypot(vx,vy), mx=2.6; if(sp>mx){ vx*=mx/sp; vy*=mx/sp; }
     const G=.0024, top=()=>sa.t+r+4, floor=()=>innerHeight-sa.b-r-10; let last=performance.now(), start=last, bounces=0;
     const step=()=>{ const now=performance.now(), dt=Math.min(32,now-last); last=now;
       r=r0f+(rT-r0f)*Math.min(1,(now-start)/160); vy+=G*dt; x+=vx*dt; y+=vy*dt;
       if(x<r){ x=r; vx=-vx*.82; bounces++; } if(x>innerWidth-r){ x=innerWidth-r; vx=-vx*.82; bounces++; }
       if(y<top()){ y=top(); vy=Math.abs(vy)*.82; }
       if(y>floor()){ y=floor(); vy=-Math.abs(vy)*.72; vx*=.92; bounces++; if(Math.abs(vy)<.25) vy=-.25; }
-      place(o,x,y,r);
+      place(o,x,y,r); look(x,y);
       if(now-start<2300) requestAnimationFrame(step); else home(x,y); };
     // fly home: arc up and over, then land on the cat's head and the cat catches it
     const home=(x0,y0)=>{ const cr=P.coin.isConnected?P.coin.getBoundingClientRect():null, tx=cr&&cr.width?cr.left+cr.width/2:b.cx, ty=cr&&cr.width?cr.top+cr.height/2:b.cy; b.r0=cr&&cr.width?cr.width/2:b.r0; const qx=(x0+tx)/2, qy=Math.max(Math.min(y0,ty)-150, ty-45, sa.t+r+4), s0=performance.now(), D=700;
       const hs=()=>{ const k=Math.min(1,(performance.now()-s0)/D), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2, m=1-e;
-        place(o,m*m*x0+2*m*e*qx+e*e*tx, m*m*y0+2*m*e*qy+e*e*ty, r+(b.r0-r)*e);
-        if(k<1) requestAnimationFrame(hs); else { o.v.remove(); P.coin.style.opacity=''; b.flinging=0;
+        const hx=m*m*x0+2*m*e*qx+e*e*tx, hy=m*m*y0+2*m*e*qy+e*e*ty; place(o,hx,hy,r+(b.r0-r)*e); if(k<.85) look(hx,hy); else P.eyes.style.transform='';
+        if(k<1) requestAnimationFrame(hs); else { o.v.remove(); P.coin.style.opacity=''; b.flinging=0; P.eyes.style.transform='';
           P.coin.animate([{transform:'none'},{transform:'translate(0,2px)',offset:.35},{transform:'none'}],{duration:340,easing:'ease-out'});
           P.body.animate([{transform:'none'},{transform:'scale(1.05,.92)',offset:.3},{transform:'scale(.98,1.03)',offset:.65},{transform:'none'}],{duration:420,easing:'ease-out'}); } };
       hs(); };
     requestAnimationFrame(step); };
 
-  const release=cancel=>{ if(!c) return; const b=c,P=b.P,pp=p,k=Math.max(p,.22),o=b.o,S0=b.S,y0=b.y,fx=b.fx==null?b.cx:b.fx,fy=b.fy==null?b.y:b.fy; b.fx=b.fy=null; c=null; cancelAnimationFrame(raf); b.classList.remove('charging');
+  const release=cancel=>{ if(!c) return; if(c.dragging){ const b=c; if(performance.now()-b.lt>90){ b.vx=0; b.vy=0; } fling(b,b.dpos||{x:b.gx,y:b.gy,r:Math.max(b.r0*1.8,15)}); return; } const b=c,P=b.P,pp=p,k=Math.max(p,.22),o=b.o,S0=b.S,y0=b.y,fx=b.fx==null?b.cx:b.fx,fy=b.fy==null?b.y:b.fy; b.fx=b.fy=null; c=null; cancelAnimationFrame(raf); b.classList.remove('charging');
     if(b.tg) b.tg=0;
     const back=S0>1.15?Math.round(140+180*Math.min(1,Math.log(S0)/Math.log(b.R))):0;
     // shrink the big coin back down to coin size, then hand over to the coin in the drawing
@@ -1585,7 +1651,11 @@ function popCat(text,kind,g){
     if(pp<.35){ taps=(now-lastTap<1500)?taps+1:1; lastTap=now; if(taps>=5) setTimeout(()=>sulk(b),450); } else taps=0;
   };
   document.addEventListener('pointerup',()=>release(false));
-  document.addEventListener('pointercancel',()=>release(true));
+  // iPhone: a finger that drifts during a hold can start a page scroll, which cancels the pointer - keep the hold until the finger lifts
+  document.addEventListener('pointercancel',e=>{ if(c&&e.pointerType==='touch') return; release(true); });
+  document.addEventListener('touchmove',e=>{ if(c) e.preventDefault(); },{passive:false});
+  document.addEventListener('touchend',()=>{ if(c) release(false); });
+  document.addEventListener('touchcancel',()=>{ if(c) release(true); });
   document.addEventListener('contextmenu',e=>{ if(e.target.closest('.catbtn')) e.preventDefault(); });
 })();
 setInterval(()=>{ const cs=[...document.querySelectorAll('.catbtn:not(.pet):not(.charging):not(.asleep):not(.sulk)')]; if(!cs.length||document.hidden) return; const c=cs[Math.floor(Math.random()*cs.length)]; c.classList.add('blink'); setTimeout(()=>c.classList.remove('blink'),260); },4200);
@@ -1596,11 +1666,12 @@ function party(g){
   document.body.appendChild(el); clearTimeout(party._t); party._t=setTimeout(endParty,3200);
 }
 function endParty(){ const el=document.getElementById('party'); if(el) el.remove(); }
-async function addPayment(g,from,to,amount){
+async function addPayment(g,from,to,amount,stay){
   const c=calcGroup(g), bal=Object.assign({},c.bal); bal[from]=(bal[from]||0)+amount; bal[to]=(bal[to]||0)-amount;
   const square=Object.values(bal).every(v=>Math.abs(v)<=2) && (S.exp[g.id]||[]).length>0;
   const ok=await write(()=>S.db.doc('groups/'+g.id+'/payments/'+rid('p')).set({from,to,amount,date:today(),at:Date.now(),by:S.uid||null}));
-  if(ok){ closeSheet(); if(square) setTimeout(()=>party(g),250); else toast('Settled',true); write(()=>S.db.doc('groups/'+g.id).update({touchedAt:Date.now()})); }
+  if(ok){ if(stay&&!square){ toast(mName(g,from)+' paid '+mName(g,to)+' '+fmt(amount,g.currency),true); if(S.sheet&&S.sheet.kind==='settle') renderSheet(); } else { closeSheet(); if(square) setTimeout(()=>party(g),250); else toast('Settled',true); } write(()=>S.db.doc('groups/'+g.id).update({touchedAt:Date.now()})); }
+  else { const r=document.querySelector('#sheet .xfer.going'); if(r) r.classList.remove('going'); }
 }
 function searchResults(q){
   const n=norm(q); if(!n) return [];
@@ -1637,7 +1708,7 @@ document.addEventListener('click',e=>{
     case 'swDel': swDelete(t.closest('.swipe')); break;
     case 'home': go(null); break;
     case 'open': go(t.dataset.g); break;
-    case 'settleSheet': case 'settleTab': openSheet('settle'); break;
+    case 'settleSheet': case 'settleTab': S.settleAsk=null; openSheet('settle'); break;
     case 'spendSheet': openSheet('spend'); break;
     case 'newGroup': newGroupForm(); break;
     case 'settings': if(g) editGroupForm(g); break;
@@ -1671,6 +1742,7 @@ document.addEventListener('click',e=>{
     case 'key': { const f=S.form; let v=String(f.amountStr||''); const k=t.dataset.k;
       if(k==='del') v=v.slice(0,-1); else if(k==='.'){ if(!v.includes('.')) v=(v||'0')+'.'; } else { if(/\.\d\d$/.test(v)) break; v=(v==='0'?'':v)+k; }
       if(v.replace('.','').length>9) break; f.amountStr=v; const a=document.getElementById('e-amt'); if(a) a.value=v; updatePreview(); refreshSentence(); break; }
+    case 'scanReceipt': scanReceipt(); break;
     case 'toggleSplit': S.form.showSplit=!S.form.showSplit; if(!S.form.showSplit) S.form.mode='equal'; if(S.form.step!==3) S.form.step=3; renderSheet(); break;
     case 'toggleNote': S.form.showNote=!S.form.showNote; renderSheet(); { const n=document.getElementById('e-note'); if(n) n.focus(); } break;
     case 'delExp': { const f=S.form; const x=(S.exp[f.gid]||[]).find(e=>e.id===f.id); if(x) softDelete('groups/'+f.gid+'/expenses/'+x.id,x,'"'+x.desc+'" deleted',x.photoId); break; }
@@ -1679,10 +1751,13 @@ document.addEventListener('click',e=>{
     case 'nmToggle': { const x=(S.exp[g.id]||[]).find(e=>e.id===S.sheet.data.id); const me=myMid(g); if(x) setNotMine(x,me,!(x.notMine&&x.notMine[me])).then(ok=>{ if(ok){ toast('Updated'); renderSheet(); } }); break; }
     case 'nmKeep': { const x=(S.exp[g.id]||[]).find(e=>e.id===S.sheet.data.id); if(x) setNotMine(x,t.dataset.m,false).then(ok=>{ if(ok) renderSheet(); }); break; }
     case 'nmRemove': { const x=(S.exp[g.id]||[]).find(e=>e.id===S.sheet.data.id); if(x) removeFromExpense(x,t.dataset.m); break; }
-    case 'markPaid': { const c=calcGroup(g), tr=c.transfers[Number(t.dataset.i)]; if(tr) confirmBox('Mark as paid?',mName(g,tr.from)+' '+(tr.from===myMid(g)?'paid':'paid')+' '+mName(g,tr.to)+' '+fmt(tr.amount,g.currency)+'.','Yes, paid',()=>addPayment(g,tr.from,tr.to,tr.amount)); break; }
+    case 'markPaid': { const c=calcGroup(g), tr=c.transfers[Number(t.dataset.i)]; if(tr){ S.settleAsk=tr.from+'>'+tr.to; renderSheet(); } break; }
+    case 'payNo': S.settleAsk=null; renderSheet(); break;
+    case 'payYes': { const c=calcGroup(g), tr=c.transfers[Number(t.dataset.i)]; if(!tr) break; S.settleAsk=null; const row=t.closest('.xfer'); if(row){ row.classList.add('going'); }
+      setTimeout(()=>addPayment(g,tr.from,tr.to,tr.amount,true),row?220:0); break; }
     case 'recordPay': openSheet('pay',{}); break;
     case 'savePay': savePay(); break;
-    case 'delPay': { const p=(S.pay[g.id]||[]).find(x=>x.id===t.dataset.p); if(p) softDelete('groups/'+g.id+'/payments/'+p.id,p,'Payment removed'); break; }
+    case 'delPay': { const p=(S.pay[g.id]||[]).find(x=>x.id===t.dataset.p); if(!p) break; const row=t.closest('.orow'); if(row){ row.style.transition='opacity .2s,transform .2s'; row.style.opacity='0'; row.style.transform='translateX(16px)'; } setTimeout(()=>softDelete('groups/'+g.id+'/payments/'+p.id,p,'Payment removed',null,true),row?200:0); break; }
     case 'undo': { const u=S.undo; S.undo=null; document.getElementById('toast').innerHTML=''; if(u){ clearTimeout(u.timer); write(()=>S.db.doc(u.path).set(u.body)).then(ok=>{ if(ok) toast('Back again',true); }); } break; }
     case 'search': openSheet('search',{q:''}); break;
     case 'srOpen': { closeSheet(); go(t.dataset.g); setTimeout(()=>openSheet('detail',{id:t.dataset.e}),330); break; }

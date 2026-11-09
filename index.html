@@ -327,7 +327,8 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 @keyframes kPopIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
 @keyframes kJump{0%{transform:translateY(60px) scale(.6);opacity:0}45%{transform:translateY(-16px) scale(1.06);opacity:1}70%{transform:translateY(3px)}100%{transform:none}}
 @keyframes kFall{to{transform:translateY(110vh) rotate(540deg)}}
-#sheet.anim .ov{animation:kFade .22s ease}
+#sheet.anim .ov{animation:kDim .22s ease}
+@keyframes kDim{from{background-color:rgba(17,17,17,0)}}
 #sheet.anim .pn{animation:kUp .32s cubic-bezier(.2,.9,.25,1)}
 #sheet .ov{transition:background-color .3s ease}
 #sheet.closing .ov{background:rgba(17,17,17,0)}
@@ -1134,7 +1135,8 @@ async function saveGroup(){
       if(ok){ closeSheet(); toast('Switched to '+f.currency); } else err.textContent='Some of it didn\'t convert - try again.';
       return;
     }
-    closeSheet(); toast('Saved');
+    if(S.groups[f.id]) S.groups[f.id]=Object.assign({},S.groups[f.id],JSON.parse(JSON.stringify(body)));
+    closeSheet(); toast('Saved'); render();
     write(()=>S.db.doc('groups/'+f.id).update(body));
   }
 }
@@ -1190,7 +1192,8 @@ async function joinAs(mid,newName){
   if(members.some(m=>m.uid===S.uid)){ closeSheet(); return; }
   if(mid){ const m=members.find(m=>m.id===mid); if(!m||m.uid){ toast('Someone already picked that name'); return; } m.uid=S.uid; }
   else { const n=(newName||'').trim(); if(!n){ toast('Add your name'); return; } members.push({id:rid('m'),name:n.slice(0,30),uid:S.uid}); }
-  closeSheet(); syncSubs(); toast("You're in");
+  if(S.groups[g.id]) S.groups[g.id]=Object.assign({},S.groups[g.id],{members});
+  closeSheet(); syncSubs(); toast("You're in"); render();
   write(()=>S.db.doc('groups/'+g.id).update({members,touchedAt:Date.now()}));
 }
 
@@ -1482,7 +1485,8 @@ async function saveExpense(){
   const catManual=f.cat!=='auto', ec=effCat(f);
   const body={desc:desc.slice(0,60),amount:r.total,currency:f.currency,rate:r.foreign?r.rate:1,base:r.base,paidBy:f.paidBy,date:f.date||today(),cat:ec.cat,meal:ec.meal||null,catManual,note:(f.note||'').slice(0,400),mode:f.mode,shares,exact,weights,photoId:f.photoId||null,notMine,createdAt:f.createdAt||Date.now(),createdBy:f.createdBy||S.uid||null,updatedAt:Date.now()};
   const id=f.id||rid('e');
-  const saving=write(()=>S.db.doc('groups/'+g.id+'/expenses/'+id).set(body));
+  const prevExp=(S.exp[g.id]||[]).find(x=>x.id===id); localPut('groups/'+g.id+'/expenses/'+id,body);
+  const saving=write(()=>S.db.doc('groups/'+g.id+'/expenses/'+id).set(body)); saving.then(ok=>{ if(!ok){ localPut('groups/'+g.id+'/expenses/'+id,prevExp?Object.assign({},prevExp):null); render(); } });
   closeSheet(); if(f.id) toast('Saved',true); else { const kind=ec.cat==='drinks'?'drinks':ec.cat==='meal'?'meal':'nom'; setTimeout(()=>popCat({drinks:'Cheers',meal:'Yum'}[kind]||'Nom nom',kind,g),260); }
   const upd={touchedAt:Date.now()}; if(r.foreign) upd.rates={[f.currency]:r.rate};
   saving.then(ok=>{ if(ok) write(()=>S.db.doc('groups/'+g.id).update(upd)); });
@@ -1557,7 +1561,7 @@ async function removeFromExpense(x,mid){
   body.shares=shares; body.notMine=Object.assign({},x.notMine||{}); delete body.notMine[mid];
   if(x.mode==='shares'){ body.weights=Object.assign({},x.weights||{}); delete body.weights[mid]; }
   body.exact={}; body.updatedAt=Date.now();
-  toast('Updated'); renderSheet();
+  localPut('groups/'+g.id+'/expenses/'+x.id,body); toast('Updated'); renderSheet(); render();
   write(()=>S.db.doc('groups/'+g.id+'/expenses/'+x.id).set(body)).then(ok=>{ if(!ok&&S.sheet) renderSheet(); });
 }
 
@@ -1588,10 +1592,14 @@ function fadeRow(id){
     {opacity:0,height:'0px',paddingTop:'0px',paddingBottom:'0px',marginTop:'0px',marginBottom:'0px',borderBottomWidth:'0px'}],{duration:280,easing:'ease-in-out',fill:'forwards'});
   return new Promise(r=>{ a.onfinish=r; setTimeout(r,400); });
 }
+/* put a change into our own copy now, so redraws before the database echoes it back never show the old state */
+function localPut(path,data){ const m=/^groups\/([^/]+)\/(expenses|payments)\/([^/]+)$/.exec(path); if(!m) return; const [,gid,kind,id]=m, box=kind==='expenses'?S.exp:S.pay;
+  const list=(box[gid]||[]).filter(x=>x.id!==id); if(data) list.push(Object.assign({id},JSON.parse(JSON.stringify(data)))); box[gid]=list; }
 async function softDelete(path,item,msg,photoId,keepSheet){
   const body=Object.assign({},item); delete body.id;
   if(S.undo){ clearTimeout(S.undo.timer); S.undo.finish(); }
   if(!keepSheet){ const wasOpen=!!S.sheet; closeSheet(); if(wasOpen) await new Promise(r=>setTimeout(r,180)); await fadeRow(item.id); }
+  localPut(path,null); render();
   const u={path,body,finish:()=>{ if(photoId) dropPhoto(photoId); }};
   u.timer=setTimeout(()=>{ if(S.undo===u){ S.undo=null; } u.finish(); },6000);
   S.undo=u; toast(msg,false,'Undo',6000);
@@ -1805,8 +1813,9 @@ async function addPayment(g,from,to,amount,stay){
   const c=calcGroup(g), bal=Object.assign({},c.bal); bal[from]=(bal[from]||0)+amount; bal[to]=(bal[to]||0)-amount;
   const square=Object.values(bal).every(v=>Math.abs(v)<=2) && (S.exp[g.id]||[]).length>0;
   const pid=rid('p'); S.freshPay=pid; clearTimeout(addPayment._t); addPayment._t=setTimeout(()=>{ S.freshPay=null; },700);
-  const saving=write(()=>S.db.doc('groups/'+g.id+'/payments/'+pid).set({from,to,amount,date:today(),at:Date.now(),by:S.uid||null}));
-  saving.then(ok=>{ if(!ok&&S.sheet&&S.sheet.kind==='settle') renderSheet(); });
+  const pbody={from,to,amount,date:today(),at:Date.now(),by:S.uid||null}; localPut('groups/'+g.id+'/payments/'+pid,pbody);
+  const saving=write(()=>S.db.doc('groups/'+g.id+'/payments/'+pid).set(pbody));
+  saving.then(ok=>{ if(!ok){ localPut('groups/'+g.id+'/payments/'+pid,null); render(); if(S.sheet&&S.sheet.kind==='settle') renderSheet(); } });
   { if(stay&&!square){ toast(mName(g,from)+' paid '+mName(g,to)+' '+fmt(amount,g.currency),true); if(S.sheet&&S.sheet.kind==='settle') renderSheet(); } else { closeSheet(); if(square) setTimeout(()=>party(g),250); else toast('Settled',true); } saving.then(ok=>{ if(ok) write(()=>S.db.doc('groups/'+g.id).update({touchedAt:Date.now()})); }); }
 }
 function searchResults(q){
@@ -1894,7 +1903,7 @@ document.addEventListener('click',e=>{
     case 'recordPay': openSheet('pay',{}); break;
     case 'savePay': savePay(); break;
     case 'delPay': { const p=(S.pay[g.id]||[]).find(x=>x.id===t.dataset.p); if(!p) break; const row=t.closest('.orow'); foldAway(row,()=>softDelete('groups/'+g.id+'/payments/'+p.id,p,'Payment removed',null,true)); break; }
-    case 'undo': { const u=S.undo; S.undo=null; hideToast('up'); if(u){ clearTimeout(u.timer); { const m=/\/expenses\/([^/]+)$/.exec(u.path); if(m) S.newAt[m[1]]=performance.now(); } write(()=>S.db.doc(u.path).set(u.body)).then(ok=>{ if(ok) toast('Back again',true); }); } break; }
+    case 'undo': { const u=S.undo; S.undo=null; hideToast('up'); if(u){ clearTimeout(u.timer); { const m=/\/expenses\/([^/]+)$/.exec(u.path); if(m) S.newAt[m[1]]=performance.now(); } localPut(u.path,u.body); render(); write(()=>S.db.doc(u.path).set(u.body)).then(ok=>{ if(ok) toast('Back again',true); }); } break; }
     case 'search': openSheet('search',{q:''}); break;
     case 'srOpen': { closeSheet(); go(t.dataset.g); setTimeout(()=>openSheet('detail',{id:t.dataset.e}),330); break; }
     case 'partyClose': endParty(); break;

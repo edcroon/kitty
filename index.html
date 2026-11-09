@@ -657,18 +657,11 @@ function countUp(){
   });
 }
 function safeInsets(){ if(safeInsets.v) return safeInsets.v; const d=document.createElement('div'); d.style.cssText='position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)'; document.body.appendChild(d); const cs=getComputedStyle(d); safeInsets.v={t:parseFloat(cs.paddingTop)||0,b:parseFloat(cs.paddingBottom)||0}; d.remove(); return safeInsets.v; }
-/* the strip behind the clock: iOS takes its colour from theme-color, so keep it in step with the sheet's dimming and the party */
-const BASE_TINT=[247,246,243], DIM_TINT=[167,166,164], PARTY_TINT=[247,246,243];
-let tintNow=BASE_TINT.slice(), tintRaf=0;
-function tintTo(c,ms){ let m=document.querySelector('meta[name="theme-color"]'); if(!m){ m=document.createElement('meta'); m.name='theme-color'; document.head.appendChild(m); }
-  cancelAnimationFrame(tintRaf); const from=tintNow.slice(), t0=performance.now(), D=ms||300;
-  const hex=v=>'#'+v.map(x=>Math.round(x).toString(16).padStart(2,'0')).join('');
-  const f=()=>{ const k=Math.min(1,(performance.now()-t0)/D), e=1-Math.pow(1-k,2); tintNow=from.map((x,i)=>x+(c[i]-x)*e); m.content=hex(tintNow); if(k<1) tintRaf=requestAnimationFrame(f); }; f(); }
 function setPage(c){ document.body.style.background=c; document.documentElement.style.setProperty('--page',c); const tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content=c.indexOf('var(')===0?'#F7F6F3':c; }
 // Redraws keep the same header cat, so a hold, flick, lion or sulk carries on through live updates.
 function render(){
   const app=document.getElementById('app'), v=S.view+':'+(S.gid||''), old=render._v===v?app.querySelector('.top .catbtn'):null;
-  if(old&&!S.nav&&!S.loading) flip(()=>app,FL_APP,renderInner,{skipNew:el=>{ const it=el.querySelector&&el.querySelector('.item[data-e]'); return !!(it&&S.newAt[it.dataset.e]!=null); }}); else renderInner();
+  if(old&&!S.nav&&!S.loading) flip(()=>app,FL_APP,renderInner,{noGhost:!!S.sheet||!!document.querySelector('#sheet .pn'),skipNew:el=>{ const it=el.querySelector&&el.querySelector('.item[data-e]'); return !!(it&&S.newAt[it.dataset.e]!=null); }}); else renderInner();
   if(!S.loading&&!S.err&&S.sheet&&(S.sheet.kind==='settle'||S.sheet.kind==='spend')) renderSheet();
   render._v=v;
   if(old){ const nc=app.querySelector('.top .catbtn'); if(nc&&nc!==old&&nc.parentNode){ if(old.classList.contains('asleep')!==nc.classList.contains('asleep')) old.classList.toggle('asleep',nc.classList.contains('asleep')); nc.replaceWith(old); } }
@@ -860,7 +853,7 @@ function renderSettle(g,c){
   const pays=(S.pay[g.id]||[]).slice().sort((a,b)=>(b.at||0)-(a.at||0));
   if(pays.length){
     h+='<div class="sec" style="margin-top:22px">Payments made</div><div class="list">';
-    pays.forEach(p=>{ h+='<div class="orow'+(p.id===S.freshPay?' fresh':'')+'"><span style="font-size:15px">'+esc(mName(g,p.from))+' paid '+esc(mName(g,p.to))+'<br><span class="muted" style="font-size:13px">'+esc(dLong(p.date))+'</span></span><span style="display:flex;align-items:center;gap:4px"><span class="num">'+fmt(p.amount,g.currency)+'</span>'+(canEdit()?'<button class="x" data-a="delPay" data-p="'+esc(p.id)+'" aria-label="Remove this payment">'+IC.x+'</button>':'')+'</span></div>'; });
+    pays.forEach(p=>{ h+='<div class="orow'+(p.id===S.freshPay?' fresh':'')+'" data-p="'+esc(p.id)+'"><span style="font-size:15px">'+esc(mName(g,p.from))+' paid '+esc(mName(g,p.to))+'<br><span class="muted" style="font-size:13px">'+esc(dLong(p.date))+'</span></span><span style="display:flex;align-items:center;gap:4px"><span class="num">'+fmt(p.amount,g.currency)+'</span>'+(canEdit()?'<button class="x" data-a="delPay" data-p="'+esc(p.id)+'" aria-label="Remove this payment">'+IC.x+'</button>':'')+'</span></div>'; });
     h+='</div>';
   }
   return h;
@@ -872,14 +865,14 @@ function openSheet(kind,data){
   const fresh=!el.querySelector('.pn')||el.classList.contains('closing');
   el.classList.remove('closing','dragging');
   S.sheet={kind,data:data||{}}; renderSheet();
-  if(fresh){ tintTo(DIM_TINT); el.classList.add('anim'); clearTimeout(openSheet._t); openSheet._t=setTimeout(()=>el.classList.remove('anim'),400); }
+  if(fresh){ el.classList.add('anim'); clearTimeout(openSheet._t); openSheet._t=setTimeout(()=>el.classList.remove('anim'),400); }
 }
 function closeSheet(){
   if(S.confirm&&S.confirm.onNo&&!S.confirm.done){ const f=S.confirm.onNo; S.confirm.onNo=null; f(); }
   const el=document.getElementById('sheet'); S.sheet=null; S.form=null;
   if(!el.querySelector('.pn')){ el.innerHTML=''; return; }
   const pn=el.querySelector('.pn'); if(pn){ pn.style.transform=''; pn.style.transition=''; }
-  el.classList.remove('anim','dragging'); el.classList.add('closing'); tintTo(BASE_TINT);
+  el.classList.remove('anim','dragging'); el.classList.add('closing'); 
   clearTimeout(closeSheet._t); closeSheet._t=setTimeout(()=>{ if(!S.sheet) el.innerHTML=''; el.classList.remove('closing'); },320);
 }
 (function(){
@@ -906,7 +899,9 @@ function flKey(el){
 }
 function flSnap(root,sel){
   const m=new Map(), seen={};
-  root.querySelectorAll(sel).forEach(el=>{ if(el.closest('.flghost')) return; const r=el.getBoundingClientRect(); if(r.width<1&&r.height<1) return; let k=flKey(el); seen[k]=(seen[k]||0)+1; k+='#'+seen[k]; m.set(k,{el,r,o:+getComputedStyle(el).opacity}); });
+  root.querySelectorAll(sel).forEach(el=>{ if(el.closest('.flghost')) return; const r=el.getBoundingClientRect(); if(r.width<1&&r.height<1) return;
+    let o=1, clip=false; for(let e=el; e&&e!==root.parentElement; e=e.parentElement){ o*=+getComputedStyle(e).opacity; if(e!==el){ const q=e.getBoundingClientRect(); if(q.height<2||q.width<2) clip=true; } }
+    let k=flKey(el); seen[k]=(seen[k]||0)+1; k+='#'+seen[k]; m.set(k,{el,r,o:clip?0:o,own:+getComputedStyle(el).opacity,fading:!!el._flNew}); });
   return m;
 }
 function flGhost(el,r,host){
@@ -940,7 +935,10 @@ function flip(getRoot,sel,mutate,opt){
   after.forEach((n,k)=>{
     const o=before.get(k);
     let anc=n.el.parentElement, ad={x:0,y:0}; while(anc&&anc!==r1){ if(applied.has(anc)){ ad=applied.get(anc); break; } anc=anc.parentElement; }
-    if(o){
+    if(o&&o.fading){ // it was still fading in when this redraw replaced it: carry the fade on
+      n.el._flNew=1; const a=n.el.animate([{opacity:o.own},{opacity:1}],{duration:Math.max(80,240*(1-o.own)),easing:FL_EASE,fill:'backwards'}); a.onfinish=a.oncancel=()=>{ n.el._flNew=0; }; }
+    else if(o&&o.o<.05){ /* was invisible: just let it appear */ }
+    else if(o){
       const dx=opt.noX?0:(o.r.left-n.r.left), dy=(o.r.top-top0)-(n.r.top-top1);
       const nx=dx-ad.x, ny=dy-ad.y;
       if(Math.abs(nx)>.5||Math.abs(ny)>.5){ keep(n.el.animate([{transform:'translate('+nx+'px,'+ny+'px)'},{transform:'translate(0,0)'}],{duration:FL_MS,easing:FL_EASE,composite:'add',id:'fl'})); applied.set(n.el,{x:dx,y:dy}); }
@@ -953,7 +951,12 @@ function flip(getRoot,sel,mutate,opt){
       }
     }
   });
-  if(!opt.noGhost){ const ks=new Set(after.keys()); before.forEach((o,k)=>{ if(ks.has(k)) return; const c=String(o.el.className||'').split(' ')[0]; if(!FL_FADE.test(c)||o.o<.5) return; let p=o.el.parentElement; while(p){ if(p._flGhosted) return; p=p.parentElement; } o.el._flGhosted=1; flGhost(o.el,o.r,host); }); before.forEach(o=>{ o.el._flGhosted=0; }); }
+  if(!opt.noGhost){ const ks=new Set(after.keys()), keyOf=new Map(); before.forEach((o,k)=>keyOf.set(o.el,k));
+    before.forEach((o,k)=>{ if(ks.has(k)) return; const c=String(o.el.className||'').split(' ')[0]; if(!FL_FADE.test(c)||o.o<.5) return;
+      // only whole things that went away leave a fading copy - a change inside a row that stays just changes
+      const whole=/^(face|xfer|orow|chip|swipe|item|person|srow|sec|f|owe|empty|pill|split|remhint)$/.test(c);
+      let p=o.el.parentElement; while(p){ if(p._flGhosted) return; const pk=keyOf.get(p); if(!whole&&pk&&ks.has(pk)) return; p=p.parentElement; }
+      o.el._flGhosted=1; flGhost(o.el,o.r,host); }); before.forEach(o=>{ o.el._flGhosted=0; }); }
 }
 function sheetFlip(fn){ flip(()=>document.querySelector('#sheet .pn'),FL_SHEET,fn,{rel:true,host:()=>document.querySelector('#sheet .ov')||document.body}); }
 /* fold a row away: fade, then close the gap it leaves */
@@ -1794,9 +1797,9 @@ function party(g){
   const el=document.createElement('div'); el.id='party'; el.setAttribute('data-a','partyClose'); el.setAttribute('role','status');
   let bits=''; for(let i=0;i<40;i++){ const z=8+Math.random()*14; bits+='<b class="coin" style="left:'+(Math.random()*100)+'%;width:'+z+'px;height:'+z+'px;animation-delay:'+(Math.random()*1.2).toFixed(2)+'s;animation-duration:'+(1.1+Math.random()*1.1).toFixed(2)+'s"></b>'; }
   el.innerHTML=bits+cat(140)+'<div class="big">All square!</div><div class="sub">'+esc(g.name)+' is settled up</div>';
-  document.body.appendChild(el); tintTo(PARTY_TINT,200); clearTimeout(party._t); party._t=setTimeout(endParty,3200);
+  document.body.appendChild(el); clearTimeout(party._t); party._t=setTimeout(endParty,3200);
 }
-function endParty(){ const el=document.getElementById('party'); if(!el||el._going) return; el._going=1; el.style.pointerEvents='none'; tintTo(BASE_TINT,260);
+function endParty(){ const el=document.getElementById('party'); if(!el||el._going) return; el._going=1; el.style.pointerEvents='none'; 
   const a=el.animate([{opacity:1},{opacity:0}],{duration:260,easing:'ease-out',fill:'forwards'}); a.onfinish=()=>el.remove(); setTimeout(()=>el.remove(),500); }
 async function addPayment(g,from,to,amount,stay){
   const c=calcGroup(g), bal=Object.assign({},c.bal); bal[from]=(bal[from]||0)+amount; bal[to]=(bal[to]||0)-amount;

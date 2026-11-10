@@ -230,7 +230,7 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 @keyframes kZ{0%{opacity:0;transform:translate(0,5px)}30%{opacity:1}100%{opacity:0;transform:translate(7px,-12px)}}
 @keyframes kBreathe{50%{transform:scale(1.03,.96)}}
 .sulk .k-eyes,.sulk .k-mouth,.sulk .k-coin{display:none}.sulk .k-hmph{display:inline}
-.k-mane{display:none}.lion .k-mane{display:inline}.lion .k-coin{transform:translateY(-6px)}.catbtn svg{overflow:visible}.lion .k-body>path:nth-child(2){fill:#F3C66E}
+.k-mane{display:none}.lion .k-mane{display:inline}.k-coinw{transition:transform .35s cubic-bezier(.3,.7,.3,1)}.lion .k-coinw{transform:translateY(-6px)}.catbtn svg{overflow:visible}.lion .k-body>path:nth-child(2){fill:#F3C66E}
 .kfl{position:fixed;left:0;top:0;z-index:200;pointer-events:none;overflow:visible}.kfl text{font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace;font-weight:500}
 .k-eyes,.k-coin{transform-box:fill-box}
 .k-body{transform-box:view-box;transform-origin:50px 91.5px}
@@ -363,7 +363,7 @@ const CAT_WORDS = {
   groceries:['shop','shopping','supermarket','groceries','tesco','sainsburys','waitrose','aldi','lidl','market','walmart','target','costco'],
   tickets:['ticket','tickets','museum','gig','show','entry','tour','concert','cinema','tickets','gallery','match']
 };
-const CAT_SVG = '<svg viewBox="0 0 100 100" width="SZ" height="SZ" aria-hidden="true" class="kcat"><g stroke-linejoin="round" stroke-linecap="round"><circle class="k-coin" cx="50" cy="10" r="8" fill="#5C8DFF"></circle><g class="k-body"><path class="k-mane" d="M50.0 22.0 A10.9 10.9 0 0 1 67.8 26.1 A10.9 10.9 0 0 1 82.1 37.4 A10.9 10.9 0 0 1 90.0 53.9 A10.9 10.9 0 0 1 90.0 72.1 A10.9 10.9 0 0 1 82.1 88.6 A10.9 10.9 0 0 1 67.8 99.9 A10.9 10.9 0 0 1 50.0 104.0 A10.9 10.9 0 0 1 32.2 99.9 A10.9 10.9 0 0 1 17.9 88.6 A10.9 10.9 0 0 1 10.0 72.1 A10.9 10.9 0 0 1 10.0 53.9 A10.9 10.9 0 0 1 17.9 37.4 A10.9 10.9 0 0 1 32.2 26.1 A10.9 10.9 0 0 1 50.0 22.0 Z" fill="#E08A35" stroke="#111111" stroke-width="3" stroke-linejoin="round"></path><path d="BODYD" fill="#F7F6F3" stroke="#111111" stroke-width="3"></path><path d="M45 26 H55" stroke="#111111" stroke-width="6" fill="none"></path><g class="k-eyes"><circle cx="38" cy="62" r="5.5" fill="#111111"></circle><circle cx="62" cy="62" r="5.5" fill="#111111"></circle></g><path class="k-mouth" d="M46 71 Q50 74.5 54 71" fill="none" stroke="#111111" stroke-width="2.6"></path><g class="k-blush"><ellipse cx="27" cy="70" rx="5.5" ry="3.2" fill="#F2A3A0"></ellipse><ellipse cx="73" cy="70" rx="5.5" ry="3.2" fill="#F2A3A0"></ellipse></g><g class="k-tipsy" fill="none" stroke="#111111" stroke-width="2.4" stroke-linecap="round"><path d="M37 62 c0-2 3-2 3 0 c0 3.5-6 3.5-6 0 c0-5 9-5 9 0 c0 6.5-12 6.5-12 0"></path><path d="M61 62 c0-2 3-2 3 0 c0 3.5-6 3.5-6 0 c0-5 9-5 9 0 c0 6.5-12 6.5-12 0"></path><path d="M43 72 q2.3-2.5 4.6 0 t4.6 0 t4.6 0" stroke-width="2.4"></path></g><g class="k-hic" fill="#F7F6F3" stroke="#111111" stroke-width="2"><circle cx="86" cy="40" r="4"></circle><circle cx="93" cy="27" r="5.5"></circle></g><g class="k-fish" stroke="#111111" stroke-width="2.2" stroke-linejoin="round"><g class="k-fish-in"><path d="M45 76 C53 66 68 66 75 76 C68 86 53 86 45 76 Z" fill="#8FB0D8"></path><path d="M75 76 L87 67 L83.5 76 L87 85 Z" fill="#8FB0D8"></path><circle cx="52.5" cy="74.5" r="1.8" fill="#111111" stroke="none"></circle><path d="M60 70.5 Q63 76 60 81.5" fill="none" stroke-width="2"></path></g></g><g class="k-tongue"><path d="M47.6 72.6 Q50 79 52.4 72.6 Z" fill="#E77F86" stroke="#111111" stroke-width="1.8" stroke-linejoin="round"></path></g><g class="k-sleep" fill="none" stroke="#111111" stroke-width="2.8"><path d="M33 61 Q38 65 43 61"></path><path d="M57 61 Q62 65 67 61"></path></g><g class="k-acc"><g class="k-party" stroke="#111111" stroke-width="2.6" stroke-linejoin="round"><path d="M18 33 L26 4 L43 25 Z" fill="#1F4FD1"></path><path d="M22 19 L35 15 M20 26 L39 21" stroke="#F7F6F3" stroke-width="2.6"></path><path d="M18 33 L26 4 L43 25 Z" fill="none"></path><circle cx="26" cy="4" r="4" fill="#F2C14E"></circle></g><g class="k-santa" stroke="#111111" stroke-width="2.6" stroke-linejoin="round"><path d="M15 33 L45 24 C41 12 33 2 23 0 C14 -1 7 6 6 15 C11 10 16 10 18 15 C17 21 15 27 15 33 Z" fill="#C8382B"></path><path d="M11 32 C22 27 35 22 47 21 L48 29 C36 30 24 34 13 40 Z" fill="#F7F6F3"></path><circle cx="7" cy="16" r="5.5" fill="#F7F6F3"></circle></g><g class="k-heart"><path d="M84 30 C79 25 79 18 84 18 C86 18 87 20 87 21 C87 20 88 18 90 18 C95 18 95 25 87 31 Z" fill="#E4586B" stroke="#111111" stroke-width="2.2" stroke-linejoin="round"></path></g></g></g><g class="k-zz" fill="#111111" font-family="Inter Tight,Helvetica,sans-serif" font-weight="700"><text x="80" y="26" font-size="15">z</text><text x="90" y="12" font-size="11">z</text></g><g class="k-hmph" fill="none" stroke="#111111" stroke-width="3"><path d="M83 20 L90 13"></path><path d="M87 29 L96 27"></path><path d="M77 13 L79 5"></path></g></g></svg>';
+const CAT_SVG = '<svg viewBox="0 0 100 100" width="SZ" height="SZ" aria-hidden="true" class="kcat"><g stroke-linejoin="round" stroke-linecap="round"><g class="k-coinw"><circle class="k-coin" cx="50" cy="10" r="8" fill="#5C8DFF"></circle></g><g class="k-body"><path class="k-mane" d="M50.0 22.0 A10.9 10.9 0 0 1 67.8 26.1 A10.9 10.9 0 0 1 82.1 37.4 A10.9 10.9 0 0 1 90.0 53.9 A10.9 10.9 0 0 1 90.0 72.1 A10.9 10.9 0 0 1 82.1 88.6 A10.9 10.9 0 0 1 67.8 99.9 A10.9 10.9 0 0 1 50.0 104.0 A10.9 10.9 0 0 1 32.2 99.9 A10.9 10.9 0 0 1 17.9 88.6 A10.9 10.9 0 0 1 10.0 72.1 A10.9 10.9 0 0 1 10.0 53.9 A10.9 10.9 0 0 1 17.9 37.4 A10.9 10.9 0 0 1 32.2 26.1 A10.9 10.9 0 0 1 50.0 22.0 Z" fill="#E08A35" stroke="#111111" stroke-width="3" stroke-linejoin="round"></path><path d="BODYD" fill="#F7F6F3" stroke="#111111" stroke-width="3"></path><path d="M45 26 H55" stroke="#111111" stroke-width="6" fill="none"></path><g class="k-eyes"><circle cx="38" cy="62" r="5.5" fill="#111111"></circle><circle cx="62" cy="62" r="5.5" fill="#111111"></circle></g><path class="k-mouth" d="M46 71 Q50 74.5 54 71" fill="none" stroke="#111111" stroke-width="2.6"></path><g class="k-blush"><ellipse cx="27" cy="70" rx="5.5" ry="3.2" fill="#F2A3A0"></ellipse><ellipse cx="73" cy="70" rx="5.5" ry="3.2" fill="#F2A3A0"></ellipse></g><g class="k-tipsy" fill="none" stroke="#111111" stroke-width="2.4" stroke-linecap="round"><path d="M37 62 c0-2 3-2 3 0 c0 3.5-6 3.5-6 0 c0-5 9-5 9 0 c0 6.5-12 6.5-12 0"></path><path d="M61 62 c0-2 3-2 3 0 c0 3.5-6 3.5-6 0 c0-5 9-5 9 0 c0 6.5-12 6.5-12 0"></path><path d="M43 72 q2.3-2.5 4.6 0 t4.6 0 t4.6 0" stroke-width="2.4"></path></g><g class="k-hic" fill="#F7F6F3" stroke="#111111" stroke-width="2"><circle cx="86" cy="40" r="4"></circle><circle cx="93" cy="27" r="5.5"></circle></g><g class="k-fish" stroke="#111111" stroke-width="2.2" stroke-linejoin="round"><g class="k-fish-in"><path d="M45 76 C53 66 68 66 75 76 C68 86 53 86 45 76 Z" fill="#8FB0D8"></path><path d="M75 76 L87 67 L83.5 76 L87 85 Z" fill="#8FB0D8"></path><circle cx="52.5" cy="74.5" r="1.8" fill="#111111" stroke="none"></circle><path d="M60 70.5 Q63 76 60 81.5" fill="none" stroke-width="2"></path></g></g><g class="k-tongue"><path d="M47.6 72.6 Q50 79 52.4 72.6 Z" fill="#E77F86" stroke="#111111" stroke-width="1.8" stroke-linejoin="round"></path></g><g class="k-sleep" fill="none" stroke="#111111" stroke-width="2.8"><path d="M33 61 Q38 65 43 61"></path><path d="M57 61 Q62 65 67 61"></path></g><g class="k-acc"><g class="k-party" stroke="#111111" stroke-width="2.6" stroke-linejoin="round"><path d="M18 33 L26 4 L43 25 Z" fill="#1F4FD1"></path><path d="M22 19 L35 15 M20 26 L39 21" stroke="#F7F6F3" stroke-width="2.6"></path><path d="M18 33 L26 4 L43 25 Z" fill="none"></path><circle cx="26" cy="4" r="4" fill="#F2C14E"></circle></g><g class="k-santa" stroke="#111111" stroke-width="2.6" stroke-linejoin="round"><path d="M15 33 L45 24 C41 12 33 2 23 0 C14 -1 7 6 6 15 C11 10 16 10 18 15 C17 21 15 27 15 33 Z" fill="#C8382B"></path><path d="M11 32 C22 27 35 22 47 21 L48 29 C36 30 24 34 13 40 Z" fill="#F7F6F3"></path><circle cx="7" cy="16" r="5.5" fill="#F7F6F3"></circle></g><g class="k-heart"><path d="M84 30 C79 25 79 18 84 18 C86 18 87 20 87 21 C87 20 88 18 90 18 C95 18 95 25 87 31 Z" fill="#E4586B" stroke="#111111" stroke-width="2.2" stroke-linejoin="round"></path></g></g></g><g class="k-zz" fill="#111111" font-family="Inter Tight,Helvetica,sans-serif" font-weight="700"><text x="80" y="26" font-size="15">z</text><text x="90" y="12" font-size="11">z</text></g><g class="k-hmph" fill="none" stroke="#111111" stroke-width="3"><path d="M83 20 L90 13"></path><path d="M87 29 L96 27"></path><path d="M77 13 L79 5"></path></g></g></svg>';
 // the cat fills out as a group's expenses add up (f from 0 to 1)
 const catBody=f=>{ f=Math.max(0,Math.min(1,f||0)); const n=v=>Math.round(v*10)/10, L=n(15-10*f), R=n(85+10*f), B=n(90+2.5*f);
   return 'M22 46 C21 36 22 24 25 17 C27 13 31 13 34 16 L43 26 H57 L66 16 C69 13 73 13 75 17 C78 24 79 36 78 46 C'+n(83+6*f)+' 53 '+R+' '+n(60-1*f)+' '+R+' '+n(66+3*f)+' C'+R+' '+n(81+4*f)+' '+n(70+6*f)+' '+B+' 50 '+B+' C'+n(30-6*f)+' '+B+' '+L+' '+n(81+4*f)+' '+L+' '+n(66+3*f)+' C'+L+' '+n(60-1*f)+' '+n(17-6*f)+' 53 22 46 Z'; };
@@ -492,6 +492,7 @@ function errText(e){
   return "Couldn't save just now - try again.";
 }
 async function write(fn){
+  if(!S.db) await S.dbReady;
   try{ await fn(); return true; }
   catch(e){
     if(e && e.code==='unavailable'){ await new Promise(r=>setTimeout(r,400+Math.random()*600)); try{ await fn(); return true; }catch(e2){ toast(errText(e2)); return false; } }
@@ -538,35 +539,48 @@ function useCap(n){
     (function go(){ if(window.claude && typeof window.claude.use==='function'){ Promise.resolve(window.claude.use(n)).then(res,()=>res(null)); } else if(tries++<30){ setTimeout(go,100); } else res(null); })();
   });
 }
+/* what was on screen last time, kept on this phone, so opening Kitty never waits on the network */
+const SNAP_KEY='kitty-snap';
+function loadSnap(){ try{ const x=JSON.parse(localStorage.getItem(SNAP_KEY)||'null'); if(x&&x.v===1&&x.groups) return x; }catch(e){} return null; }
+function saveSnap(){ clearTimeout(saveSnap._t); saveSnap._t=setTimeout(()=>{ if(S.loading||!S.live) return;
+  try{ localStorage.setItem(SNAP_KEY,JSON.stringify({v:1,uid:S.uid||null,name:S.profileName||'',groups:S.groups,exp:S.exp,pay:S.pay})); }catch(e){} },500); }
+S.dbReady=new Promise(r=>{ S._dbReady=r; });
 async function boot(){
+  const snap=loadSnap();
+  if(snap){ S.groups=snap.groups||{}; S.exp=snap.exp||{}; S.pay=snap.pay||{}; if(snap.uid) S.uid=snap.uid; if(snap.name) S.profileName=snap.name; S.loading=false; S.fromSnap=true; route(); }
   render();
-  const t=setTimeout(()=>{ S.slow=true; render(); },10000);
+  const t=setTimeout(()=>{ S.slow=true; if(S.loading) render(); },10000);
   const [db,user,assets] = await Promise.all([useCap('db'),useCap('user'),useCap('assets')]);
-  S.db=db; S.user=user; S.assets=assets;
-  if(!db){ clearTimeout(t); S.loading=false; S.err='nodb'; render(); return; }
+  S.db=db; S.user=user; S.assets=assets; if(db) S._dbReady(db);
+  if(!db){ clearTimeout(t); if(!S.fromSnap){ S.loading=false; S.err='nodb'; render(); } return; }
+  db.collection('groups').onSnapshot(snap=>{
+    // the phone's own copy can answer "nothing" for a moment while it opens: don't let that blank what we already show
+    if(snap.metadata&&snap.metadata.fromCache&&!snap.docs.length&&Object.keys(S.groups).length) return;
+    if(!snap.metadata.fromCache){ clearTimeout(t); S.slow=false; }
+    S.loading=false; S.live=true;
+    const g={}; snap.docs.forEach(d=>{ g[d.id]=Object.assign({id:d.id},d.data()); });
+    Object.keys(S.pendingG||{}).forEach(id=>{ if(!g[id]) g[id]=S.pendingG[id]; });
+    S.groups=g; syncSubs(); route(); render();
+  }, e=>{ clearTimeout(t); if(!S.fromSnap){ S.loading=false; S.err=e.code||'err'; render(); } });
   if(user){
     try{ S.uid = await user.id(); }catch(e){}
     try{ const c = await user.can('data.write'); S.canWrite = (c===false)?false:(c===true?true:null); }catch(e){ S.canWrite=null; }
     try{ if(S.uid){ const ps=await user.profiles([S.uid]); S.profileName=(ps&&ps[S.uid]&&ps[S.uid].name)||''; } }catch(e){}
     if(!S.profileName){ try{ S.profileName=localStorage.getItem('kitty-name')||''; }catch(e){} }
     if(!S.profileName && !S.askedName){ S.askedName=true; setTimeout(()=>{ if(!S.sheet&&!S.profileName) openSheet('name'); },700); }
+    render();
   }
-  db.collection('groups').onSnapshot(snap=>{
-    if(!snap.metadata.fromCache){ clearTimeout(t); S.slow=false; }
-    S.loading=false;
-    const g={}; snap.docs.forEach(d=>{ g[d.id]=Object.assign({id:d.id},d.data()); });
-    Object.keys(S.pendingG||{}).forEach(id=>{ if(!g[id]) g[id]=S.pendingG[id]; });
-    S.groups=g; syncSubs(); route(); render();
-  }, e=>{ clearTimeout(t); S.loading=false; S.err=e.code||'err'; render(); });
 }
 function syncSubs(){
+  if(!S.db) return; // the feeds start as soon as the connection is up
   const want=new Set(Object.values(S.groups).filter(g=>myMid(g)||g.id===S.gid).map(g=>g.id));
   Object.keys(S.subs).forEach(gid=>{ if(!want.has(gid)){ S.subs[gid].forEach(u=>u()); delete S.subs[gid]; } });
   want.forEach(gid=>{
     if(S.subs[gid]) return;
     const ref=S.db.doc('groups/'+gid);
-    const u1=ref.collection('expenses').onSnapshot(s=>{ S.exp[gid]=s.docs.map(d=>Object.assign({id:d.id},d.data())); render(); },()=>{});
-    const u2=ref.collection('payments').onSnapshot(s=>{ S.pay[gid]=s.docs.map(d=>Object.assign({id:d.id},d.data())); render(); },()=>{});
+    const blank=(s,box)=>s.metadata&&s.metadata.fromCache&&!s.docs.length&&(box[gid]||[]).length;
+    const u1=ref.collection('expenses').onSnapshot(s=>{ if(blank(s,S.exp)) return; S.exp[gid]=s.docs.map(d=>Object.assign({id:d.id},d.data())); render(); },()=>{});
+    const u2=ref.collection('payments').onSnapshot(s=>{ if(blank(s,S.pay)) return; S.pay[gid]=s.docs.map(d=>Object.assign({id:d.id},d.data())); render(); },()=>{});
     S.subs[gid]=[u1,u2];
   });
 }
@@ -661,6 +675,7 @@ function safeInsets(){ if(safeInsets.v) return safeInsets.v; const d=document.cr
 function setPage(c){ document.body.style.background=c; document.documentElement.style.setProperty('--page',c); const tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content=c.indexOf('var(')===0?'#F7F6F3':c; }
 // Redraws keep the same header cat, so a hold, flick, lion or sulk carries on through live updates.
 function render(){
+  saveSnap();
   const app=document.getElementById('app'), v=S.view+':'+(S.gid||''), old=render._v===v?app.querySelector('.top .catbtn'):null;
   if(old&&!S.nav&&!S.loading) flip(()=>app,FL_APP,renderInner,{noGhost:!!S.sheet||!!document.querySelector('#sheet .pn'),skipNew:el=>{ const it=el.querySelector&&el.querySelector('.item[data-e]'); return !!(it&&S.newAt[it.dataset.e]!=null); }}); else renderInner();
   if(!S.loading&&!S.err&&S.sheet&&(S.sheet.kind==='settle'||S.sheet.kind==='spend')) renderSheet();
@@ -1186,6 +1201,7 @@ function sheetJoin(){
 }
 async function joinAs(mid,newName){
   const g=G(S.gid); if(!g||!S.uid) return;
+  if(!S.db) await S.dbReady;
   const snap=await S.db.doc('groups/'+g.id).get().catch(()=>null);
   const cur=snap&&snap.exists?snap.data():g;
   const members=(cur.members||[]).map(m=>Object.assign({},m));
@@ -1779,8 +1795,9 @@ function popCat(text,kind,g){
     const back=S0>1.15?Math.round(140+180*Math.min(1,Math.log(S0)/Math.log(b.R))):0;
     // shrink the big coin back down to coin size, then hand over to the coin in the drawing
     const s0=performance.now(); o.txt.style.transition='opacity .12s'; o.txt.style.opacity=0;
+    const cr=P.coin.getBoundingClientRect(), xT=cr.width?cr.left+cr.width/2:b.cx, yT=y0+(cr.height?(cr.top+cr.height/2)-b.cy:0);
     const step=()=>{ const kk=back?Math.min(1,(performance.now()-s0)/back):1, ee=kk*kk*kk, S=Math.exp(Math.log(S0)*(1-ee));
-      place(o,fx+(b.cx-fx)*ee,fy+(y0-fy)*ee,b.r0*S); if(kk<1) requestAnimationFrame(step); else { o.v.remove(); P.coin.style.opacity=''; } };
+      place(o,fx+(xT-fx)*ee,fy+(yT-fy)*ee,b.r0*S); if(kk<1) requestAnimationFrame(step); else { o.v.remove(); P.coin.style.opacity=''; } };
     step();
     const cf='translate(0,'+(-26*pp)+'px) rotate('+(-25*pp)+'deg)';
     const fb=P.body.style.transform||'none', fe=P.eyes.style.transform||'none'; [P.body,P.eyes].forEach(x=>{ x.style.transform=''; x.style.transition=''; });

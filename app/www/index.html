@@ -214,6 +214,34 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .r-nom .k-mouth{transform-box:fill-box;transform-origin:50% 0;animation:kChew .2s .62s 3 ease-in-out}
 .r-meal svg{animation:kMunch .25s .7s 4 ease-in-out}@keyframes kMunch{50%{transform:scale(1.04,.95)}}
 @keyframes kChew{50%{transform:scale(1.3,2.2)}}
+/* reactions to the other expense types */
+@keyframes kHide{to{opacity:0}}@keyframes kShow{from{opacity:0}to{opacity:1}}
+.kr,.kr g,.kr path,.kr rect,.kr circle{transform-box:fill-box}
+.kr-bag{animation:kBag .75s 1.05s cubic-bezier(.4,0,.6,1) both;transform-origin:50% 100%}
+@keyframes kBag{0%{opacity:0;transform:translateY(-70px)}12%{opacity:1}58%{transform:translateY(0) scale(1)}70%{transform:translateY(0) scale(1.08,.88)}84%{transform:translateY(-3px) scale(.97,1.04)}100%{opacity:1;transform:none}}
+.r-groceries svg{transform-origin:50% 100%;animation:kWob .32s 1.5s 4 alternate ease-in-out both}
+@keyframes kWob{0%{transform:rotate(-6deg) translateY(2px)}100%{transform:rotate(6deg) translateY(2px)}}
+.kr-taxi{animation:kDrive 1.3s 1s cubic-bezier(.45,.1,.55,.9) both}
+@keyframes kDrive{0%{opacity:0;transform:translateX(120px)}4%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translateX(-130px)}}
+.kr-car{animation:kBump .14s 1s 9 alternate ease-in-out}@keyframes kBump{from{transform:translate(0,-19px)}to{transform:translate(0,-20.5px)}}
+.r-transport .k-eyes{animation:kLook 1.25s 1s ease-in-out both}
+@keyframes kLook{0%{transform:none}15%{transform:translateX(5px)}75%{transform:translateX(-5px)}100%{transform:none}}
+.r-stay .k-sleep,.r-stay .k-zz{display:inline}
+.r-stay .k-sleep{animation:kShow .01s 1.05s both}.r-stay .k-eyes{animation:kHide .01s 1.05s both}
+.r-stay .k-zz text{animation:kZ 1.5s ease-in-out 1.2s 2 both}.r-stay .k-zz text+text{animation-delay:1.65s}
+.r-stay svg{transform-origin:50% 100%;animation:kSink .5s 1.05s ease-out both}@keyframes kSink{to{transform:translateY(4px) scale(1.03,.95)}}
+.kr-tk{transform-origin:50% 50%;animation:kTix .55s 1s cubic-bezier(.3,.7,.4,1.5) both}
+@keyframes kTix{0%{opacity:0;transform:translate(-14px,34px) rotate(50deg) scale(.3)}100%{opacity:1;transform:rotate(-12deg)}}
+.kr-conf>*{opacity:0;animation:kConf .9s 1.15s ease-out both}
+@keyframes kConf{0%{opacity:0;transform:none}15%{opacity:1}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(200deg)}}
+.r-tickets .k-eyes circle{transform-box:fill-box;transform-origin:50% 50%;animation:kWide .3s 1.05s ease-out both}@keyframes kWide{to{transform:scale(1.4)}}
+.r-tickets .k-mouth{animation:kHide .01s 1.05s both}.kr-o{animation:kShow .01s 1.05s both}
+.kr-paper{transform-origin:50% 0;animation:kUnroll .85s 1s cubic-bezier(.3,.7,.3,1) both}
+@keyframes kUnroll{0%{transform:scaleY(0)}60%{transform:scaleY(1.04)}100%{transform:none}}
+.kr-roll{animation:kShow .01s 1s both}
+.r-bills .k-eyes{animation:kHide .01s 1.3s both}.kr-squeeze{animation:kShow .01s 1.3s both}
+.kr-drop{animation:kDrop2 1s 1.35s ease-in both}@keyframes kDrop2{0%{opacity:0;transform:none}15%{opacity:1}100%{opacity:0;transform:translateY(16px)}}
+.r-bills svg{animation:kShiver .09s 1.35s 8 alternate linear}@keyframes kShiver{from{transform:translateX(-1.5px)}to{transform:translateX(1.5px)}}
 #party .coin{position:absolute;top:-30px;border-radius:50%;background:#5C8DFF;animation:kRain linear forwards}
 @keyframes kRain{to{transform:translateY(calc(100vh + 60px))}}
 #party .catart svg{transform-origin:50% 90%;animation:kDance 1s ease-in-out .9s 2}
@@ -1561,7 +1589,7 @@ async function saveExpense(){
   const id=f.id||rid('e');
   const prevExp=(S.exp[g.id]||[]).find(x=>x.id===id); localPut('groups/'+g.id+'/expenses/'+id,body);
   const saving=write(()=>S.db.doc('groups/'+g.id+'/expenses/'+id).set(body)); saving.then(ok=>{ if(!ok){ localPut('groups/'+g.id+'/expenses/'+id,prevExp?Object.assign({},prevExp):null); render(); } });
-  closeSheet(); if(f.id) toast('Saved',true); else { const kind=ec.cat==='drinks'?'drinks':ec.cat==='meal'?'meal':'nom'; setTimeout(()=>popCat({drinks:'Cheers',meal:'Yum'}[kind]||'Nom nom',kind,g),260); }
+  closeSheet(); if(f.id) toast('Saved',true); else { const kind=REACT_WORDS[ec.cat]?ec.cat:'nom'; setTimeout(()=>popCat(REACT_WORDS[kind]||'Nom nom',kind,g),260); }
   const upd={touchedAt:Date.now()}; if(r.foreign) upd.rates={[f.currency]:r.rate};
   saving.then(ok=>{ if(ok) write(()=>S.db.doc('groups/'+g.id).update(upd)); });
 }
@@ -1679,11 +1707,21 @@ async function softDelete(path,item,msg,photoId,keepSheet){
   S.undo=u; toast(msg,false,'Undo',6000);
   const ok=await write(()=>S.db.doc(path).delete()); if(!ok){ if(S.undo===u){ clearTimeout(u.timer); S.undo=null; } render(); }
 }
+// little props the cat gets for each type of expense (drinks and meals use the fish and hiccups drawn into the cat)
+const REACT_ART={
+  groceries:'<g class="kr kr-bag"><path d="M42 10 C42 0 58 0 58 10" fill="none" stroke="#111111" stroke-width="2.4"/><path d="M37 14 L28 -6 L32 -8 L41 12 Z" fill="#E0B070" stroke="#111111" stroke-width="2"/><path d="M30 -2 L34 -4 M32.5 3 L36.5 1" stroke="#111111" stroke-width="1.4"/><path d="M57 12 L62 -4 M60 12 L67 0 M55 11 L57 -6" stroke="#3E8E41" stroke-width="3.2" fill="none"/><path d="M60 11 L64 -1 L67 1 Z" fill="#F08A3C" stroke="#111111" stroke-width="1.6"/><path d="M33 9 H67 L64.5 28 H35.5 Z" fill="#D9B37A" stroke="#111111" stroke-width="2.6"/><path d="M34 14 H66" stroke="#111111" stroke-width="1.6"/></g>',
+  transport:'<g class="kr kr-taxi"><g class="kr-car" transform="translate(0,-19)"><path d="M46 80 H56 M48 86 H60 M46 92 H53" stroke="#111111" stroke-width="2" fill="none"/><path d="M2 93 V87 Q2 83 6 83 H10 L15 76 H29 L34 83 H38 Q42 83 42 87 V93 Z" fill="#F2C14E" stroke="#111111" stroke-width="2.4"/><path d="M16.5 82 L19 78.5 H25 L27.5 82 Z" fill="#CFE0F5" stroke="#111111" stroke-width="1.6"/><rect x="19" y="71.5" width="6" height="4.5" rx="1" fill="#111111"/><circle cx="11" cy="93" r="4.2" fill="#111111"/><circle cx="33" cy="93" r="4.2" fill="#111111"/></g></g>',
+  stay:'',
+  tickets:'<g class="kr"><ellipse class="kr-o" cx="50" cy="73" rx="3.4" ry="4.2" fill="#111111"/><g class="kr-tk"><path d="M70 6 H96 V11 A3 3 0 0 0 96 17 V22 H70 V17 A3 3 0 0 0 70 11 Z" fill="#F2C14E" stroke="#111111" stroke-width="2.2"/><path d="M77.5 8 V20" stroke="#111111" stroke-width="1.6" stroke-dasharray="2 2"/><path d="M82 12 H92 M82 16 H89" stroke="#111111" stroke-width="1.6"/></g><g class="kr-conf"><rect x="48" y="20" width="4" height="7" fill="#5C8DFF" style="--x:-30px;--y:-26px"/><rect x="52" y="22" width="4" height="7" fill="#E4586B" style="--x:22px;--y:-34px"/><circle cx="50" cy="24" r="2.6" fill="#F2C14E" style="--x:-12px;--y:-40px"/><rect x="47" y="24" width="4" height="6" fill="#6FB36A" style="--x:34px;--y:-12px"/><circle cx="53" cy="22" r="2.6" fill="#5C8DFF" style="--x:4px;--y:-46px"/><rect x="49" y="21" width="4" height="7" fill="#F2C14E" style="--x:-38px;--y:-6px"/></g></g>',
+  bills:'<g class="kr"><g class="kr-squeeze" fill="none" stroke="#111111" stroke-width="2.8"><path d="M33 57.5 L41.5 62 L33 66.5"/><path d="M67 57.5 L58.5 62 L67 66.5"/></g><path class="kr-drop" d="M81 30 C81 30 77 36 77 39 A4 4 0 0 0 85 39 C85 36 81 30 81 30 Z" fill="#8FC3F0" stroke="#111111" stroke-width="1.8"/><g class="kr-paper"><path d="M-14 22 H10 V78 L7 75 L4 78 L1 75 L-2 78 L-5 75 L-8 78 L-11 75 L-14 78 Z" fill="#FFFFFF" stroke="#111111" stroke-width="2.2"/><path d="M-10 30 H6 M-10 36 H2 M-10 42 H6 M-10 48 H0 M-10 54 H6 M-10 60 H3 M-10 68 H6" stroke="#111111" stroke-width="1.7" fill="none"/></g><rect class="kr-roll" x="-17" y="18" width="30" height="6" rx="3" fill="#F7F6F3" stroke="#111111" stroke-width="2.2"/></g>'
+};
+const REACT_WORDS={drinks:'Cheers',meal:'Yum',groceries:'Stocked up',transport:'Beep beep',stay:'Night night',tickets:'Woo!',bills:'Ouch'};
 function popCat(text,kind,g){
   let el=document.getElementById('popcat'); if(el) el.remove();
   if(!document.querySelector('.dock')){ toast(text,true); return; }
   el=document.createElement('div'); el.id='popcat'; el.setAttribute('role','status');
   el.innerHTML='<div class="in"><span class="lbl2">'+esc(text)+'</span>'+cat(88,kind?'r-'+kind:'')+'</div>';
+  const art=REACT_ART[kind], root=el.querySelector('svg > g'); if(art&&root) root.insertAdjacentHTML('beforeend',art);
   document.body.appendChild(el); clearTimeout(popCat._t); popCat._t=setTimeout(()=>{ el.remove(); },3300);
 }
 

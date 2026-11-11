@@ -989,8 +989,10 @@ function flGhost(el,r,host){
   if(r.height<2||r.width<2||r.bottom<0||r.top>innerHeight) return;
   const g=el.cloneNode(true); g.classList.add('flghost'); g.removeAttribute('id'); g.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));
   Object.assign(g.style,{position:'fixed',left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',margin:'0',pointerEvents:'none',zIndex:'60',boxSizing:'border-box',transform:'none'});
-  host.appendChild(g); const a=g.animate([{opacity:1},{opacity:0}],{duration:160,easing:'ease-out',fill:'forwards'}); a.onfinish=()=>g.remove(); setTimeout(()=>g.remove(),400);
+  host.appendChild(g); const a=g.animate([{opacity:1},{opacity:0}],{duration:120,easing:'cubic-bezier(.2,.6,.4,1)',fill:'forwards'}); a.onfinish=()=>g.remove(); setTimeout(()=>g.remove(),400);
 }
+// fading copies of things leaving the sheet live on their own layer just above it, so a redraw of the sheet can't wipe them mid-fade
+function flLayer(){ let l=document.getElementById('flsheet'); if(!l){ l=document.createElement('div'); l.id='flsheet'; l.setAttribute('aria-hidden','true'); l.style.cssText='position:fixed;inset:0;z-index:21;pointer-events:none'; document.body.appendChild(l); } return l; }
 let flDepth=0;
 function flip(getRoot,sel,mutate,opt){
   opt=opt||{};
@@ -999,12 +1001,13 @@ function flip(getRoot,sel,mutate,opt){
   const base0=opt.rel?r0.getBoundingClientRect():null, h0=base0?base0.height:0, top0=base0?base0.top:0;
   const before=opt.swap?new Map():flSnap(r0,sel), clone=opt.swap&&opt.rel?r0.cloneNode(true):null;
   if(clone){ clone.scrollTop=r0.scrollTop; clone.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id')); }
-  (flip.anims||[]).forEach(a=>{ try{a.cancel();}catch(e){} }); flip.anims=[];
+  // each surface (page, sheet) has its own running glides, so a page redraw never cuts short the sheet's
+  const AK=sel; flip.am=flip.am||{}; (flip.am[AK]||[]).forEach(a=>{ try{a.cancel();}catch(e){} }); const mine=flip.am[AK]=[];
   if(opt.rel) r0.style.height='';
   flDepth++; try{ mutate(); } finally{ flDepth--; }
   const r1=getRoot(); if(!r1) return;
   const b1=opt.rel?r1.getBoundingClientRect():null, top1=b1?b1.top:0, h1=b1?b1.height:0;
-  const keep=a=>{ flip.anims.push(a); return a; };
+  const keep=a=>{ mine.push(a); return a; };
   const host=opt.host?opt.host():document.body;
   if(opt.swap){ // a different sheet: the old one fades away as the new one grows
     if(clone){ Object.assign(clone.style,{position:'fixed',left:base0.left+'px',top:base0.top+'px',width:base0.width+'px',height:base0.height+'px',margin:'0',pointerEvents:'none',zIndex:'60',overflow:'hidden',transform:'none'}); clone.classList.add('flghost'); clone.removeAttribute('role'); host.appendChild(clone); const a=clone.animate([{opacity:1},{opacity:0}],{duration:200,easing:'ease-out',fill:'forwards'}); a.onfinish=()=>clone.remove(); setTimeout(()=>clone.remove(),500); }
@@ -1013,25 +1016,28 @@ function flip(getRoot,sel,mutate,opt){
   }
   const after=flSnap(r1,sel), applied=new Map();
   if(opt.rel&&Math.abs(h1-h0)>1){ r1.classList.add('flipping'); const a=keep(r1.animate([{height:h0+'px'},{height:h1+'px'}],{duration:FL_MS,easing:FL_EASE})); a.onfinish=a.oncancel=()=>r1.classList.remove('flipping'); }
+  const fadeIns=[]; let bigMove=false;
   after.forEach((n,k)=>{
     const o=before.get(k);
     let anc=n.el.parentElement, ad={x:0,y:0}; while(anc&&anc!==r1){ if(applied.has(anc)){ ad=applied.get(anc); break; } anc=anc.parentElement; }
     if(o&&o.fading){ // it was still fading in when this redraw replaced it: carry the fade on
-      n.el._flNew=1; const a=n.el.animate([{opacity:o.own},{opacity:1}],{duration:Math.max(80,240*(1-o.own)),easing:FL_EASE,fill:'backwards'}); a.onfinish=a.oncancel=()=>{ n.el._flNew=0; }; }
+      n.el._flNew=1; const wait=Math.max(0,(o.el._flAt||0)-performance.now()); n.el._flAt=o.el._flAt; const a=n.el.animate([{opacity:o.own},{opacity:1}],{duration:Math.max(80,240*(1-o.own)),delay:wait,easing:FL_EASE,fill:'backwards'}); a.onfinish=a.oncancel=()=>{ n.el._flNew=0; }; }
     else if(o&&o.o<.05){ /* was invisible: just let it appear */ }
     else if(o){
       const dx=opt.noX?0:(o.r.left-n.r.left), dy=(o.r.top-top0)-(n.r.top-top1);
       const nx=dx-ad.x, ny=dy-ad.y;
+      if(Math.abs(ny)>12) bigMove=true;
       if(Math.abs(nx)>.5||Math.abs(ny)>.5){ keep(n.el.animate([{transform:'translate('+nx+'px,'+ny+'px)'},{transform:'translate(0,0)'}],{duration:FL_MS,easing:FL_EASE,composite:'add',id:'fl'})); applied.set(n.el,{x:dx,y:dy}); }
       else if(ad.x||ad.y) applied.set(n.el,ad);
     } else {
       const c=String(n.el.className||'').split(' ')[0];
       if(!opt.noFade&&FL_FADE.test(c)&&!(opt.skipNew&&opt.skipNew(n.el))&&!n.el.getAnimations().some(a=>a.id!=='fl')){
         let p=n.el.parentElement, under=false; while(p&&p!==r1){ if(p._flNew||p.getAnimations().some(a=>a.id!=='fl')){ under=true; break; } p=p.parentElement; }
-        if(!under){ n.el._flNew=1; const a=(n.el.animate([{opacity:0,transform:c==='face'||c==='chip'?'scale(.88)':'translateY(-4px)'},{opacity:1,transform:'none'}],{duration:240,delay:90,easing:FL_EASE,fill:'backwards'})); a.onfinish=a.oncancel=()=>{ n.el._flNew=0; }; }
+        if(!under){ n.el._flNew=1; n.el._flAt=performance.now()+90; } if(!under) fadeIns.push(()=>{ const d=bigMove?200:90; n.el._flAt=performance.now()+d; const a=(n.el.animate([{opacity:0,transform:c==='face'||c==='chip'?'scale(.88)':'translateY(-4px)'},{opacity:1,transform:'none'}],{duration:240,delay:d,easing:FL_EASE,fill:'backwards'})); a.onfinish=a.oncancel=()=>{ n.el._flNew=0; }; });
       }
     }
   });
+  fadeIns.forEach(f=>f());
   if(!opt.noGhost){ const ks=new Set(after.keys()), keyOf=new Map(); before.forEach((o,k)=>keyOf.set(o.el,k));
     before.forEach((o,k)=>{ if(ks.has(k)) return; const c=String(o.el.className||'').split(' ')[0]; if(!FL_FADE.test(c)||o.o<.5) return;
       // only whole things that went away leave a fading copy - a change inside a row that stays just changes
@@ -1039,11 +1045,10 @@ function flip(getRoot,sel,mutate,opt){
       let p=o.el.parentElement; while(p){ if(p._flGhosted) return; const pk=keyOf.get(p); if(!whole&&pk&&ks.has(pk)) return; p=p.parentElement; }
       o.el._flGhosted=1; flGhost(o.el,o.r,host); }); before.forEach(o=>{ o.el._flGhosted=0; }); }
 }
-function sheetFlip(fn){ flip(()=>document.querySelector('#sheet .pn'),FL_SHEET,fn,{rel:true,host:()=>document.querySelector('#sheet .ov')||document.body}); }
+function sheetFlip(fn){ flip(()=>document.querySelector('#sheet .pn'),FL_SHEET,fn,{rel:true,host:flLayer}); }
 /* fold a row away: fade, then close the gap it leaves */
 function foldAway(row,cb){
   if(!row){ cb(); return; }
-  const pn=row.closest('.pn'); if(pn){ clearTimeout(pn._sw); pn.style.height=pn.getBoundingClientRect().height+'px'; }
   const h=row.getBoundingClientRect().height;
   row.style.height=h+'px'; row.style.overflow='hidden'; row.offsetHeight;
   row.style.transition='opacity .18s,transform .18s,height .26s cubic-bezier(.3,.7,.3,1) .1s,padding .26s cubic-bezier(.3,.7,.3,1) .1s,border-color .26s .1s';
@@ -1736,8 +1741,8 @@ function popCat(text,kind,g){
     if(!pn||!S.sheet||el.classList.contains('closing')||flDepth) return _rs.apply(this,arguments);
     const same=el.dataset.kind===S.sheet.kind, stepping=!!(S.form&&S.form.stepAnim), args=arguments;
     let out=null; if(stepping){ const gs=pn.querySelector('.gstep'); if(gs){ const r=gs.getBoundingClientRect(); out={c:gs.cloneNode(true),r,dir:S.form.stepAnim}; } }
-    flip(()=>document.querySelector('#sheet .pn'),FL_SHEET,()=>_rs.apply(this,args),{rel:true,swap:!same,noGhost:stepping,host:()=>document.querySelector('#sheet .ov')||document.body});
-    if(out&&flMotion()){ const g=out.c, host=document.querySelector('#sheet .ov')||document.body; g.classList.remove('fwd','back'); g.classList.add('flghost'); g.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id')); g.removeAttribute('id');
+    flip(()=>document.querySelector('#sheet .pn'),FL_SHEET,()=>_rs.apply(this,args),{rel:true,swap:!same,noGhost:stepping,host:flLayer});
+    if(out&&flMotion()){ const g=out.c, host=flLayer(); g.classList.remove('fwd','back'); g.classList.add('flghost'); g.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id')); g.removeAttribute('id');
       Object.assign(g.style,{position:'fixed',left:out.r.left+'px',top:out.r.top+'px',width:out.r.width+'px',margin:'0',pointerEvents:'none',zIndex:'60',animation:'none'}); host.appendChild(g);
       const dx=out.dir==='back'?28:-28; const a=g.animate([{opacity:1,transform:'none'},{opacity:0,transform:'translateX('+dx+'px)'}],{duration:110,easing:'ease-in',fill:'forwards'}); a.onfinish=()=>g.remove(); setTimeout(()=>g.remove(),500); } }; }
 { const _r=refreshSentence; refreshSentence=function(){ sheetFlip(()=>_r()); }; const _u=updatePreview; updatePreview=function(){ sheetFlip(()=>_u()); }; }
@@ -2024,8 +2029,8 @@ document.addEventListener('click',e=>{
     case 'nmRemove': { const x=(S.exp[g.id]||[]).find(e=>e.id===S.sheet.data.id); if(x) removeFromExpense(x,t.dataset.m); break; }
     case 'markPaid': { const c=calcGroup(g), tr=c.transfers[Number(t.dataset.i)]; if(tr){ S.settleAsk=tr.from+'>'+tr.to; renderSheet(); } break; }
     case 'payNo': S.settleAsk=null; renderSheet(); break;
-    case 'payYes': { const c=calcGroup(g), tr=c.transfers[Number(t.dataset.i)]; if(!tr) break; S.settleAsk=null; const row=t.closest('.xfer'); if(row) row.classList.add('going');
-      foldAway(row,()=>addPayment(g,tr.from,tr.to,tr.amount,true)); break; }
+    case 'payYes': { const c=calcGroup(g), tr=c.transfers[Number(t.dataset.i)]; if(!tr) break; S.settleAsk=null;
+      addPayment(g,tr.from,tr.to,tr.amount,true); break; }
     case 'recordPay': openSheet('pay',{}); break;
     case 'savePay': savePay(); break;
     case 'delPay': { const p=(S.pay[g.id]||[]).find(x=>x.id===t.dataset.p); if(!p) break; const row=t.closest('.orow'); foldAway(row,()=>softDelete('groups/'+g.id+'/payments/'+p.id,p,'Payment removed',null,true)); break; }

@@ -1181,7 +1181,7 @@ async function saveGroup(){
       if(!(r>0)){ err.textContent='Add the exchange rate to convert this group.'; return; }
       err.textContent='Converting...';
       const ok=await convertGroup(g,f.currency,r,body);
-      if(ok){ closeSheet(); toast('Switched to '+f.currency); } else err.textContent='Some of it didn\'t convert - try again.';
+      if(ok){ if(S.form===f) closeSheet(); toast('Switched to '+f.currency); } else if(S.form===f) err.textContent='Some of it didn\'t convert - try again.';
       return;
     }
     if(S.groups[f.id]) S.groups[f.id]=Object.assign({},S.groups[f.id],JSON.parse(JSON.stringify(body)));
@@ -1215,12 +1215,14 @@ async function convertGroup(g,cur,r,body){
 async function deleteGroup(gid){
   const ex=S.exp[gid]||[], ps=S.pay[gid]||[];
   await new Promise(r=>setTimeout(r,180)); await fadeRow('g:'+gid);
-  S.gone[gid]=true; // keep it hidden while its expenses are removed, so the list doesn't redraw it
+  // gone straight away on screen; the removal carries on in the background and never touches what you've opened since
+  S.gone[gid]=true;
+  if(S.gid===gid) go(null); else render();
+  toast('Group deleted');
   for(const x of ex){ await write(()=>S.db.doc('groups/'+gid+'/expenses/'+x.id).delete()); if(x.photoId) dropPhoto(x.photoId); }
   for(const p of ps){ await write(()=>S.db.doc('groups/'+gid+'/payments/'+p.id).delete()); }
   const ok=await write(()=>S.db.doc('groups/'+gid).delete());
-  if(ok){ closeSheet(); if(S.view==='home'&&!S.gid) render(); else go(null); toast('Group deleted'); }
-  else { delete S.gone[gid]; render(); }
+  if(!ok){ delete S.gone[gid]; render(); toast("Couldn't delete the group - try again"); }
 }
 
 /* join */

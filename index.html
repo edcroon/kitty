@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
-<script>window.KITTY_VER="10th Nov, 18:53";</script>
+<script>window.KITTY_VER="10th Nov, 19:39";</script>
 <script>window.KITTY_FB={"apiKey": "AIzaSyCehhm2KN9nvSXIbWAAJPdOHCWd2vV_bOc", "authDomain": "kitty-6ac2d.firebaseapp.com", "projectId": "kitty-6ac2d", "storageBucket": "kitty-6ac2d.firebasestorage.app", "messagingSenderId": "900248128997", "appId": "1:900248128997:web:21168f11312eebb86ff30c"};</script>
 <script src="fb.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -109,6 +109,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 #sheet .pn{background:var(--bg);width:100%;max-width:480px;max-height:92vh;overflow:auto;overflow-x:hidden;overscroll-behavior:contain;border-radius:18px 18px 0 0;box-shadow:0 -10px 30px rgba(17,17,17,.08);padding:14px 24px calc(env(safe-area-inset-bottom) + 24px);display:flex;flex-direction:column;gap:18px;transition:transform .24s cubic-bezier(.4,0,.6,1)}
 #sheet .hd{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-right:-12px}
 #sheet .hd h2{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
+html.sheeton,html.sheeton body{overflow:hidden}
 #sheet .pn>*{flex-shrink:0}#sheet .pn.flipping{overflow:hidden}
 #sheet .grab{width:36px;height:4px;background:var(--line);margin:0 auto -6px;flex-shrink:0}
 .f{display:flex;flex-direction:column;gap:6px}
@@ -141,7 +142,7 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .calpanel{background:var(--bg);width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:14px 24px calc(env(safe-area-inset-bottom) + 20px);box-shadow:0 -10px 30px rgba(17,17,17,.1);display:flex;flex-direction:column;gap:8px}
 .calpanel .grab{width:36px;height:4px;background:var(--line);margin:0 auto 6px}.calpanel .hd h2{margin:0;font-size:20px;font-weight:600}
 .calov.in{animation:kCalFade .22s ease-out}.calov.in .calpanel{animation:kCalUp .34s cubic-bezier(.2,.85,.3,1)}
-.calov.out{opacity:0;transition:opacity .22s ease-in}.calov.out .calpanel{transform:translateY(100%);transition:transform .22s cubic-bezier(.5,0,.75,0)}
+.calov{transition:background-color .26s ease}.calov.out{background:rgba(17,17,17,0);pointer-events:none}.calov.out .calpanel{transform:translateY(105%);transition:transform .26s cubic-bezier(.4,0,.8,.4)}
 @keyframes kCalFade{from{background:rgba(17,17,17,0)}}@keyframes kCalUp{from{transform:translateY(100%)}}
 .calhd{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:500;margin:0 -12px}
 .ver{margin:28px 0 8px;text-align:center;font-size:11px;color:var(--muted,#8a8a86);opacity:.7}
@@ -276,6 +277,7 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 .sent .u{cursor:pointer;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:5px;text-decoration-color:var(--ink);-webkit-tap-highlight-color:transparent}
 .sent .u.cur{color:var(--pos);text-decoration-color:var(--pos)}
 .sent .dt{position:relative;display:inline-block;padding:6px 4px;margin:-6px -4px;color:var(--muted);text-decoration-color:#C9C4BB;font-size:.85em}.sent .dt input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+#sheet.anim .savebar,#sheet.closing .savebar{position:relative;bottom:auto}
 .steps{display:flex;overflow-x:hidden;overflow-y:visible;scroll-behavior:smooth;margin:0 -2px}
 .step{flex:0 0 100%;min-width:0;box-sizing:border-box;padding:2px;display:flex;flex-direction:column;gap:10px}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);margin-top:6px}
@@ -339,8 +341,6 @@ textarea.inp{height:auto;min-height:64px;padding:10px 0;resize:vertical}
 #sheet.closing .ov{background:rgba(17,17,17,0)}
 #sheet.closing .pn{transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.7,.2)}
 #sheet.dragging .pn{transition:none}
-#app.in>*:not(.dock){animation:kIn .24s cubic-bezier(.2,.8,.3,1) .08s both}
-#app.back>*:not(.dock){animation:kBack .24s cubic-bezier(.2,.8,.3,1) .08s both}
 .item.new{animation:kNew 1.6s cubic-bezier(.2,.8,.3,1)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -611,11 +611,36 @@ function route(){
 }
 function go(gid){
   S.nav=gid?'in':'back';
-  if(gid){ S.view='group'; S.gid=gid; syncSubs(); try{ location.hash='g-'+gid; }catch(e){} }
-  else { S.view='home'; S.gid=null; try{ location.hash='home'; }catch(e){} }
+  if(gid){ S.view='group'; S.gid=gid; syncSubs(); setHash('g-'+gid); }
+  else { S.view='home'; S.gid=null; setHash('home'); }
   route(); render(); window.scrollTo(0,0);
 }
+function setHash(h){ try{ history.replaceState(history.state,'','#'+h); }catch(e){ try{ location.hash=h; }catch(_){} } }
 window.addEventListener('hashchange',()=>{ route(); render(); });
+// iPhone-style back: swipe in from the left edge of a group. The page follows your finger with your groups underneath.
+(function(){
+  let x0=null,y0=0,mode=null,lx=0,lt=0,vx=0,w=null,top=null,under=null;
+  const W=()=>innerWidth;
+  const place=x=>{ const k=Math.max(0,Math.min(1,x/W())); top.style.transform='translateX('+x+'px)'; under.style.transform='translateX('+(-W()*.28*(1-k))+'px)'; under.style.filter='brightness('+(.94+.06*k)+')'; };
+  const build=()=>{ const app=document.getElementById('app'), d=document.createElement('div'); const bg=document.body.style.background;
+    try{ renderHome(d); }catch(e){ return false; } setPage(bg||'var(--bg)');
+    under=pageLayer(app,app.getBoundingClientRect().top+window.scrollY,0,d); top=pageLayer(app);
+    top.style.boxShadow='0 0 28px rgba(17,17,17,.12)';
+    w=document.createElement('div'); w.className='pgwrap'; w.setAttribute('aria-hidden','true');
+    Object.assign(w.style,{position:'fixed',inset:'0',zIndex:'15',pointerEvents:'none',overflow:'hidden',background:'var(--bg)'});
+    w.appendChild(under); w.appendChild(top); document.querySelectorAll('.pgwrap').forEach(x=>x.remove()); document.body.appendChild(w); return true; };
+  document.addEventListener('touchstart',e=>{ x0=null; if(S.view!=='group'||S.sheet||e.touches.length>1||!flMotion()) return; const t=e.touches[0]; if(t.clientX>28) return; x0=lx=t.clientX; y0=t.clientY; lt=performance.now(); vx=0; mode=null; },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(x0==null) return; const t=e.touches[0], mx=t.clientX-x0, my=t.clientY-y0;
+    if(!mode){ if(mx>8&&mx>Math.abs(my)*1.3){ if(!build()){ x0=null; return; } mode='h'; } else if(Math.abs(my)>10||mx<-8){ x0=null; return; } else return; }
+    const now=performance.now(); vx=vx*.5+.5*(t.clientX-lx)/Math.max(1,now-lt); lx=t.clientX; lt=now; place(Math.max(0,mx)); },{passive:true});
+  const end=e=>{ if(x0==null||mode!=='h'){ x0=null; return; } const mx=Math.max(0,((e.changedTouches&&e.changedTouches[0])||{clientX:x0}).clientX-x0); x0=null; mode=null;
+    const wrap=w, t=top, u=under, go_=mx>W()*.35||vx>.45, k=mx/W(), ms=Math.max(140,(go_?1-k:k)*360), ease='cubic-bezier(.22,.8,.24,1)';
+    t.style.transition=u.style.transition='transform '+ms+'ms '+ease+', filter '+ms+'ms '+ease;
+    if(go_){ S.nav=null; S.view='home'; S.gid=null; setHash('home'); render(); window.scrollTo(0,0); requestAnimationFrame(()=>{ t.style.transform='translateX('+W()+'px)'; u.style.transform='none'; u.style.filter='brightness(1)'; }); }
+    else requestAnimationFrame(()=>place(0));
+    setTimeout(()=>wrap.remove(),ms+40); w=top=under=null; };
+  document.addEventListener('touchend',end,{passive:true}); document.addEventListener('touchcancel',end,{passive:true});
+})();
 
 // swipe sideways between the add-expense steps (right = back a step)
 (function(){
@@ -640,19 +665,6 @@ window.addEventListener('hashchange',()=>{ route(); render(); });
     if(two&&(mx>70||vx>.45)){ memCommit(false); S.form.step=1; S.form.adding=false; S.form.stepAnim='back'; S.sheet.focused=true; renderSheet(); }
     else if(!two&&(mx<-70||vx<-.45)){ gNext(); if(S.form.step!==2){ el.style.transition='transform .3s cubic-bezier(.2,.9,.3,1.2),opacity .3s'; el.style.transform=''; el.style.opacity=''; } }
     else { el.style.transition='transform .3s cubic-bezier(.2,.9,.3,1.2),opacity .3s'; el.style.transform=''; el.style.opacity=''; } },{passive:true});
-})();
-// iPhone-style back: swipe in from the left edge of a group to go back to your groups
-(function(){
-  let x0=null, y0=0, t0=0, dx=0, on=false; const app=()=>document.getElementById('app');
-  document.addEventListener('touchstart',e=>{ x0=null; if(S.view!=='group'||S.sheet||e.touches.length>1) return; const t=e.touches[0]; if(t.clientX>28) return; x0=t.clientX; y0=t.clientY; t0=performance.now(); dx=0; on=false; },{passive:true});
-  document.addEventListener('touchmove',e=>{ if(x0==null) return; const t=e.touches[0]; dx=Math.max(0,t.clientX-x0); const dy=Math.abs(t.clientY-y0);
-    if(!on){ if(dy>12&&dy>dx){ x0=null; return; } if(dx<8) return; on=true; const a=app(); a.style.transition='none'; a.style.boxShadow='-8px 0 24px rgba(0,0,0,.06)'; }
-    app().style.transform='translateX('+dx+'px)'; },{passive:true});
-  document.addEventListener('touchend',()=>{ if(x0==null) return; const a=app(); x0=null; if(!on) return; on=false;
-    const w=innerWidth, fast=dx/(performance.now()-t0)>0.5&&dx>60;
-    a.style.transition='transform .22s cubic-bezier(.2,.8,.3,1)';
-    if(dx>w*0.33||fast){ a.style.transform='translateX('+w+'px)'; setTimeout(()=>{ a.style.transition='none'; a.style.transform=''; a.style.boxShadow=''; go(null); },200); }
-    else { a.style.transform=''; setTimeout(()=>{ a.style.transition=''; a.style.boxShadow=''; },230); } },{passive:true});
 })();
 
 /* ---------- render: main ---------- */
@@ -695,14 +707,33 @@ function render(){
 function renderInner(){
   const app=document.getElementById('app');
   const nav=S.nav; S.nav=null;
-  if(nav){
-    if(flMotion()&&app.firstElementChild){ document.querySelectorAll('.pgghost').forEach(g=>g.remove());
-      const ar=app.getBoundingClientRect(), g=document.createElement('div'); g.className='pgghost'; g.setAttribute('aria-hidden','true');
-      const cs=getComputedStyle(app); Object.assign(g.style,{position:'fixed',left:ar.left+'px',top:ar.top+'px',width:ar.width+'px',boxSizing:'border-box',padding:cs.padding,pointerEvents:'none',zIndex:'5'});
-      [...app.children].forEach(c=>{ if(c.classList.contains('dock')) return; const k=c.cloneNode(true); k.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id')); g.appendChild(k); });
-      document.body.appendChild(g); const dx=nav==='in'?-24:24;
-      const a=g.animate([{opacity:1,transform:'none'},{opacity:0,transform:'translateX('+dx+'px)'}],{duration:110,easing:'ease-in',fill:'forwards'}); a.onfinish=()=>g.remove(); setTimeout(()=>g.remove(),500); }
-    app.classList.remove('in','back'); void app.offsetWidth; app.classList.add(nav); clearTimeout(render._t); render._t=setTimeout(()=>app.classList.remove('in','back'),360); }
+  let pg=null;
+  if(nav&&flMotion()&&app.firstElementChild){ document.querySelectorAll('.pgwrap').forEach(w=>w.remove()); pg=pageLayer(app); }
+  renderPage(app);
+  if(pg) slidePages(pg,nav,app);
+}
+// a page change: the new page slides in over the old one (or the old one slides off to go back), both solid, like iOS
+function pageLayer(app,top,x,src){
+  const ar=app.getBoundingClientRect(), cs=getComputedStyle(app);
+  const L=document.createElement('div'); Object.assign(L.style,{position:'absolute',inset:'0',background:'var(--bg)',overflow:'hidden',willChange:'transform'});
+  const inner=document.createElement('div'); Object.assign(inner.style,{position:'absolute',left:ar.left+'px',top:(top==null?ar.top:top)+'px',width:ar.width+'px',boxSizing:'border-box',padding:cs.padding});
+  [...(src||app).children].forEach(c=>{ const k=c.cloneNode(true); k.style.transform=''; k.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id')); k.removeAttribute('id'); (c.classList.contains('dock')?L:inner).appendChild(k); });
+  L.insertBefore(inner,L.firstChild); L._x=x||0; return L;
+}
+function slidePages(oldL,nav,app){
+  const newL=pageLayer(app,app.getBoundingClientRect().top+window.scrollY);
+  const w=document.createElement('div'); w.className='pgwrap'; w.setAttribute('aria-hidden','true');
+  Object.assign(w.style,{position:'fixed',inset:'0',zIndex:'15',pointerEvents:'none',overflow:'hidden',background:'var(--bg)'});
+  const fwd=nav==='in', top=fwd?newL:oldL, under=fwd?oldL:newL, W=innerWidth, x0=oldL._x||0;
+  top.style.boxShadow='0 0 28px rgba(17,17,17,.12)';
+  w.appendChild(under); w.appendChild(top); document.body.appendChild(w);
+  const ms=fwd?340:Math.max(180,340*(1-x0/W)), ease='cubic-bezier(.22,.8,.24,1)', o={duration:ms,easing:ease,fill:'forwards'};
+  const dim=[{filter:'brightness(1)'},{filter:'brightness(.94)'}];
+  if(fwd){ newL.animate([{transform:'translateX('+W+'px)'},{transform:'none'}],o); oldL.animate([{transform:'none',filter:'brightness(1)'},{transform:'translateX('+(-W*.28)+'px)',filter:'brightness(.94)'}],o); }
+  else { oldL.animate([{transform:'translateX('+x0+'px)'},{transform:'translateX('+W+'px)'}],o); newL.animate([{transform:'translateX('+(-W*.28*(1-x0/W))+'px)',filter:'brightness(.94)'},{transform:'none',filter:'brightness(1)'}],o); }
+  setTimeout(()=>w.remove(),ms+20);
+}
+function renderPage(app){
   setTimeout(()=>{ fitBig(); countUp(); landNew(); hydratePhotos(); },0);
   if(S.loading){ setPage('var(--bg)'); app.innerHTML='<div class="top">'+brand()+'</div><p class="muted" style="margin-top:24px">'+(S.slow?"Can't reach Kitty's data yet - check your connection.":'Loading...')+'</p>'; return; }
   if(S.err){ setPage('var(--bg)'); app.innerHTML='<div class="top">'+brand()+'</div><div class="banner" style="margin-top:24px">'+(S.err==='nodb'?'Kitty needs you to be signed in to Claude to load your groups.':'Kitty can\'t load right now. Try reopening the page.')+'</div>'; return; }
@@ -758,7 +789,7 @@ function renderGroup(app,g){
   const n=(g.members||[]).length, dr=dateRange(g), ex=S.exp[g.id]||[];
   h+='<div class="gtop"><h1 class="gname">'+esc(g.name)+'</h1><button class="gsub" data-a="spendSheet"'+(ex.length?'':' disabled')+'>'+(dr?esc(dr):n+(n===1?' person':' people'))+' · '+cnt('spent-'+g.id,c.spent,g.currency)+' spent'+(ex.length?'<span class="chev" aria-hidden="true">›</span>':'')+'</button></div>';
   if(loaded && ex.length) h+=oweCard(g,c);
-  if(!loaded) h+='<p class="muted">Loading expenses...</p>'; else h+=renderList(g);
+  if(loaded) h+=renderList(g);
   h+='</div>';
   if(canEdit()) h+='<div class="dock"><div class="in"><button class="btn primary grow" data-a="addExp">'+IC.plus+'Add expense</button></div></div>';
   app.innerHTML=h;
@@ -892,12 +923,12 @@ function openSheet(kind,data){
   const el=document.getElementById('sheet'); clearTimeout(closeSheet._t);
   const fresh=!el.querySelector('.pn')||el.classList.contains('closing');
   el.classList.remove('closing','dragging');
-  S.sheet={kind,data:data||{}}; renderSheet();
+  S.sheet={kind,data:data||{}}; document.documentElement.classList.add('sheeton'); renderSheet();
   if(fresh){ el.classList.add('anim'); clearTimeout(openSheet._t); openSheet._t=setTimeout(()=>el.classList.remove('anim'),400); }
 }
 function closeSheet(){
   if(S.confirm&&S.confirm.onNo&&!S.confirm.done){ const f=S.confirm.onNo; S.confirm.onNo=null; f(); }
-  const el=document.getElementById('sheet'); S.sheet=null; S.form=null;
+  const el=document.getElementById('sheet'); S.sheet=null; S.form=null; document.documentElement.classList.remove('sheeton');
   if(!el.querySelector('.pn')){ el.innerHTML=''; return; }
   const pn=el.querySelector('.pn'); if(pn){ pn.style.transform=''; pn.style.transition=''; }
   el.classList.remove('anim','dragging'); el.classList.add('closing'); 
@@ -1021,6 +1052,7 @@ function renderSheet(){
   if(k==='invite') drawQR();
   if(k==='expense') updatePreview();
   if(!S.sheet.focused){ S.sheet.focused=true; const f=el.querySelector('[data-autofocus]'); if(f){ try{f.focus({preventScroll:true});}catch(e){} } }
+  try{ window.dispatchEvent(new Event('kitty-sheet')); }catch(e){}
 }
 function confirmBox(title,text,yes,fn){ S.confirm={title,text,yes,fn}; openSheet('confirm'); }
 
@@ -1029,7 +1061,7 @@ function sheetGroup(){
   const f=S.form, isNew=!f.id, fg={members:f.members};
   if(isNew) return sheetNewGroup(f,fg);
   let h=head('Group settings');
-  h+='<label class="sr" for="g-title">Group name</label><input autocomplete="off" class="gninp" id="g-title" data-f="name" value="'+esc(f.name)+'" placeholder="Name it, e.g. Lisbon" maxlength="60" '+(isNew?'data-autofocus':'')+'>';
+  h+='<label class="sr" for="g-title">What\'s the group for?</label><input autocomplete="off" autocorrect="off" name="kg'+Date.now()%1000+'" class="gninp" id="g-title" data-f="name" value="'+esc(f.name)+'" placeholder="e.g. Lisbon" maxlength="60" '+(isNew?'data-autofocus':'')+'>';
   const hasMoney=!isNew && ((S.exp[f.id]||[]).length>0 || (S.pay[f.id]||[]).length>0);
   h+=gPills(f);
   if(hasMoney && f.currency!==f.oldCurrency){
@@ -1063,7 +1095,7 @@ function gFaces(f,fg,isNew){
   });
   h+='</div>';
   const ed=f.editIdx!=null;
-  h+='<div class="addrow"><label class="sr" for="m-new">'+(ed?'Rename':'Add a friend')+'</label><input autocomplete="off" autocorrect="off" spellcheck="false" name="kf'+Date.now()%1000+'" class="inp" id="m-new" data-mnew="1" enterkeyhint="'+(ed?'done':'next')+'" value="'+esc(f.newName||'')+'" placeholder="'+(ed?'Rename':'Add a friend, e.g. Sam')+'" maxlength="30"><button class="btn sm caps" data-a="mAdd">'+(ed?'DONE':'ADD')+'</button></div>';
+  h+='<div class="addrow"><label class="sr" for="m-new">'+(ed?'Change to':'Add a friend')+'</label><input autocomplete="off" autocorrect="off" spellcheck="false" name="kf'+Date.now()%1000+'" class="inp" id="m-new" data-mnew="1" enterkeyhint="'+(ed?'done':'next')+'" value="'+esc(f.newName||'')+'" placeholder="'+(ed?'Change to':'Add a friend, e.g. Sam')+'" maxlength="30"><button class="btn sm caps" data-a="mAdd">'+(ed?'DONE':'ADD')+'</button></div>';
   return h;
 }
 function sheetNewGroup(f,fg){
@@ -1071,7 +1103,7 @@ function sheetNewGroup(f,fg){
   let h='<div class="hd"><h2 id="sh-t" class="gq">'+(two?'Who\'s going to <button class="sentlink" data-a="gBack">'+esc(f.name.trim())+'</button>?':'Name your group')+'</h2><button class="x" data-a="close" aria-label="Close">'+IC.x+'</button></div>';
   h+='<div class="gstep'+(f.stepAnim?' '+f.stepAnim:'')+'">';
   if(!two){
-    h+='<label class="sr" for="g-title">Group name</label><input autocomplete="off" class="gninp" id="g-title" data-f="name" enterkeyhint="next" value="'+esc(f.name)+'" placeholder="e.g. Lisbon" maxlength="60" data-autofocus>';
+    h+='<label class="sr" for="g-title">What\'s the group for?</label><input autocomplete="off" autocorrect="off" name="kg'+Date.now()%1000+'" class="gninp" id="g-title" data-f="name" enterkeyhint="next" value="'+esc(f.name)+'" placeholder="e.g. Lisbon" maxlength="60" data-autofocus>';
     h+=gPills(f);
   } else h+=gFaces(f,fg,true);
   h+='</div><div class="hint bad" id="g-err"></div>';
@@ -1100,7 +1132,7 @@ function calPanel(k){
 }
 function calClose(){
   const o=document.querySelector('#sheet .calov'); if(!o||o.classList.contains('out')) return;
-  o.classList.add('out'); setTimeout(()=>{ if(S.form){ S.form.showCal=false; renderSheet(); } },230);
+  o.getAnimations({subtree:true}).forEach(a=>a.finish()); o.classList.remove('in'); o.classList.add('out'); setTimeout(()=>{ if(S.form){ S.form.showCal=false; renderSheet(); } },270);
 }
 function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function calHtml(f){
@@ -1148,7 +1180,7 @@ async function saveGroup(){
     body.createdAt=Date.now(); body.createdBy=S.uid||null; body.rates={};
     if(!clean.some(m=>m.uid===S.uid) && S.uid){ clean[0].uid=S.uid; }
     // go straight in - the save carries on in the background, and only brings you back if it fails
-    S.groups[id]=Object.assign({id},JSON.parse(JSON.stringify(body))); (S.pendingG=S.pendingG||{})[id]=S.groups[id];
+    S.groups[id]=Object.assign({id},JSON.parse(JSON.stringify(body))); (S.pendingG=S.pendingG||{})[id]=S.groups[id]; S.exp[id]=[]; S.pay[id]=[];
     closeSheet(); go(id); toast('Group started',true);
     const ok=await write(()=>S.db.doc('groups/'+id).set(body));
     if(S.pendingG) delete S.pendingG[id];
@@ -1450,7 +1482,7 @@ function sheetExpense(){
   h+='<div class="pad" role="group" aria-label="Number pad">'+['1','2','3','4','5','6','7','8','9','.','0','del'].map(k=>'<button data-a="key" data-k="'+k+'" aria-label="'+(k==='del'?'Delete':k==='.'?'Decimal point':k)+'">'+(k==='del'?'<svg aria-hidden="true" width="42" height="32" viewBox="0 0 34 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M11 2h19a2 2 0 0 1 2 2v18a2 2 0 0 1-2 2H11L2 13z"/><path d="M16 8.5l9 9M25 8.5l-9 9"/></svg>':k==='.'?'<span class="pdot"></span>':k)+'</button>').join('')+'</div></section>';
   // 2. what for
   h+='<section class="step"><div class="q">What for?</div><div id="catBox">'+catChips(f)+'</div>';
-  h+='<div class="f" style="margin-top:14px"><label class="sr" for="e-desc">What for?</label><input autocomplete="off" class="inp" id="e-desc" data-f="desc" value="'+esc(f.desc)+'" placeholder="Name it, e.g. Dinner at Ramiro" maxlength="60"></div><div class="remhint" id="remHint" aria-live="polite"></div>';
+  h+='<div class="f" style="margin-top:14px"><label class="sr" for="e-desc">What for?</label><input autocomplete="off" class="inp" id="e-desc" data-f="desc" value="'+esc(f.desc)+'" placeholder="What for? e.g. Dinner at Ramiro" maxlength="60"></div><div class="remhint" id="remHint" aria-live="polite"></div>';
   h+='<div class="minis"><button class="mini'+(f.showNote||f.note?' on':'')+'" data-a="toggleNote">'+(f.note?'Note added':'+ Note')+'</button>';
   if(canPhoto() && !f.photoId) h+='<label class="mini ph">'+IC.cam+(f.uploading?'Uploading...':'Photo')+'<input type="file" accept="image/*" id="e-photo-m" class="sr" '+(f.uploading?'disabled':'')+'></label>';
   h+='</div>';
@@ -1706,6 +1738,22 @@ function popCat(text,kind,g){
     if(t.id==='kb-date'){ f.date=t.value||today(); renderSheet(); fill(); }
     if(t.id==='kb-photo' && t.files && t.files[0]) uploadPhoto(t.files[0]); });
   window.addEventListener('kitty-sheet',()=>{ if(bar.classList.contains('on')) fill(); });
+})();
+
+// While a sheet is open and the keyboard is up, the sheet sits in the visible area just above the keyboard,
+// so iOS doesn't shove the whole page up to reveal the field.
+(()=>{
+  const vv=window.visualViewport; if(!vv) return; let was=false;
+  const fit=()=>{ const ov=document.querySelector('#sheet .ov'), pn=ov&&ov.querySelector('.pn'); if(!ov) { was=false; return; }
+    const full=document.documentElement.clientHeight||innerHeight, kb=vv.height<full-120&&!!S.sheet;
+    if(kb!==was){ ov.style.transition='height .26s cubic-bezier(.22,.8,.24,1), background-color .3s ease'; clearTimeout(fit._t); fit._t=setTimeout(()=>{ ov.style.transition=''; },300); }
+    was=kb;
+    if(kb){ ov.style.top=vv.offsetTop+'px'; ov.style.bottom='auto'; ov.style.height=vv.height+'px'; if(pn) pn.style.maxHeight=Math.max(200,vv.height-10)+'px'; }
+    else { ov.style.top=''; ov.style.bottom=''; ov.style.height=''; if(pn) pn.style.maxHeight=''; }
+  };
+  vv.addEventListener('resize',fit); vv.addEventListener('scroll',fit);
+  window.addEventListener('kitty-sheet',fit);
+  document.addEventListener('focusin',e=>{ if(e.target.closest&&e.target.closest('#sheet')){ requestAnimationFrame(fit); } });
 })();
 
 // Playing with the cat.

@@ -98,7 +98,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 #sheet .pn{background:var(--bg);width:100%;max-width:480px;max-height:92vh;overflow:auto;overflow-x:hidden;overscroll-behavior:contain;border-radius:18px 18px 0 0;box-shadow:0 -10px 30px rgba(17,17,17,.08);padding:14px 24px calc(env(safe-area-inset-bottom) + 24px);display:flex;flex-direction:column;gap:18px;transition:transform .24s cubic-bezier(.4,0,.6,1)}
 #sheet .hd{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-right:-12px}
 #sheet .hd h2{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
-html.sheeton,html.sheeton body{overflow:hidden}
 #sheet .pn>*{flex-shrink:0}#sheet .pn.flipping{overflow:hidden}
 #sheet .grab{width:36px;height:4px;background:var(--line);margin:0 auto -6px;flex-shrink:0}
 .f{display:flex;flex-direction:column;gap:6px}
@@ -937,19 +936,25 @@ function renderSettle(g,c){
 
 /* ---------- sheets ---------- */
 function openSheet(kind,data){
-  const el=document.getElementById('sheet'); clearTimeout(closeSheet._t);
+  const el=document.getElementById('sheet'); clearTimeout(closeSheet._t); closeSheet._tok=(closeSheet._tok||0)+1;
   const fresh=!el.querySelector('.pn')||el.classList.contains('closing');
   el.classList.remove('closing','dragging');
-  S.sheet={kind,data:data||{}}; document.documentElement.classList.add('sheeton'); renderSheet();
+  S.sheet={kind,data:data||{}}; renderSheet();
   if(fresh){ el.classList.add('anim'); clearTimeout(openSheet._t); openSheet._t=setTimeout(()=>el.classList.remove('anim'),400); }
 }
 function closeSheet(){
   if(S.confirm&&S.confirm.onNo&&!S.confirm.done){ const f=S.confirm.onNo; S.confirm.onNo=null; f(); }
-  const el=document.getElementById('sheet'); S.sheet=null; S.form=null; document.documentElement.classList.remove('sheeton');
+  const el=document.getElementById('sheet'); S.sheet=null; S.form=null;
   if(!el.querySelector('.pn')){ el.innerHTML=''; return; }
   const pn=el.querySelector('.pn'); if(pn){ pn.style.transform=''; pn.style.transition=''; }
   el.classList.remove('anim','dragging'); el.classList.add('closing'); 
-  clearTimeout(closeSheet._t); closeSheet._t=setTimeout(()=>{ if(!S.sheet) el.innerHTML=''; el.classList.remove('closing'); },320);
+  // clear it away only once it has actually finished sliding down, however busy the phone is
+  const tok=closeSheet._tok=(closeSheet._tok||0)+1;
+  const done=()=>{ if(tok!==closeSheet._tok) return; closeSheet._tok++; clearTimeout(closeSheet._t); if(!S.sheet) el.innerHTML=''; el.classList.remove('closing'); };
+  clearTimeout(closeSheet._t); closeSheet._t=setTimeout(done,1200);
+  requestAnimationFrame(()=>{ if(tok!==closeSheet._tok) return; const an=el.getAnimations?el.getAnimations({subtree:true}):[];
+    if(!an.length){ setTimeout(done,320); return; }
+    Promise.all(an.map(a=>a.finished.catch(()=>{}))).then(()=>requestAnimationFrame(done)); });
 }
 (function(){
   let y0=null, dy=0, pn=null;
@@ -1198,7 +1203,7 @@ async function saveGroup(){
     if(!clean.some(m=>m.uid===S.uid) && S.uid){ clean[0].uid=S.uid; }
     // go straight in - the save carries on in the background, and only brings you back if it fails
     S.groups[id]=Object.assign({id},JSON.parse(JSON.stringify(body))); (S.pendingG=S.pendingG||{})[id]=S.groups[id]; S.exp[id]=[]; S.pay[id]=[];
-    closeSheet(); go(id); toast('Group started',true);
+    closeSheet(); requestAnimationFrame(()=>go(id)); toast('Group started',true);
     const ok=await write(()=>S.db.doc('groups/'+id).set(body));
     if(S.pendingG) delete S.pendingG[id];
     if(!ok){ delete S.groups[id]; if(S.gid===id) go(null); }
@@ -1769,21 +1774,6 @@ function popCat(text,kind,g){
   window.addEventListener('kitty-sheet',()=>{ if(bar.classList.contains('on')) fill(); });
 })();
 
-// While a sheet is open and the keyboard is up, the sheet sits in the visible area just above the keyboard,
-// so iOS doesn't shove the whole page up to reveal the field.
-(()=>{
-  const vv=window.visualViewport; if(!vv) return; let was=false;
-  const fit=()=>{ const ov=document.querySelector('#sheet .ov'), pn=ov&&ov.querySelector('.pn'); if(!ov) { was=false; return; }
-    const full=document.documentElement.clientHeight||innerHeight, kb=vv.height<full-120&&!!S.sheet;
-    if(kb!==was){ ov.style.transition='height .26s cubic-bezier(.22,.8,.24,1), background-color .3s ease'; clearTimeout(fit._t); fit._t=setTimeout(()=>{ ov.style.transition=''; },300); }
-    was=kb;
-    if(kb){ ov.style.top=vv.offsetTop+'px'; ov.style.bottom='auto'; ov.style.height=vv.height+'px'; if(pn) pn.style.maxHeight=Math.max(200,vv.height-10)+'px'; }
-    else { ov.style.top=''; ov.style.bottom=''; ov.style.height=''; if(pn) pn.style.maxHeight=''; }
-  };
-  vv.addEventListener('resize',fit); vv.addEventListener('scroll',fit);
-  window.addEventListener('kitty-sheet',fit);
-  document.addEventListener('focusin',e=>{ if(e.target.closest&&e.target.closest('#sheet')){ requestAnimationFrame(fit); } });
-})();
 
 // Playing with the cat.
 // Hold: the coin rises and keeps growing until it fills the screen, currency symbols flashing inside; let go and it slams into the slot.

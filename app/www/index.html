@@ -767,7 +767,7 @@ function renderHome(app){
   mine.forEach(g=>{ const c=calcGroup(g); const v=c.bal[myMid(g)]||0; tot[g.currency]=(tot[g.currency]||0)+v; });
   const curs=Object.keys(tot).filter(c=>tot[c]!==0);
   let lab='Balance', bigHtml='<span class="num">'+fmt(0,'GBP')+'</span>', sub="You're all square", bigCls='';
-  if(curs.length===1){ const v=tot[curs[0]]; sub=v>0?"Overall, you're owed":"Overall, you owe"; bigHtml=v<0?'<span class="neg">-'+cnt('hero',Math.abs(v),curs[0])+'</span>':cnt('hero',Math.abs(v),curs[0]); }
+  if(curs.length===1){ const v=tot[curs[0]]; sub=v>0?"Overall, you're owed":"Overall, you owe"; bigHtml=v<0?'<span class="neg">'+cnt('hero',Math.abs(v),curs[0])+'</span>':cnt('hero',Math.abs(v),curs[0]); }
   else if(curs.length>1){ sub='Overall, across currencies'; bigCls=' sm'; bigHtml=curs.map(c=>'<span class="num '+sign(tot[c])+'">'+(tot[c]<0?'-':'+')+fmt(Math.abs(tot[c]),c)+'</span>').join('<br>'); }
   let h='<div class="stack" style="gap:0">';
   h+='<div class="top">'+brand()+'<div class="r">'+(mine.length?'<button class="round" data-a="search" aria-label="Search expenses">'+IC.search+'</button>':'')+(canEdit()?'<button class="round" data-a="newGroup" aria-label="New group">'+IC.plus+'</button>':'')+'</div></div>';

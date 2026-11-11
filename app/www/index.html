@@ -1271,7 +1271,7 @@ function sheetJoin(){
   if(navigator.standalone===false&&/iPhone|iPad|iPod/.test(navigator.userAgent)) h+='<div class="iosnote"><p style="margin:0"><b>Want Kitty as an app?</b> Tap Copy link, then Share and Add to Home Screen. Open Kitty from your Home Screen, tap <i>Got an invite link?</i> and paste it. Or just join here in Safari.</p><button class="btn sm" data-a="copyInvite">Copy link</button></div>';
   h+='<p style="margin:0;font-weight:500">Which one are you? That way Kitty shows what you owe and what you\'re owed.</p>';
   if(free.length){ h+='<div class="list">'+free.map(m=>'<button class="item" data-a="joinAs" data-m="'+esc(m.id)+'">'+av(g,m.id,30)+'<span class="t"><b>'+esc(m.name)+'</b></span></button>').join('')+'</div>'; }
-  h+='<div class="f"><label for="j-name">'+(free.length?"I'm not on the list - add me as":'Your name')+'</label><input class="inp" id="j-name" value="'+esc(S.profileName?S.profileName.split(' ')[0]:'')+'" maxlength="30"></div><button class="btn primary" data-a="joinNew">Join</button>';
+  h+='<div class="f"><label for="j-name">'+(free.length?"I'm not on the list - add me as":'Your name')+'</label><input class="inp" id="j-name" value="'+esc(S.profileName?S.profileName.split(' ')[0]:'')+'" maxlength="30"></div><div class="hint bad" id="j-err"></div><button class="btn primary" data-a="joinNew">Join</button>';
   return h;
 }
 async function joinAs(mid,newName){
@@ -1282,7 +1282,12 @@ async function joinAs(mid,newName){
   const members=(cur.members||[]).map(m=>Object.assign({},m));
   if(members.some(m=>m.uid===S.uid)){ closeSheet(); return; }
   if(mid){ const m=members.find(m=>m.id===mid); if(!m||m.uid){ toast('Someone already picked that name'); return; } m.uid=S.uid; }
-  else { const n=(newName||'').trim(); if(!n){ toast('Add your name'); return; } members.push({id:rid('m'),name:n.slice(0,30),uid:S.uid}); }
+  else { const n=(newName||'').trim(), err=document.getElementById('j-err'), say=t=>{ if(err) err.textContent=t; else toast(t); };
+    if(!n){ say('Add your name.'); return; }
+    // one person, one spot: a name that's already in the group (any capitals) means you're probably already on the list
+    const same=members.find(m=>(m.name||'').trim().toLowerCase()===n.toLowerCase());
+    if(same){ say(same.uid?'Someone in the group is already called '+same.name+'. Add a different name.':'There\'s already a '+same.name+' in this group. If that\'s you, tap '+same.name+' above.'); return; }
+    members.push({id:rid('m'),name:n.slice(0,30),uid:S.uid}); }
   if(S.groups[g.id]) S.groups[g.id]=Object.assign({},S.groups[g.id],{members});
   closeSheet(); syncSubs(); toast("You're in"); render();
   write(()=>S.db.doc('groups/'+g.id).update({members,touchedAt:Date.now()}));

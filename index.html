@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
-<script>window.KITTY_VER="11th Nov, 21:15";</script>
+<script>window.KITTY_VER="11th Nov, 21:17";</script>
 <script>window.KITTY_FB={"apiKey": "AIzaSyCehhm2KN9nvSXIbWAAJPdOHCWd2vV_bOc", "authDomain": "kitty-6ac2d.firebaseapp.com", "projectId": "kitty-6ac2d", "storageBucket": "kitty-6ac2d.firebasestorage.app", "messagingSenderId": "900248128997", "appId": "1:900248128997:web:21168f11312eebb86ff30c"};</script>
 <script src="fb.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -828,14 +828,15 @@ function renderGroup(app,g){
 // Show a group's big figures in another currency for a moment (display only, nothing in the group changes).
 // The other currency is the one you've used most in this group, otherwise dollars (or pounds for a dollar group).
 const SHOW={cur:{},rate:{}};
-// your own currency: what most of your other groups use, else your phone's region, else pounds
+// your own currency: from the region set on the phone (where you're from, not where you are), else what your other groups use, else pounds
 function homeCur(g){
-  const n={}; Object.values(S.groups||{}).forEach(x=>{ if(x&&x.id!==g.id&&x.currency&&!(S.gone&&S.gone[x.id])) n[x.currency]=(n[x.currency]||0)+1; });
-  const top=Object.keys(n).sort((a,b)=>n[b]-n[a])[0]; if(top) return top;
-  const reg=((navigator.language||'').split('-')[1]||'').toUpperCase();
   const EURO='IE FR DE ES IT PT NL BE AT FI GR LU SK SI EE LV LT MT CY HR'.split(' ');
-  const R={GB:'GBP',US:'USD',CA:'CAD',AU:'AUD',NZ:'NZD',CH:'CHF',SE:'SEK',NO:'NOK',DK:'DKK',IS:'ISK',PL:'PLN',CZ:'CZK',HU:'HUF',TR:'TRY',AE:'AED',MA:'MAD',ZA:'ZAR',TH:'THB',JP:'JPY',SG:'SGD',HK:'HKD',MX:'MXN'};
-  return EURO.includes(reg)?'EUR':(R[reg]||'GBP');
+  const R={GB:'GBP',UK:'GBP',US:'USD',CA:'CAD',AU:'AUD',NZ:'NZD',CH:'CHF',SE:'SEK',NO:'NOK',DK:'DKK',IS:'ISK',PL:'PLN',CZ:'CZK',HU:'HUF',TR:'TRY',AE:'AED',MA:'MAD',ZA:'ZAR',TH:'THB',JP:'JPY',SG:'SGD',HK:'HKD',MX:'MXN'};
+  const tags=[]; try{ tags.push(Intl.DateTimeFormat().resolvedOptions().locale); }catch(e){} (navigator.languages||[navigator.language]).forEach(l=>tags.push(l));
+  for(const t of tags){ let reg=''; try{ reg=new Intl.Locale(t).region||''; }catch(e){ reg=(String(t||'').split('-')[1]||''); } reg=reg.toUpperCase();
+    if(EURO.includes(reg)) return 'EUR'; if(R[reg]) return R[reg]; }
+  const n={}; Object.values(S.groups||{}).forEach(x=>{ if(x&&x.id!==g.id&&x.currency&&!(S.gone&&S.gone[x.id])) n[x.currency]=(n[x.currency]||0)+1; });
+  return Object.keys(n).sort((a,b)=>n[b]-n[a])[0]||'GBP';
 }
 // what tapping the balance switches to: your own currency; if the group's already in it, the foreign currency you've spent most in there
 function altCur(g){

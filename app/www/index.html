@@ -807,7 +807,7 @@ function renderGroup(app,g){
   h+='<div class="top" style="display:grid;grid-template-columns:1fr auto 1fr"><button class="round back" data-a="home" aria-label="Back to your groups">'+IC.back+'</button>'+cat(50,'',true)+'<div class="r" style="justify-content:flex-end">'+(canEdit()?'<button class="round" data-a="settings" aria-label="Group settings">'+IC.dots+'</button>':'<button class="round" data-a="invite" aria-label="Invite people with a QR code">'+IC.qr+'</button>')+'</div></div>';
   if(!me && canEdit()) h+='<div class="banner" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span>You\'re not in this group yet.</span><button class="btn sm primary" data-a="join">Join</button></div>';
   const n=(g.members||[]).length, dr=dateRange(g), ex=S.exp[g.id]||[];
-  h+='<div class="gtop"><h1 class="gname">'+esc(g.name)+'</h1><button class="gsub" data-a="spendSheet"'+(ex.length?'':' disabled')+'>'+(dr?esc(dr):n+(n===1?' person':' people'))+' · '+(()=>{ const sh=shown(g,c.spent); return cnt('spent-'+g.id+'-'+sh.cur,sh.p,sh.cur); })()+' spent'+(ex.length?'<span class="chev" aria-hidden="true">›</span>':'')+'</button></div>';
+  h+='<div class="gtop" data-k="gtop"><h1 class="gname">'+esc(g.name)+'</h1><button class="gsub" data-a="spendSheet"'+(ex.length?'':' disabled')+'>'+(dr?esc(dr):n+(n===1?' person':' people'))+' · '+(()=>{ const sh=shown(g,c.spent); return cnt('spent-'+g.id+'-'+sh.cur,sh.p,sh.cur); })()+' spent'+(ex.length?'<span class="chev" aria-hidden="true">›</span>':'')+'</button></div>';
   if(loaded && ex.length) h+=oweCard(g,c);
   if(loaded) h+=renderList(g);
   h+='</div>';
@@ -817,20 +817,41 @@ function renderGroup(app,g){
 // Show a group's big figures in another currency for a moment (display only, nothing in the group changes).
 // The other currency is the one you've used most in this group, otherwise dollars (or pounds for a dollar group).
 const SHOW={cur:{},rate:{}};
-function altCur(g){ const n={}; (S.exp[g.id]||[]).forEach(x=>{ if(x.currency&&x.currency!==g.currency) n[x.currency]=(n[x.currency]||0)+1; });
+// your own currency: what most of your other groups use, else your phone's region, else pounds
+function homeCur(g){
+  const n={}; Object.values(S.groups||{}).forEach(x=>{ if(x&&x.id!==g.id&&x.currency&&!(S.gone&&S.gone[x.id])) n[x.currency]=(n[x.currency]||0)+1; });
+  const top=Object.keys(n).sort((a,b)=>n[b]-n[a])[0]; if(top) return top;
+  const reg=((navigator.language||'').split('-')[1]||'').toUpperCase();
+  const EURO='IE FR DE ES IT PT NL BE AT FI GR LU SK SI EE LV LT MT CY HR'.split(' ');
+  const R={GB:'GBP',US:'USD',CA:'CAD',AU:'AUD',NZ:'NZD',CH:'CHF',SE:'SEK',NO:'NOK',DK:'DKK',IS:'ISK',PL:'PLN',CZ:'CZK',HU:'HUF',TR:'TRY',AE:'AED',MA:'MAD',ZA:'ZAR',TH:'THB',JP:'JPY',SG:'SGD',HK:'HKD',MX:'MXN'};
+  return EURO.includes(reg)?'EUR':(R[reg]||'GBP');
+}
+// what tapping the balance switches to: your own currency; if the group's already in it, the foreign currency you've spent most in there
+function altCur(g){
+  const home=homeCur(g); if(home!==g.currency) return home;
+  const n={}; (S.exp[g.id]||[]).forEach(x=>{ if(x.currency&&x.currency!==g.currency) n[x.currency]=(n[x.currency]||0)+1; });
   const best=Object.keys(n).sort((a,b)=>n[b]-n[a])[0]; return best||(g.currency==='USD'?'GBP':'USD'); }
 const curWord=c=>({GBP:'pounds',USD:'dollars',EUR:'euros',CAD:'Canadian dollars',AUD:'Australian dollars',JPY:'yen',CHF:'francs'}[c]||esc(c));
 function shown(g,p){ const c=SHOW.cur[g.id]; return c?{p:Math.round(p*SHOW.rate[g.id+'>'+c]),cur:c}:{p,cur:g.currency}; }
 async function flipCur(){
   const g=G(S.gid); if(!g) return;
-  if(SHOW.cur[g.id]){ delete SHOW.cur[g.id]; render(); return; }
+  if(SHOW.cur[g.id]){ delete SHOW.cur[g.id]; flipRender(); return; }
   const alt=altCur(g), k=g.id+'>'+alt;
   if(!SHOW.rate[k]){ const r=await liveRate(g.currency,alt).catch(()=>null); let v=r&&r.rate;
     if(!(v>0)&&g.rates&&g.rates[alt]>0) v=1/g.rates[alt];
     if(!(v>0)){ toast("Can't get the exchange rate right now"); return; }
     SHOW.rate[k]=v; }
   if(G(S.gid)!==g) return;
-  SHOW.cur[g.id]=alt; render();
+  SHOW.cur[g.id]=alt; flipRender();
+}
+// the card grows or shrinks for the note line: glide its height with everything else rather than snapping
+function flipRender(){
+  const q=()=>document.querySelector('#app .owe'), c0=q(), h0=c0?c0.getBoundingClientRect().height:0;
+  render(); const c1=q(); if(!c0||!c1||!flMotion()) return;
+  const h1=c1.getBoundingClientRect().height;
+  if(Math.abs(h1-h0)>1){ ((flip.am||{})[FL_APP]||[]).forEach(a=>{ try{a.cancel();}catch(e){} }); // what's below simply rides along with the card
+    c1.animate([{height:h0+'px',overflow:'hidden'},{height:h1+'px',overflow:'hidden'}],{duration:300,easing:FL_EASE}); }
+  const n=c1.querySelector('.curnote'); if(n) n.animate([{opacity:0},{opacity:1}],{duration:200,delay:110,easing:FL_EASE,fill:'backwards'});
 }
 function oweCard(g,c){
   const me=myMid(g), v=me?(c.bal[me]||0):0, ts=c.transfers||[];
@@ -841,7 +862,7 @@ function oweCard(g,c){
   if(v){ const sh=shown(g,Math.abs(v)), alt=SHOW.cur[g.id];
     amt='<button class="curflip" data-a="flipCur" aria-label="Show in '+(alt?esc(g.currency):esc(altCur(g)))+'"><span class="num '+cls+'">'+cnt('bal-'+g.id+'-'+me+'-'+sh.cur,sh.p,sh.cur)+'</span></button>'+
       (alt?'<span class="curnote">In '+esc(alt)+' at today\'s rate - tap the total for '+esc(g.currency)+'</span>':''); }
-  return '<div class="owe"><span class="t"><span class="w">'+t+'</span>'+amt+'</span>'+(ts.length?'<button class="btn sm primary" data-a="settleSheet">Settle up</button>':'')+'</div>';
+  return '<div class="owe" data-k="owe"><span class="t"><span class="w">'+t+'</span>'+amt+'</span>'+(ts.length?'<button class="btn sm primary" data-a="settleSheet">Settle up</button>':'')+'</div>';
 }
 function dateRange(g){
   const a=g.startDate, b=g.endDate; if(!a&&!b) return '';

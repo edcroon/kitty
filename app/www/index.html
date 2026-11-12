@@ -837,7 +837,7 @@ function oweCard(g,c){
   else t=ts.length?(me?"You're square":'Still to settle'):"Everyone's square";
   if(v){ const sh=shown(g,Math.abs(v)), alt=SHOW.cur[g.id];
     amt='<button class="curflip" data-a="flipCur" aria-label="Show in '+(alt?esc(g.currency):esc(altCur(g)))+'"><span class="num '+cls+'">'+cnt('bal-'+g.id+'-'+me+'-'+sh.cur,sh.p,sh.cur)+'</span></button>'+
-      (alt?'<span class="curnote">In '+curWord(alt)+' at today\'s rate - tap for '+curWord(g.currency)+'</span>':''); }
+      (alt?'<span class="curnote">In '+esc(alt)+' at today\'s rate - tap the total for '+esc(g.currency)+'</span>':''); }
   return '<div class="owe"><span class="t"><span class="w">'+t+'</span>'+amt+'</span>'+(ts.length?'<button class="btn sm primary" data-a="settleSheet">Settle up</button>':'')+'</div>';
 }
 function dateRange(g){

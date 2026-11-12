@@ -33,7 +33,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .hero{display:flex;flex-direction:column;gap:6px;padding:30px 0 14px}
 .hero .big{font-family:var(--num);font-size:56px;font-weight:600;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums lining-nums}
 .hero .big.sm{font-size:28px}
-.hero .sub{font-size:14px;color:var(--muted)}
+.hero .sub{font-size:14px;color:var(--muted)}.hero .curnote{font-size:12px;color:var(--muted);margin-top:-2px;align-self:flex-start;cursor:pointer}.hero .big[data-a]{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .sec{font-size:13px;color:var(--muted);padding:10px 0 2px}
 .rows{display:flex;flex-direction:column}
 .grow-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;align-items:baseline;padding:14px 0;border:none;border-bottom:none;background:none;text-align:left;width:100%;cursor:pointer;font:inherit;color:inherit}
@@ -770,12 +770,20 @@ function renderHome(app){
   mine.forEach(g=>{ const c=calcGroup(g); const v=c.bal[myMid(g)]||0; tot[g.currency]=(tot[g.currency]||0)+v; });
   const curs=Object.keys(tot).filter(c=>tot[c]!==0);
   let lab='Balance', bigHtml='<span class="num">'+fmt(0,'GBP')+'</span>', sub="You're all square", bigCls='';
-  if(curs.length===1){ const v=tot[curs[0]]; sub=v>0?"Overall, you're owed":"Overall, you owe"; bigHtml=v<0?'<span class="neg">'+cnt('hero',Math.abs(v),curs[0])+'</span>':cnt('hero',Math.abs(v),curs[0]); }
+  const home=homeCur({}), conv=SHOW.cur.home&&curs.length&&curs.every(c=>c===home||SHOW.rate['home>'+c]>0);
+  let note='';
+  if(conv){ const v=Math.round(curs.reduce((a,c)=>a+tot[c]*(c===home?1:SHOW.rate['home>'+c]),0));
+    sub=v>0?"Overall, you're owed":v<0?"Overall, you owe":"You're all square"; bigHtml=v<0?'<span class="neg">'+cnt('hero-'+home,Math.abs(v),home)+'</span>':cnt('hero-'+home,Math.abs(v),home);
+    note=curs.length>1?"At today's rates - tap the total for each currency":"At today's rate - tap the total for "+esc(curs[0]); }
+  else if(curs.length===1){ const v=tot[curs[0]]; sub=v>0?"Overall, you're owed":"Overall, you owe"; bigHtml=v<0?'<span class="neg">'+cnt('hero',Math.abs(v),curs[0])+'</span>':cnt('hero',Math.abs(v),curs[0]); }
   else if(curs.length>1){ sub='Overall, across currencies'; bigCls=' sm'; bigHtml=curs.map(c=>'<span class="num '+sign(tot[c])+'">'+(tot[c]<0?'-':'+')+fmt(Math.abs(tot[c]),c)+'</span>').join('<br>'); }
+  if(!conv&&curs.some(c=>c!==home)) note='Tap the total for '+esc(home);
+  S.homeCurs={curs,home};
   let h='<div class="stack" style="gap:0">';
   h+='<div class="top">'+brand()+'<div class="r">'+(mine.length?'<button class="round" data-a="search" aria-label="Search expenses">'+IC.search+'</button>':'')+(canEdit()?'<button class="round" data-a="newGroup" aria-label="New group">'+IC.plus+'</button>':'')+'</div></div>';
   if(S.canWrite===false) h+='<div class="banner" style="margin-top:12px">You can see Kitty but can\'t add anything yet. Ask whoever shared it to invite you as an Editor.</div>';
-  h+='<div class="hero"><span class="lab">'+lab+'</span><span class="big'+bigCls+'">'+bigHtml+'</span><span class="sub">'+sub+'</span></div>';
+  const tap=note?' data-a="flipHomeCur" role="button" tabindex="0"':'';
+  h+='<div class="hero" data-k="hero"><span class="lab">'+lab+'</span><span class="big'+bigCls+'"'+tap+'>'+bigHtml+'</span><span class="sub">'+sub+'</span>'+(note?'<span class="curnote"'+tap+'>'+note+'</span>':'')+'</div>';
   if(!mine.length){
     h+='<div class="empty">'+cat(72,'bob',true)+'<div class="t">No groups yet</div><div class="d">Start one for a trip, the flat or a night out, then add your friends.</div>'+(canEdit()?'<button class="btn primary" data-a="newGroup" style="margin-top:8px">'+IC.plus+'Start a group</button>'+'<button class="linkbtn joinlink" data-a="joinLink">Got an invite link? Join a group</button>':'')+'</div>';
   } else {
@@ -847,9 +855,20 @@ async function flipCur(){
   if(G(S.gid)!==g) return;
   SHOW.cur[g.id]=alt; flipRender();
 }
+async function flipHomeCur(){
+  if(SHOW.cur.home){ delete SHOW.cur.home; flipRender('#app .hero'); return; }
+  const {curs,home}=S.homeCurs||{curs:[],home:'GBP'};
+  for(const c of curs){ if(c===home||SHOW.rate['home>'+c]) continue;
+    const r=await liveRate(c,home).catch(()=>null); let v=r&&r.rate;
+    if(!(v>0)){ const g=Object.values(S.groups||{}).find(x=>x&&x.currency===home&&x.rates&&x.rates[c]>0); if(g) v=g.rates[c]; }
+    if(!(v>0)){ toast("Can't get the exchange rate right now"); return; }
+    SHOW.rate['home>'+c]=v; }
+  if(S.view!=='home') return;
+  SHOW.cur.home=home; flipRender('#app .hero');
+}
 // the card grows or shrinks for the note line: glide its height with everything else rather than snapping
-function flipRender(){
-  const q=()=>document.querySelector('#app .owe'), c0=q(), h0=c0?c0.getBoundingClientRect().height:0;
+function flipRender(sel){
+  const q=()=>document.querySelector(sel||'#app .owe'), c0=q(), h0=c0?c0.getBoundingClientRect().height:0;
   render(); const c1=q(); if(!c0||!c1||!flMotion()) return;
   const h1=c1.getBoundingClientRect().height;
   if(Math.abs(h1-h0)>1){ ((flip.am||{})[FL_APP]||[]).forEach(a=>{ try{a.cancel();}catch(e){} }); // what's below simply rides along with the card
@@ -2033,6 +2052,7 @@ document.addEventListener('click',e=>{
     case 'settleSheet': case 'settleTab': S.settleAsk=null; openSheet('settle'); break;
     case 'spendSheet': openSheet('spend'); break;
     case 'flipCur': flipCur(); break;
+    case 'flipHomeCur': flipHomeCur(); break;
     case 'newGroup': newGroupForm(); break;
     case 'settings': if(g) editGroupForm(g); break;
     case 'invite': openSheet('invite'); break;

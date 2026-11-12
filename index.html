@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
-<script>window.KITTY_VER="11th Nov, 21:17";</script>
+<script>window.KITTY_VER="11th Nov, 21:20";</script>
 <script>window.KITTY_FB={"apiKey": "AIzaSyCehhm2KN9nvSXIbWAAJPdOHCWd2vV_bOc", "authDomain": "kitty-6ac2d.firebaseapp.com", "projectId": "kitty-6ac2d", "storageBucket": "kitty-6ac2d.firebasestorage.app", "messagingSenderId": "900248128997", "appId": "1:900248128997:web:21168f11312eebb86ff30c"};</script>
 <script src="fb.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -66,7 +66,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .gsub{border:none;background:none;padding:0;font:inherit;font-size:14px;color:var(--muted);text-align:left;cursor:pointer;display:inline-flex;align-items:center;gap:5px;align-self:flex-start;flex-wrap:wrap}
 .gsub:disabled{cursor:default;opacity:1}.gsub .chev{font-size:19px;line-height:1;margin-top:-3px}
 .owe{display:flex;align-items:center;gap:12px;padding:14px 14px 14px 16px;min-height:72px;background:#EFEBE4;border-radius:var(--r);font-size:16px;margin-top:4px}
-.curflip{all:unset;cursor:pointer;-webkit-tap-highlight-color:transparent;align-self:flex-start}.owe .curnote{font-size:12px;color:var(--muted)}
+.curflip{all:unset;cursor:pointer;-webkit-tap-highlight-color:transparent;align-self:flex-start}.owe{flex-wrap:wrap;row-gap:0}.owe .curnote{flex-basis:100%;font-size:12px;color:var(--muted);margin-top:-2px}
 .owe .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.owe .w{font-size:15px}.owe .num{font-size:24px;letter-spacing:-.02em;white-space:nowrap;line-height:1.15}
 .dayhd{font-size:13px;color:var(--muted);padding:18px 0 0}.list>.dayhd:first-child{padding-top:2px}
 .spendhd{display:flex;flex-direction:column;gap:4px;font-size:14px}.spendhd .num{font-size:32px;letter-spacing:-.02em}
@@ -844,6 +844,8 @@ function altCur(g){
   const n={}; (S.exp[g.id]||[]).forEach(x=>{ if(x.currency&&x.currency!==g.currency) n[x.currency]=(n[x.currency]||0)+1; });
   const best=Object.keys(n).sort((a,b)=>n[b]-n[a])[0]; return best||(g.currency==='USD'?'GBP':'USD'); }
 const curWord=c=>({GBP:'pounds',USD:'dollars',EUR:'euros',CAD:'Canadian dollars',AUD:'Australian dollars',JPY:'yen',CHF:'francs'}[c]||esc(c));
+// worth offering the switch: the group isn't in your own currency, or you've spent in another currency there
+const curWorth=g=>homeCur(g)!==g.currency||(S.exp[g.id]||[]).some(x=>x.currency&&x.currency!==g.currency);
 function shown(g,p){ const c=SHOW.cur[g.id]; return c?{p:Math.round(p*SHOW.rate[g.id+'>'+c]),cur:c}:{p,cur:g.currency}; }
 async function flipCur(){
   const g=G(S.gid); if(!g) return;
@@ -867,14 +869,13 @@ function flipRender(){
 }
 function oweCard(g,c){
   const me=myMid(g), v=me?(c.bal[me]||0):0, ts=c.transfers||[];
-  let t, cls='', amt='';
+  let t, cls='', amt='', note='';
   if(v<0){ const o=ts.filter(x=>x.from===me); t=o.length===1?'You owe '+esc(mName(g,o[0].to)):'You owe'; cls='neg'; }
   else if(v>0){ const o=ts.filter(x=>x.to===me); t=o.length===1?esc(mName(g,o[0].from))+' owes you':'You get back'; cls='pos'; }
   else t=ts.length?(me?"You're square":'Still to settle'):"Everyone's square";
   if(v){ const sh=shown(g,Math.abs(v)), alt=SHOW.cur[g.id];
-    amt='<button class="curflip" data-a="flipCur" aria-label="Show in '+(alt?esc(g.currency):esc(altCur(g)))+'"><span class="num '+cls+'">'+cnt('bal-'+g.id+'-'+me+'-'+sh.cur,sh.p,sh.cur)+'</span></button>'+
-      (alt?'<span class="curnote">In '+esc(alt)+' at today\'s rate - tap the total for '+esc(g.currency)+'</span>':''); }
-  return '<div class="owe" data-k="owe"><span class="t"><span class="w">'+t+'</span>'+amt+'</span>'+(ts.length?'<button class="btn sm primary" data-a="settleSheet">Settle up</button>':'')+'</div>';
+    amt='<button class="curflip" data-a="flipCur" aria-label="Show in '+(alt?esc(g.currency):esc(altCur(g)))+'"><span class="num '+cls+'">'+cnt('bal-'+g.id+'-'+me+'-'+sh.cur,sh.p,sh.cur)+'</span></button>'; note=(alt?'<span class="curnote" data-a="flipCur">In '+esc(alt)+' at today\'s rate - tap the total for '+esc(g.currency)+'</span>':(curWorth(g)?'<span class="curnote" data-a="flipCur">In '+esc(g.currency)+' - tap the total for '+esc(altCur(g))+'</span>':'')); }
+  return '<div class="owe" data-k="owe"><span class="t"><span class="w">'+t+'</span>'+amt+'</span>'+(ts.length?'<button class="btn sm primary" data-a="settleSheet">Settle up</button>':'')+note+'</div>';
 }
 function dateRange(g){
   const a=g.startDate, b=g.endDate; if(!a&&!b) return '';

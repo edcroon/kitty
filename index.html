@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
-<script>window.KITTY_VER="11th Nov, 21:20";</script>
+<script>window.KITTY_VER="11th Nov, 21:25";</script>
 <script>window.KITTY_FB={"apiKey": "AIzaSyCehhm2KN9nvSXIbWAAJPdOHCWd2vV_bOc", "authDomain": "kitty-6ac2d.firebaseapp.com", "projectId": "kitty-6ac2d", "storageBucket": "kitty-6ac2d.firebasestorage.app", "messagingSenderId": "900248128997", "appId": "1:900248128997:web:21168f11312eebb86ff30c"};</script>
 <script src="fb.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -874,7 +874,7 @@ function oweCard(g,c){
   else if(v>0){ const o=ts.filter(x=>x.to===me); t=o.length===1?esc(mName(g,o[0].from))+' owes you':'You get back'; cls='pos'; }
   else t=ts.length?(me?"You're square":'Still to settle'):"Everyone's square";
   if(v){ const sh=shown(g,Math.abs(v)), alt=SHOW.cur[g.id];
-    amt='<button class="curflip" data-a="flipCur" aria-label="Show in '+(alt?esc(g.currency):esc(altCur(g)))+'"><span class="num '+cls+'">'+cnt('bal-'+g.id+'-'+me+'-'+sh.cur,sh.p,sh.cur)+'</span></button>'; note=(alt?'<span class="curnote" data-a="flipCur">In '+esc(alt)+' at today\'s rate - tap the total for '+esc(g.currency)+'</span>':(curWorth(g)?'<span class="curnote" data-a="flipCur">In '+esc(g.currency)+' - tap the total for '+esc(altCur(g))+'</span>':'')); }
+    amt='<button class="curflip" data-a="flipCur" aria-label="Show in '+(alt?esc(g.currency):esc(altCur(g)))+'"><span class="num '+cls+'">'+cnt('bal-'+g.id+'-'+me+'-'+sh.cur,sh.p,sh.cur)+'</span></button>'; note=(alt?'<span class="curnote" data-a="flipCur">At today\'s rate - tap the total for '+esc(g.currency)+'</span>':(curWorth(g)?'<span class="curnote" data-a="flipCur">Tap the total for '+esc(altCur(g))+'</span>':'')); }
   return '<div class="owe" data-k="owe"><span class="t"><span class="w">'+t+'</span>'+amt+'</span>'+(ts.length?'<button class="btn sm primary" data-a="settleSheet">Settle up</button>':'')+note+'</div>';
 }
 function dateRange(g){

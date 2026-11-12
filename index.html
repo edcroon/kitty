@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
-<script>window.KITTY_VER="11th Nov, 18:52";</script>
+<script>window.KITTY_VER="11th Nov, 21:05";</script>
 <script>window.KITTY_FB={"apiKey": "AIzaSyCehhm2KN9nvSXIbWAAJPdOHCWd2vV_bOc", "authDomain": "kitty-6ac2d.firebaseapp.com", "projectId": "kitty-6ac2d", "storageBucket": "kitty-6ac2d.firebasestorage.app", "messagingSenderId": "900248128997", "appId": "1:900248128997:web:21168f11312eebb86ff30c"};</script>
 <script src="fb.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -66,6 +66,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .gsub{border:none;background:none;padding:0;font:inherit;font-size:14px;color:var(--muted);text-align:left;cursor:pointer;display:inline-flex;align-items:center;gap:5px;align-self:flex-start;flex-wrap:wrap}
 .gsub:disabled{cursor:default;opacity:1}.gsub .chev{font-size:19px;line-height:1;margin-top:-3px}
 .owe{display:flex;align-items:center;gap:12px;padding:14px 14px 14px 16px;min-height:72px;background:#EFEBE4;border-radius:var(--r);font-size:16px;margin-top:4px}
+.curflip{all:unset;cursor:pointer;-webkit-tap-highlight-color:transparent;align-self:flex-start}.owe .curnote{font-size:12px;color:var(--muted)}
 .owe .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.owe .w{font-size:15px}.owe .num{font-size:24px;letter-spacing:-.02em;white-space:nowrap;line-height:1.15}
 .dayhd{font-size:13px;color:var(--muted);padding:18px 0 0}.list>.dayhd:first-child{padding-top:2px}
 .spendhd{display:flex;flex-direction:column;gap:4px;font-size:14px}.spendhd .num{font-size:32px;letter-spacing:-.02em}
@@ -814,12 +815,30 @@ function renderGroup(app,g){
   h+='<div class="top" style="display:grid;grid-template-columns:1fr auto 1fr"><button class="round back" data-a="home" aria-label="Back to your groups">'+IC.back+'</button>'+cat(50,'',true)+'<div class="r" style="justify-content:flex-end">'+(canEdit()?'<button class="round" data-a="settings" aria-label="Group settings">'+IC.dots+'</button>':'<button class="round" data-a="invite" aria-label="Invite people with a QR code">'+IC.qr+'</button>')+'</div></div>';
   if(!me && canEdit()) h+='<div class="banner" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span>You\'re not in this group yet.</span><button class="btn sm primary" data-a="join">Join</button></div>';
   const n=(g.members||[]).length, dr=dateRange(g), ex=S.exp[g.id]||[];
-  h+='<div class="gtop"><h1 class="gname">'+esc(g.name)+'</h1><button class="gsub" data-a="spendSheet"'+(ex.length?'':' disabled')+'>'+(dr?esc(dr):n+(n===1?' person':' people'))+' · '+cnt('spent-'+g.id,c.spent,g.currency)+' spent'+(ex.length?'<span class="chev" aria-hidden="true">›</span>':'')+'</button></div>';
+  h+='<div class="gtop"><h1 class="gname">'+esc(g.name)+'</h1><button class="gsub" data-a="spendSheet"'+(ex.length?'':' disabled')+'>'+(dr?esc(dr):n+(n===1?' person':' people'))+' · '+(()=>{ const sh=shown(g,c.spent); return cnt('spent-'+g.id+'-'+sh.cur,sh.p,sh.cur); })()+' spent'+(ex.length?'<span class="chev" aria-hidden="true">›</span>':'')+'</button></div>';
   if(loaded && ex.length) h+=oweCard(g,c);
   if(loaded) h+=renderList(g);
   h+='</div>';
   if(canEdit()) h+='<div class="dock"><div class="in"><button class="btn primary grow" data-a="addExp">'+IC.plus+'Add expense</button></div></div>';
   app.innerHTML=h;
+}
+// Show a group's big figures in another currency for a moment (display only, nothing in the group changes).
+// The other currency is the one you've used most in this group, otherwise dollars (or pounds for a dollar group).
+const SHOW={cur:{},rate:{}};
+function altCur(g){ const n={}; (S.exp[g.id]||[]).forEach(x=>{ if(x.currency&&x.currency!==g.currency) n[x.currency]=(n[x.currency]||0)+1; });
+  const best=Object.keys(n).sort((a,b)=>n[b]-n[a])[0]; return best||(g.currency==='USD'?'GBP':'USD'); }
+const curWord=c=>({GBP:'pounds',USD:'dollars',EUR:'euros',CAD:'Canadian dollars',AUD:'Australian dollars',JPY:'yen',CHF:'francs'}[c]||esc(c));
+function shown(g,p){ const c=SHOW.cur[g.id]; return c?{p:Math.round(p*SHOW.rate[g.id+'>'+c]),cur:c}:{p,cur:g.currency}; }
+async function flipCur(){
+  const g=G(S.gid); if(!g) return;
+  if(SHOW.cur[g.id]){ delete SHOW.cur[g.id]; render(); return; }
+  const alt=altCur(g), k=g.id+'>'+alt;
+  if(!SHOW.rate[k]){ const r=await liveRate(g.currency,alt).catch(()=>null); let v=r&&r.rate;
+    if(!(v>0)&&g.rates&&g.rates[alt]>0) v=1/g.rates[alt];
+    if(!(v>0)){ toast("Can't get the exchange rate right now"); return; }
+    SHOW.rate[k]=v; }
+  if(G(S.gid)!==g) return;
+  SHOW.cur[g.id]=alt; render();
 }
 function oweCard(g,c){
   const me=myMid(g), v=me?(c.bal[me]||0):0, ts=c.transfers||[];
@@ -827,7 +846,9 @@ function oweCard(g,c){
   if(v<0){ const o=ts.filter(x=>x.from===me); t=o.length===1?'You owe '+esc(mName(g,o[0].to)):'You owe'; cls='neg'; }
   else if(v>0){ const o=ts.filter(x=>x.to===me); t=o.length===1?esc(mName(g,o[0].from))+' owes you':'You get back'; cls='pos'; }
   else t=ts.length?(me?"You're square":'Still to settle'):"Everyone's square";
-  if(v) amt='<span class="num '+cls+'">'+cnt('bal-'+g.id+'-'+me,Math.abs(v),g.currency)+'</span>';
+  if(v){ const sh=shown(g,Math.abs(v)), alt=SHOW.cur[g.id];
+    amt='<button class="curflip" data-a="flipCur" aria-label="Show in '+(alt?esc(g.currency):esc(altCur(g)))+'"><span class="num '+cls+'">'+cnt('bal-'+g.id+'-'+me+'-'+sh.cur,sh.p,sh.cur)+'</span></button>'+
+      (alt?'<span class="curnote">In '+curWord(alt)+' at today\'s rate - tap for '+curWord(g.currency)+'</span>':''); }
   return '<div class="owe"><span class="t"><span class="w">'+t+'</span>'+amt+'</span>'+(ts.length?'<button class="btn sm primary" data-a="settleSheet">Settle up</button>':'')+'</div>';
 }
 function dateRange(g){
@@ -1996,6 +2017,7 @@ document.addEventListener('click',e=>{
     case 'open': go(t.dataset.g); break;
     case 'settleSheet': case 'settleTab': S.settleAsk=null; openSheet('settle'); break;
     case 'spendSheet': openSheet('spend'); break;
+    case 'flipCur': flipCur(); break;
     case 'newGroup': newGroupForm(); break;
     case 'settings': if(g) editGroupForm(g); break;
     case 'invite': openSheet('invite'); break;

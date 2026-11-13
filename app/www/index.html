@@ -55,6 +55,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .gsub{border:none;background:none;padding:0;font:inherit;font-size:14px;color:var(--muted);text-align:left;cursor:pointer;display:inline-flex;align-items:center;gap:5px;align-self:flex-start;flex-wrap:wrap}
 .gsub:disabled{cursor:default;opacity:1}.gsub .chev{font-size:19px;line-height:1;margin-top:-3px}
 .owe{display:flex;align-items:center;gap:12px;padding:14px 14px 14px 16px;min-height:72px;background:#EFEBE4;border-radius:var(--r);font-size:16px;margin-top:4px}
+.curflip,.curnote,.hero .big[data-a]{touch-action:manipulation}
 .curflip{all:unset;cursor:pointer;-webkit-tap-highlight-color:transparent;align-self:flex-start}.owe{flex-wrap:wrap;row-gap:0}.owe .curnote{flex-basis:100%;font-size:12px;color:var(--muted);margin-top:-2px}
 .owe .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.owe .w{font-size:15px}.owe .num{font-size:24px;letter-spacing:-.02em;white-space:nowrap;line-height:1.15}
 .dayhd{font-size:13px;color:var(--muted);padding:18px 0 0}.list>.dayhd:first-child{padding-top:2px}
@@ -780,7 +781,7 @@ function renderHome(app){
     note=curs.length>1?"At today's rates - tap the total for each currency":"At today's rate - tap the total for "+esc(curs[0]); }
   else if(curs.length===1){ const v=tot[curs[0]]; sub=v>0?"Overall, you're owed":"Overall, you owe"; bigHtml=v<0?'<span class="neg">'+cnt('hero',Math.abs(v),curs[0])+'</span>':cnt('hero',Math.abs(v),curs[0]); }
   else if(curs.length>1){ sub='Overall, across currencies'; bigCls=' sm'; bigHtml=curs.map(c=>'<span class="num '+sign(tot[c])+'">'+(tot[c]<0?'-':'+')+fmt(Math.abs(tot[c]),c)+'</span>').join('<br>'); }
-  if(!conv&&curs.some(c=>c!==home)) note='Tap the total for '+esc(home);
+  if(!conv&&curs.some(c=>c!==home)){ note='Tap the total for '+esc(home); setTimeout(()=>curs.forEach(c=>{ if(c!==home) rateH(c,home); }),0); }
   S.homeCurs={curs,home};
   let h='<div class="stack" style="gap:0">';
   h+='<div class="top">'+brand()+'<div class="r">'+(mine.length?'<button class="round" data-a="search" aria-label="Search expenses">'+IC.search+'</button>':'')+(canEdit()?'<button class="round" data-a="newGroup" aria-label="New group">'+IC.plus+'</button>':'')+'</div></div>';
@@ -848,25 +849,31 @@ const curWord=c=>({GBP:'pounds',USD:'dollars',EUR:'euros',CAD:'Canadian dollars'
 // worth offering the switch: the group isn't in your own currency, or you've spent in another currency there
 const curWorth=g=>homeCur(g)!==g.currency||(S.exp[g.id]||[]).some(x=>x.currency&&x.currency!==g.currency);
 function shown(g,p){ const c=SHOW.cur[g.id]; return c?{p:Math.round(p*SHOW.rate[g.id+'>'+c]),cur:c}:{p,cur:g.currency}; }
+// rates are fetched in the background as soon as the "Tap the total" line shows, so a tap switches straight away
+const RATE_PEND={};
+function getRate(k,from,to,fallback){
+  if(SHOW.rate[k]) return Promise.resolve(SHOW.rate[k]); if(RATE_PEND[k]) return RATE_PEND[k];
+  return RATE_PEND[k]=liveRate(from,to).catch(()=>null).then(r=>{ let v=r&&r.rate; if(!(v>0)) v=fallback(); delete RATE_PEND[k]; if(v>0) SHOW.rate[k]=v; return v>0?v:null; });
+}
+const rateG=g=>{ const alt=altCur(g); return getRate(g.id+'>'+alt,g.currency,alt,()=>g.rates&&g.rates[alt]>0?1/g.rates[alt]:0); };
+const rateH=(c,home)=>getRate('home>'+c,c,home,()=>{ const g=Object.values(S.groups||{}).find(x=>x&&x.currency===home&&x.rates&&x.rates[c]>0); return g?g.rates[c]:0; });
+const SHOW_WAIT={};
 async function flipCur(){
   const g=G(S.gid); if(!g) return;
+  if(SHOW_WAIT[g.id]){ SHOW_WAIT[g.id]=0; return; }            // tapped again while the rate was coming: leave it as it is
   if(SHOW.cur[g.id]){ delete SHOW.cur[g.id]; flipRender(); return; }
-  const alt=altCur(g), k=g.id+'>'+alt;
-  if(!SHOW.rate[k]){ const r=await liveRate(g.currency,alt).catch(()=>null); let v=r&&r.rate;
-    if(!(v>0)&&g.rates&&g.rates[alt]>0) v=1/g.rates[alt];
-    if(!(v>0)){ toast("Can't get the exchange rate right now"); return; }
-    SHOW.rate[k]=v; }
-  if(G(S.gid)!==g) return;
+  const alt=altCur(g);
+  if(!SHOW.rate[g.id+'>'+alt]){ SHOW_WAIT[g.id]=1; const v=await rateG(g); if(!SHOW_WAIT[g.id]) return; SHOW_WAIT[g.id]=0;
+    if(!v){ toast("Can't get the exchange rate right now"); return; } }
+  if(G(S.gid)!==g||S.view!=='group') return;
   SHOW.cur[g.id]=alt; flipRender();
 }
 async function flipHomeCur(){
+  if(SHOW_WAIT.home){ SHOW_WAIT.home=0; return; }
   if(SHOW.cur.home){ delete SHOW.cur.home; flipRender('#app .hero'); return; }
-  const {curs,home}=S.homeCurs||{curs:[],home:'GBP'};
-  for(const c of curs){ if(c===home||SHOW.rate['home>'+c]) continue;
-    const r=await liveRate(c,home).catch(()=>null); let v=r&&r.rate;
-    if(!(v>0)){ const g=Object.values(S.groups||{}).find(x=>x&&x.currency===home&&x.rates&&x.rates[c]>0); if(g) v=g.rates[c]; }
-    if(!(v>0)){ toast("Can't get the exchange rate right now"); return; }
-    SHOW.rate['home>'+c]=v; }
+  const {curs,home}=S.homeCurs||{curs:[],home:'GBP'}, need=curs.filter(c=>c!==home&&!SHOW.rate['home>'+c]);
+  if(need.length){ SHOW_WAIT.home=1; const vs=await Promise.all(need.map(c=>rateH(c,home))); if(!SHOW_WAIT.home) return; SHOW_WAIT.home=0;
+    if(vs.some(v=>!v)){ toast("Can't get the exchange rate right now"); return; } }
   if(S.view!=='home') return;
   SHOW.cur.home=home; flipRender('#app .hero');
 }
@@ -877,7 +884,6 @@ function flipRender(sel){
   const h1=c1.getBoundingClientRect().height;
   if(Math.abs(h1-h0)>1){ ((flip.am||{})[FL_APP]||[]).forEach(a=>{ try{a.cancel();}catch(e){} }); // what's below simply rides along with the card
     c1.animate([{height:h0+'px',overflow:'hidden'},{height:h1+'px',overflow:'hidden'}],{duration:300,easing:FL_EASE}); }
-  const n=c1.querySelector('.curnote'); if(n) n.animate([{opacity:0},{opacity:1}],{duration:200,delay:110,easing:FL_EASE,fill:'backwards'});
 }
 function oweCard(g,c){
   const me=myMid(g), v=me?(c.bal[me]||0):0, ts=c.transfers||[];
@@ -886,7 +892,7 @@ function oweCard(g,c){
   else if(v>0){ const o=ts.filter(x=>x.to===me); t=o.length===1?esc(mName(g,o[0].from))+' owes you':'You get back'; cls='pos'; }
   else t=ts.length?(me?"You're square":'Still to settle'):"Everyone's square";
   if(v){ const sh=shown(g,Math.abs(v)), alt=SHOW.cur[g.id];
-    amt='<button class="curflip" data-a="flipCur" aria-label="Show in '+(alt?esc(g.currency):esc(altCur(g)))+'"><span class="num '+cls+'">'+cnt('bal-'+g.id+'-'+me+'-'+sh.cur,sh.p,sh.cur)+'</span></button>'; note=(alt?'<span class="curnote" data-a="flipCur">At today\'s rate - tap the total for '+esc(g.currency)+'</span>':(curWorth(g)?'<span class="curnote" data-a="flipCur">Tap the total for '+esc(altCur(g))+'</span>':'')); }
+    amt='<button class="curflip" data-a="flipCur" aria-label="Show in '+(alt?esc(g.currency):esc(altCur(g)))+'"><span class="num '+cls+'">'+cnt('bal-'+g.id+'-'+me+'-'+sh.cur,sh.p,sh.cur)+'</span></button>'; note=(alt?'<span class="curnote" data-a="flipCur">At today\'s rate - tap the total for '+esc(g.currency)+'</span>':(curWorth(g)?(setTimeout(()=>rateG(g),0),'<span class="curnote" data-a="flipCur">Tap the total for '+esc(altCur(g))+'</span>'):'')); }
   return '<div class="owe" data-k="owe"><span class="t"><span class="w">'+t+'</span>'+amt+'</span>'+(ts.length?'<button class="btn sm primary" data-a="settleSheet">Settle up</button>':'')+note+'</div>';
 }
 function dateRange(g){

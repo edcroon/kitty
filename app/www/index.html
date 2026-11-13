@@ -406,6 +406,7 @@ let catWoke=false; window.KITTY_CAT=(...a)=>cat(...a); const isNight=()=>{ const
 const cat = (sz,cls,press,fat) => { const se=season(), k=(cls||'')+(se?' ss-'+se:''), svg=CAT_SVG.replace(/SZ/g,sz).replace('BODYD',catBody(fat));
   return press?'<button class="catart catbtn '+k+(isNight()&&!catWoke?' asleep':'')+'" data-a="pet" aria-label="Kitty">'+svg+'</button>':'<span class="catart '+k+'">'+svg+'</span>'; };
 const IC = {
+  bin:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
   cal:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
   ppl:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.6 3-5.6 6-5.6s5.4 2 6 5.6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.4c2.4.2 4 1.9 4.5 4.6"/></svg>',
   note:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.5h10l4 4v13H5z"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/></svg>',
@@ -476,6 +477,8 @@ function guessCat(desc){
   window.swClose=()=>{ const r=S.swOpen; if(r&&r.isConnected) settle(r,0); S.swOpen=null; };
   window.swDelete=r=>{ const id=r.dataset.sw||''; S.swOpen=null; r.classList.remove('open');
     if(id.startsWith('g:')){ const gid=id.slice(2), g=G(gid); confirmBox('Delete '+(g?g.name:'this group')+'?','All its expenses and payments go too. This can\'t be undone.','Delete',()=>deleteGroup(gid)); S.confirm.onNo=()=>settle(r,0); r.classList.add('open'); S.swOpen=r; return; }
+    if(id.startsWith('p:')){ const g=G(S.gid), p=g&&(S.pay[g.id]||[]).find(e=>e.id===id.slice(2)); if(!p) return;
+      r.classList.add('going'); tween(r,r.offsetWidth+12,220,inq,()=>softDelete('groups/'+g.id+'/payments/'+p.id,p,'Payment removed',null,true)); return; }
     const g=G(S.gid), x=g&&(S.exp[g.id]||[]).find(e=>e.id===id); if(!x) return;
     r.classList.add('going'); tween(r,r.offsetWidth+12,220,inq,()=>softDelete('groups/'+g.id+'/expenses/'+x.id,x,'"'+x.desc+'" deleted',x.photoId)); };
   // any touch outside the open row's button puts it back, and doesn't count as a tap
@@ -929,7 +932,8 @@ function renderList(g){
   if(!ex.length&&pays.length){ // only payments so far: show them, so the page matches the balance
     let h='<div class="list">', last=null;
     pays.forEach(p=>{ if(p.date!==last){ last=p.date; h+='<div class="dayhd">'+esc(dayLabel(p.date))+'</div>'; }
-      h+='<button class="item has-av" data-a="settleSheet" data-k="pay-'+esc(p.id)+'">'+av(g,p.from,32)+'<span class="ic"><span class="l1"><b>'+esc(mName(g,p.from))+' paid '+esc(mName(g,p.to)==='You'?'you':mName(g,p.to))+'</b><span class="num">'+fmt(p.amount,g.currency)+'</span></span><span class="l2">Payment</span></span></button>'; });
+      const r='<button class="item has-av" data-a="settleSheet" data-k="pay-'+esc(p.id)+'">'+av(g,p.from,32)+'<span class="ic"><span class="l1"><b>'+esc(mName(g,p.from))+' paid '+esc(mName(g,p.to)==='You'?'you':mName(g,p.to))+'</b><span class="num">'+fmt(p.amount,g.currency)+'</span></span><span class="l2">Payment</span></span></button>';
+      h+=canEdit()?'<div class="swipe" data-sw="p:'+esc(p.id)+'"><button class="del" data-a="swDel" tabindex="-1">'+IC.bin+'<span>Delete</span></button>'+r+'</div>':r; });
     return h+'</div>';
   }
   if(!ex.length) return '<div class="empty">'+cat(64,'bob',true)+'<div class="t">Nothing in yet</div><div class="d">Add the first expense and Kitty works out who owes what.</div></div>';
@@ -938,7 +942,7 @@ function renderList(g){
   ex.forEach(x=>{
     if(x.date!==last){ last=x.date; h+='<div class="dayhd">'+esc(dayLabel(x.date))+'</div>'; }
     if(seen&&!seen.has(x.id)) S.newAt[x.id]=performance.now();
-    const r=expRow(g,x,''); h+=sw?'<div class="swipe" data-sw="'+esc(x.id)+'"><button class="del" data-a="swDel" tabindex="-1"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg><span>Delete</span></button>'+r+'</div>':r;
+    const r=expRow(g,x,''); h+=sw?'<div class="swipe" data-sw="'+esc(x.id)+'"><button class="del" data-a="swDel" tabindex="-1">'+IC.bin+'<span>Delete</span></button>'+r+'</div>':r;
   });
   return h+'</div>';
 }

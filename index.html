@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
-<script>window.KITTY_VER="15th Nov, 21:45";</script>
+<script>window.KITTY_VER="16th Nov, 10:36";</script>
 <script>window.KITTY_FB={"apiKey": "AIzaSyCehhm2KN9nvSXIbWAAJPdOHCWd2vV_bOc", "authDomain": "kitty-6ac2d.firebaseapp.com", "projectId": "kitty-6ac2d", "storageBucket": "kitty-6ac2d.firebasestorage.app", "messagingSenderId": "900248128997", "appId": "1:900248128997:web:21168f11312eebb86ff30c"};</script>
 <script src="fb.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -549,7 +549,9 @@ async function write(fn){
 
 /* ---------- model ---------- */
 const G = id => S.groups[id];
-const myMid = g => { if(!g||!S.uid) return null; const m=(g.members||[]).find(m=>m.uid===S.uid); return m?m.id:null; };
+// a person can be on more than one phone (a new phone, or the App Store app as well as the Home Screen one)
+const isMe = m => !!(m&&S.uid&&(m.uid===S.uid||(m.also||[]).includes(S.uid)));
+const myMid = g => { if(!g||!S.uid) return null; const m=(g.members||[]).find(isMe); return m?m.id:null; };
 const mem = (g,mid) => (g.members||[]).find(m=>m.id===mid);
 function mName(g,mid,you){ if(you!==false && mid===myMid(g)) return 'You'; const m=mem(g,mid); return m?m.name:'Someone'; }
 function avColour(g,mid){ const i=(g.members||[]).findIndex(m=>m.id===mid); return AVC[(i<0?0:i)%AVC.length]; }
@@ -1207,7 +1209,7 @@ function sheetGroup(){
   h+='<div class="q" style="margin-top:14px">Who\'s in?</div>'+gFaces(f,fg,false);
   if(!isNew){
     h+='<button class="mini pill" style="align-self:flex-start" data-a="invite">'+IC.qr+'Invite with QR code</button>';
-    const me=f.members.find(m=>m.uid===S.uid);
+    const me=f.members.find(isMe);
     if(me){ const i=f.members.indexOf(me);
       if(f.showPay||me.pay) h+='<div class="f"><label for="g-pay">Your bank details or payment link</label><textarea class="inp" id="g-pay" data-pay="'+i+'" placeholder="e.g. Sort code and account number, or a Monzo/Revolut link" maxlength="300">'+esc(me.pay||'')+'</textarea></div>';
       else h+='<button class="linkbtn" style="align-self:flex-start;font-size:14px" data-a="showPay">Add your bank details</button>';
@@ -1227,8 +1229,8 @@ function gPills(f){
 function gFaces(f,fg,isNew){
   let h='<div class="faces">';
   f.members.forEach((m,i)=>{
-    const isMe=(m.uid&&m.uid===S.uid)||(!S.uid&&i===0&&isNew), used=!isNew && memberUsed(f.id,m.id);
-    h+='<span class="fwrap"><button class="face'+(f.editIdx===i?' editing':'')+'" data-a="mEdit" data-i="'+i+'" aria-label="Rename '+esc(isMe?'yourself':m.name||'person')+'">'+av(fg,m.id,52)+'<span>'+esc(isMe?'You':m.name||'?')+'</span></button>'+(isMe||used?'':'<button class="fdel" data-a="mDel" data-i="'+i+'" aria-label="Remove '+esc(m.name||'person')+'">'+IC.x+'</button>')+'</span>';
+    const isMe_=isMe(m)||(!S.uid&&i===0&&isNew), used=!isNew && memberUsed(f.id,m.id);
+    h+='<span class="fwrap"><button class="face'+(f.editIdx===i?' editing':'')+'" data-a="mEdit" data-i="'+i+'" aria-label="Rename '+esc(isMe_?'yourself':m.name||'person')+'">'+av(fg,m.id,52)+'<span>'+esc(isMe_?'You':m.name||'?')+'</span></button>'+(isMe_||used?'':'<button class="fdel" data-a="mDel" data-i="'+i+'" aria-label="Remove '+esc(m.name||'person')+'">'+IC.x+'</button>')+'</span>';
   });
   h+='</div>';
   const ed=f.editIdx!=null;
@@ -1308,14 +1310,14 @@ async function saveGroup(){
   const members=f.members.map(m=>Object.assign({},m,{name:(m.name||'').trim()})).filter(m=>m.name||m.uid);
   members.forEach(m=>{ if(!m.name) m.name='Me'; });
   if(!members.length){ err.textContent='Add at least one person.'; return; }
-  const clean=members.map(m=>{ const o={id:m.id,name:m.name.slice(0,30),uid:m.uid||null}; if(m.pay) o.pay=String(m.pay).slice(0,300); return o; });
+  const clean=members.map(m=>{ const o={id:m.id,name:m.name.slice(0,30),uid:m.uid||null}; if(m.also&&m.also.length) o.also=m.also.slice(0,8); if(m.pay) o.pay=String(m.pay).slice(0,300); return o; });
   if(f.startDate&&!f.endDate) f.endDate=f.startDate;
   if(f.startDate&&f.endDate&&f.endDate<f.startDate){ err.textContent='The trip has to end after it starts.'; return; }
   const body={name:name.slice(0,60),colour:f.colour,currency:f.currency,budget:0,startDate:f.startDate||'',endDate:f.endDate||'',members:clean,touchedAt:Date.now()};
   if(!f.id){
     const id=rid('k');
     body.createdAt=Date.now(); body.createdBy=S.uid||null; body.rates={};
-    if(!clean.some(m=>m.uid===S.uid) && S.uid){ clean[0].uid=S.uid; }
+    if(!clean.some(isMe) && S.uid){ clean[0].uid=S.uid; }
     // go straight in - the save carries on in the background, and only brings you back if it fails
     S.groups[id]=Object.assign({id},JSON.parse(JSON.stringify(body))); (S.pendingG=S.pendingG||{})[id]=S.groups[id]; S.exp[id]=[]; S.pay[id]=[];
     closeSheet(); requestAnimationFrame(()=>go(id)); toast('Group started',true);
@@ -1380,7 +1382,11 @@ function sheetJoin(){
   let h=head('Join '+g.name);
   if(navigator.standalone===false&&/iPhone|iPad|iPod/.test(navigator.userAgent)) h+='<div class="iosnote"><p style="margin:0"><b>Want Kitty as an app?</b> Tap Copy link, then Share and Add to Home Screen. Open Kitty from your Home Screen, tap <i>Got an invite link?</i> and paste it. Or just join here in Safari.</p><button class="btn sm" data-a="copyInvite">Copy link</button></div>';
   h+='<p style="margin:0;font-weight:500">Which one are you? That way Kitty shows what you owe and what you\'re owed.</p>';
-  if(free.length){ h+='<div class="list">'+free.map(m=>'<button class="item" data-a="joinAs" data-m="'+esc(m.id)+'">'+av(g,m.id,30)+'<span class="t"><b>'+esc(m.name)+'</b></span></button>').join('')+'</div>'; }
+  const row=m=>'<button class="item" data-a="joinAs" data-m="'+esc(m.id)+'">'+av(g,m.id,30)+'<span class="t"><b>'+esc(m.name)+'</b></span></button>';
+  if(free.length){ h+='<div class="list">'+free.map(row).join('')+'</div>'; }
+  // names already on someone's phone: tap yours if this is a new phone (or the App Store app)
+  const taken=(g.members||[]).filter(m=>m.uid);
+  if(taken.length){ h+='<p class="muted" style="margin:6px 0 0;font-size:14px">'+(free.length?'Already using Kitty on another phone? Tap your name here.':'Already using Kitty on another phone? Tap your name.')+'</p><div class="list">'+taken.map(row).join('')+'</div>'; }
   h+='<div class="f"><label for="j-name">'+(free.length?"I'm not on the list - add me as":'Your name')+'</label><input class="inp" id="j-name" value="'+esc(S.profileName?S.profileName.split(' ')[0]:'')+'" maxlength="30"></div><div class="hint bad" id="j-err"></div><button class="btn primary" data-a="joinNew">Join</button>';
   return h;
 }
@@ -1390,8 +1396,8 @@ async function joinAs(mid,newName){
   const snap=await S.db.doc('groups/'+g.id).get().catch(()=>null);
   const cur=snap&&snap.exists?snap.data():g;
   const members=(cur.members||[]).map(m=>Object.assign({},m));
-  if(members.some(m=>m.uid===S.uid)){ closeSheet(); return; }
-  if(mid){ const m=members.find(m=>m.id===mid); if(!m||m.uid){ toast('Someone already picked that name'); return; } m.uid=S.uid; }
+  if(members.some(isMe)){ closeSheet(); return; }
+  if(mid){ const m=members.find(m=>m.id===mid); if(!m) return; if(m.uid){ m.also=(m.also||[]).filter(u=>u!==S.uid).concat(S.uid).slice(-8); } else m.uid=S.uid; }
   else { const n=(newName||'').trim(), err=document.getElementById('j-err'), say=t=>{ if(err) err.textContent=t; else toast(t); };
     if(!n){ say('Add your name.'); return; }
     // one person, one spot: a name that's already in the group (any capitals) means you're probably already on the list
